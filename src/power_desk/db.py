@@ -76,6 +76,14 @@ class PowerDeskDB:
         """Yields a managed DuckDB connection with automatic retry on concurrent lock contention."""
         deadline = time.perf_counter() + timeout
         con = None
+        if read_only and not self.db_path.exists():
+            try:
+                init_con = duckdb.connect(database=self.db_path.as_posix(), read_only=False)
+                init_con.execute("CREATE SCHEMA IF NOT EXISTS raw;")
+                init_con.close()
+            except Exception:
+                pass
+
         while time.perf_counter() < deadline:
             try:
                 con = duckdb.connect(database=self.db_path.as_posix(), read_only=read_only)
@@ -110,24 +118,24 @@ class PowerDeskDB:
         con.execute("SET search_path = 'raw,main';")
         return con
 
-    def initialize(self) -> None:
-        """Initializes raw tables from seed parquet if not present, and registers all views."""
-        needs_seed = False
-        with self.connect(read_only=False, timeout=15.0) as con:
-            tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'raw'").fetchall()
-            existing_tables = {t[0] for t in tables}
-
-            if "_dlt_version" not in existing_tables or "raw_fuelinst" not in existing_tables:
-                needs_seed = True
-                for tbl in ["raw_fuelinst", "raw_indo", "raw_itsdo", "raw_demand_forecast", "raw_windfor"]:
-                    if tbl in existing_tables:
-                        con.execute(f"DROP TABLE IF EXISTS raw.{tbl};")
-
-        # Load seed via dlt outside the open connection to avoid DuckDB lock contention
-        if needs_seed:
-            load_seed_with_dlt(self.db_path)
+    def initialize_views(self) -> None:
+        """Applies ODS and Marts SQL views to the database if base tables exist."""
+        if not self.db_path.exists():
+            return
 
         with self.connect(read_only=False, timeout=15.0) as con:
+            con.execute("CREATE SCHEMA IF NOT EXISTS raw;")
+            tables = {
+                t[0]
+                for t in con.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'raw'"
+                ).fetchall()
+            }
+
+            if not ("raw_fuelinst" in tables or "raw_indo" in tables):
+                logger.info("Raw tables not loaded yet; skipping SQL view creation.")
+                return
+
             # Apply ODS Views
             ods_dir = MODELS_DIR / "ods"
             if ods_dir.exists():
@@ -141,6 +149,10 @@ class PowerDeskDB:
                 for sql_file in sorted(marts_dir.glob("*.sql")):
                     sql = sql_file.read_text(encoding="utf-8")
                     con.execute(sql)
+
+    def initialize(self) -> None:
+        """Lightweight startup initialization for the server. Does NOT load any data."""
+        self.initialize_views()
 
     def execute_query(self, sql: str, params: list[Any] | None = None) -> dict[str, Any]:
         """Safely executes a read query and returns structured columns, rows, and execution stats."""
@@ -177,7 +189,27 @@ class PowerDeskDB:
 
     def get_filter_options(self) -> dict[str, Any]:
         """Returns available date boundaries, settlement periods, and fuel types."""
+        default_options = {
+            "min_date": "2024-03-01",
+            "max_date": "2024-03-07",
+            "day_count": 0,
+            "fuel_types": [],
+            "settlement_periods": list(range(1, 49)),
+            "table_counts": {},
+        }
+        if not self.db_path.exists():
+            return default_options
+
         with self.connect(read_only=True, timeout=10.0) as con:
+            tables = {
+                t[0]
+                for t in con.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'raw'"
+                ).fetchall()
+            }
+            if "ods_generation_actual" not in tables:
+                return default_options
+
             date_stats = con.execute("""
                 SELECT 
                     MIN(settlement_date)::TEXT as min_date,
@@ -195,13 +227,14 @@ class PowerDeskDB:
 
             table_counts = {}
             for tbl in ["raw_fuelinst", "raw_indo", "ods_generation_actual", "mart_generation_mix"]:
-                cnt = con.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
-                table_counts[tbl] = cnt
+                if tbl in tables:
+                    cnt = con.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+                    table_counts[tbl] = cnt
 
         return {
-            "min_date": date_stats[0] if date_stats else "2024-03-01",
-            "max_date": date_stats[1] if date_stats else "2024-03-07",
-            "day_count": date_stats[2] if date_stats else 7,
+            "min_date": date_stats[0] if (date_stats and date_stats[0]) else "2024-03-01",
+            "max_date": date_stats[1] if (date_stats and date_stats[1]) else "2024-03-07",
+            "day_count": date_stats[2] if (date_stats and date_stats[2]) else 0,
             "fuel_types": fuels,
             "settlement_periods": list(range(1, 49)),
             "table_counts": table_counts,
