@@ -35,6 +35,7 @@ class BmrsResourceConfig:
     cursor_field: str = "settlementDate"
     records_path: str | None = "data"
     default_step_days: int = 1
+    lag: int = 0  # Pointer lag in seconds or units (0 = zero lag, immediate continuation)
     extra_params: dict[str, Any] = field(default_factory=dict)
     format_date: Callable[[datetime | date], str] = lambda d: d.strftime("%Y-%m-%d")
 
@@ -75,32 +76,43 @@ class BmrsSourceBuilder:
         initial_date: str,
         end_date: str | None = None,
     ) -> Callable[..., Generator[list[dict[str, Any]], None, None]]:
-        """Creates a generator function for a specific resource configuration."""
+        """Creates an incremental generator function that runs until data ends and stores the pointer."""
 
         def resource_gen(
             cursor_val: dlt.sources.incremental[str] = dlt.sources.incremental(
                 config.cursor_field,
                 initial_value=initial_date,
+                lag=config.lag,
             ),
         ) -> Generator[list[dict[str, Any]], None, None]:
-            # Determine start date from cursor
+            # Resume from stored pointer if available, else start from initial_date
             raw_start = cursor_val.last_value or initial_date
             if "T" in str(raw_start):
                 start_dt = datetime.fromisoformat(str(raw_start).replace("Z", "+00:00")).date()
             else:
                 start_dt = datetime.strptime(str(raw_start)[:10], "%Y-%m-%d").date()
 
+            # If end_date is specified, stop there; otherwise run until data ends / live horizon
             if end_date:
-                end_dt = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
+                max_dt = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
             else:
-                # Default to today
-                end_dt = date.today()
+                max_dt = date.today() + timedelta(days=2)
 
             curr_dt = start_dt
             step = timedelta(days=config.default_step_days)
 
-            while curr_dt <= end_dt:
-                chunk_end = min(curr_dt + step - timedelta(days=1), end_dt)
+            logger.info(
+                "Starting incremental run for %s from pointer=%s (start_date=%s) to max_dt=%s (lag=%s)",
+                config.name,
+                cursor_val.last_value,
+                curr_dt,
+                max_dt,
+                config.lag,
+            )
+
+            empty_chunks = 0
+            while curr_dt <= max_dt:
+                chunk_end = min(curr_dt + step - timedelta(days=1), max_dt)
                 params: dict[str, Any] = {
                     config.date_param_from: config.format_date(curr_dt),
                     config.date_param_to: config.format_date(chunk_end),
@@ -121,9 +133,32 @@ class BmrsSourceBuilder:
                         records = payload
 
                     if records:
-                        # Yield raw records as-is. No custom row processing!
+                        empty_chunks = 0
+                        # Yield raw records as-is. dlt inspects cursor_field and advances cursor_val.last_value!
                         yield records
+                    else:
+                        empty_chunks += 1
+                        # If end of data reached near current date, stop extraction and keep latest pointer
+                        if not end_date or curr_dt >= date.today() - timedelta(days=1):
+                            logger.info(
+                                "No further records returned for %s at %s. Storing pointer to latest value: %s",
+                                config.name,
+                                curr_dt,
+                                cursor_val.last_value,
+                            )
+                            break
 
+                except urllib.error.HTTPError as http_err:
+                    if http_err.code in (404, 400) and (not end_date or curr_dt >= date.today() - timedelta(days=1)):
+                        logger.info(
+                            "Data stream reached end (%s) for %s at %s. Latest stored pointer: %s",
+                            http_err,
+                            config.name,
+                            curr_dt,
+                            cursor_val.last_value,
+                        )
+                        break
+                    logger.warning("HTTP error fetching %s for %s: %s", config.name, curr_dt, http_err)
                 except Exception as exc:
                     logger.warning("Failed to fetch %s for %s: %s", config.name, curr_dt, exc)
 

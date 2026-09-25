@@ -25,15 +25,16 @@ def run_backfill(
     db_path: str = "data/warehouse.duckdb",
     dataset_name: str = "raw",
 ) -> None:
-    """Runs the incremental dlt pipeline with merge disposition."""
-    resolved_end = end_date or date.today().strftime("%Y-%m-%d")
+    end_display = end_date if end_date else "Until data ends (live horizon)"
 
     print(f"\n=======================================================")
     print(f"⚡ POWER DESK — Elexon BMRS Backfill")
     print(f"=======================================================")
-    print(f"  • Date Range:    {start_date} -> {resolved_end}")
+    print(f"  • Start Date:    {start_date} (resumes from pointer if stored)")
+    print(f"  • Target:        {end_display}")
     print(f"  • Destination:   DuckDB ({db_path})")
     print(f"  • Dataset/Schema:{dataset_name}")
+    print(f"  • Incremental:   lag=0 (advances & stores latest pointer)")
     print(f"  • Strategy:      Incremental Merge on Natural Keys")
     print(f"=======================================================\n")
 
@@ -53,7 +54,7 @@ def run_backfill(
     source = builder.build(
         source_name="bmrs_backfill",
         initial_date=start_date,
-        end_date=resolved_end,
+        end_date=end_date,
     )
 
     pipeline = dlt.pipeline(
