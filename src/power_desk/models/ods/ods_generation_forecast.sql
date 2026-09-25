@@ -2,15 +2,15 @@
 CREATE OR REPLACE VIEW ods_generation_forecast AS
 WITH ranked AS (
     SELECT
-        TRY_CAST("startTime" AS TIMESTAMPTZ) AT TIME ZONE 'UTC' AS timestamp_utc,
-        TRY_CAST("generation" AS DOUBLE) AS forecast_wind_mw,
-        TRY_CAST("publishTime" AS TIMESTAMPTZ) AT TIME ZONE 'UTC' AS publish_time_utc,
+        TRY_CAST(start_time AS TIMESTAMPTZ) AT TIME ZONE 'UTC' AS timestamp_utc,
+        TRY_CAST(generation AS DOUBLE) AS forecast_wind_mw,
+        TRY_CAST(publish_time AS TIMESTAMPTZ) AT TIME ZONE 'UTC' AS publish_time_utc,
         ROW_NUMBER() OVER (
-            PARTITION BY "startTime" 
-            ORDER BY "publishTime" DESC
+            PARTITION BY start_time 
+            ORDER BY publish_time DESC
         ) AS rn
     FROM raw_windfor
-    WHERE "startTime" IS NOT NULL
+    WHERE start_time IS NOT NULL
 )
 SELECT
     timestamp_utc,

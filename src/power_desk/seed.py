@@ -104,40 +104,40 @@ def generate_seed_data(
             for fuel, gen in fuel_map.items():
                 fuelinst_records.append({
                     "dataset": "FUELINST",
-                    "publishTime": iso_publish,
-                    "startTime": iso_start,
-                    "settlementDate": date_str,
-                    "settlementPeriod": period,
-                    "fuelType": fuel,
+                    "publish_time": iso_publish,
+                    "start_time": iso_start,
+                    "settlement_date": date_str,
+                    "settlement_period": period,
+                    "fuel_type": fuel,
                     "generation": gen,
                 })
 
             # 2. INDO demand record
             indo_records.append({
                 "dataset": "INDO",
-                "publishTime": iso_publish,
-                "startTime": iso_start,
-                "settlementDate": date_str,
-                "settlementPeriod": period,
+                "publish_time": iso_publish,
+                "start_time": iso_start,
+                "settlement_date": date_str,
+                "settlement_period": period,
                 "demand": actual_demand,
             })
 
             # 3. Demand Forecast record
             demand_fc_records.append({
-                "startTime": iso_start,
-                "settlementDate": date_str,
-                "settlementPeriod": period,
+                "start_time": iso_start,
+                "settlement_date": date_str,
+                "settlement_period": period,
                 "boundary": "N",
-                "publishTime": (period_start - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "transmissionSystemDemand": actual_demand + 1200,
-                "nationalDemand": forecast_demand,
+                "publish_time": (period_start - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "transmission_system_demand": actual_demand + 1200,
+                "national_demand": forecast_demand,
             })
 
             # 4. Wind Forecast record
             windfor_records.append({
                 "dataset": "WINDFOR",
-                "publishTime": (period_start - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "startTime": iso_start,
+                "publish_time": (period_start - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "start_time": iso_start,
                 "generation": wind_fc,
             })
 

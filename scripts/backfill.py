@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""CLI utility to run an incremental dlt backfill from the Elexon BMRS API into DuckDB."""
+
+from __future__ import annotations
+
+import argparse
+from datetime import date, datetime
+import logging
+from pathlib import Path
+import sys
+import time
+
+import dlt
+from power_desk.db import get_db
+from power_desk.sources.bmrs import get_default_builder
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("backfill")
+
+
+def run_backfill(
+    start_date: str = "2024-01-01",
+    end_date: str | None = None,
+    resources: list[str] | None = None,
+    db_path: str = "data/warehouse.duckdb",
+    dataset_name: str = "raw",
+) -> None:
+    """Runs the incremental dlt pipeline with merge disposition."""
+    resolved_end = end_date or date.today().strftime("%Y-%m-%d")
+
+    print(f"\n=======================================================")
+    print(f"⚡ POWER DESK — Elexon BMRS Backfill")
+    print(f"=======================================================")
+    print(f"  • Date Range:    {start_date} -> {resolved_end}")
+    print(f"  • Destination:   DuckDB ({db_path})")
+    print(f"  • Dataset/Schema:{dataset_name}")
+    print(f"  • Strategy:      Incremental Merge on Natural Keys")
+    print(f"=======================================================\n")
+
+    builder = get_default_builder()
+    all_available = list(builder.configs.keys())
+
+    selected_resources = resources or all_available
+    for r in selected_resources:
+        if r not in builder.configs:
+            print(f"Error: Unknown resource '{r}'. Available: {all_available}", file=sys.stderr)
+            sys.exit(1)
+
+    # Filter builder configs to only requested resources
+    builder.configs = {k: v for k, v in builder.configs.items() if k in selected_resources}
+    print(f"Selected Resources ({len(selected_resources)}): {', '.join(selected_resources)}")
+
+    source = builder.build(
+        source_name="bmrs_backfill",
+        initial_date=start_date,
+        end_date=resolved_end,
+    )
+
+    pipeline = dlt.pipeline(
+        pipeline_name="bmrs_backfill",
+        destination=dlt.destinations.duckdb(db_path),
+        dataset_name=dataset_name,
+    )
+
+    t0 = time.perf_counter()
+    print("\nStarting extraction and load...")
+    load_info = pipeline.run(source)
+    duration = round(time.perf_counter() - t0, 2)
+
+    print(f"\n✓ Backfill completed in {duration}s!")
+    print(load_info)
+
+    # Refresh views in DuckDB
+    print("\nRefreshing ODS and Marts views...")
+    db = get_db()
+    db.initialize()
+    print("✓ All SQL views updated successfully.\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run an incremental dlt backfill for UK power data into DuckDB"
+    )
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        default="2024-01-01",
+        help="Initial backfill date (YYYY-MM-DD), supports back to 2021",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        default=None,
+        help="End backfill date (YYYY-MM-DD), defaults to today",
+    )
+    parser.add_argument(
+        "--resources",
+        type=str,
+        nargs="+",
+        help="List of resources to extract: raw_fuelinst, raw_indo, raw_itsdo, raw_demand_forecast, raw_windfor",
+    )
+    parser.add_argument(
+        "--db-path",
+        type=str,
+        default="data/warehouse.duckdb",
+        help="Path to DuckDB warehouse file",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="raw",
+        help="DuckDB schema/dataset name (default: raw)",
+    )
+
+    args = parser.parse_args()
+    run_backfill(
+        start_date=args.start_date,
+        end_date=args.end_date,
+        resources=args.resources,
+        db_path=args.db_path,
+        dataset_name=args.dataset,
+    )
+
+
+if __name__ == "__main__":
+    main()

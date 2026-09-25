@@ -35,6 +35,8 @@ class PowerDeskDB:
         """Returns or establishes a connection to the warehouse."""
         if self._con is None:
             self._con = duckdb.connect(database=self.db_path.as_posix(), read_only=False)
+            self._con.execute("CREATE SCHEMA IF NOT EXISTS raw;")
+            self._con.execute("SET search_path = 'raw,main';")
         return self._con
 
     def initialize(self) -> None:
