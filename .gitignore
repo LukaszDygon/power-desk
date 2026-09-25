@@ -28,6 +28,8 @@ ENV/
 
 # DuckDB & Data
 *.duckdb
+*.duckdb.*
+*.wal
 *.duckdb.tmp
 *.parquet
 !data/seed/*.parquet
