@@ -24,7 +24,7 @@ def run_backfill(
     resources: list[str] | None = None,
     db_path: str = "data/warehouse.duckdb",
     dataset_name: str = "raw",
-    full_refresh: bool = False,
+    refresh: str | None = None,
 ) -> None:
     end_display = end_date if end_date else "Until data ends (live horizon)"
 
@@ -37,6 +37,8 @@ def run_backfill(
     print(f"  • Dataset/Schema:{dataset_name}")
     print(f"  • Incremental:   lag=0 (advances & stores latest pointer)")
     print(f"  • Strategy:      Incremental Merge on Natural Keys")
+    if refresh:
+        print(f"  • Refresh Mode:  {refresh}")
     print(f"=======================================================\n")
 
     builder = get_default_builder()
@@ -64,32 +66,15 @@ def run_backfill(
         dataset_name=dataset_name,
     )
 
-    if full_refresh:
-        print("\n⚠️  FULL REFRESH: Resetting local pipeline state and dropping DuckDB destination schemas...")
-        try:
-            pipeline.drop()
-        except Exception as exc:
-            logger.warning("Could not drop pipeline: %s", exc)
-
-        try:
-            import duckdb
-            temp_con = duckdb.connect(db_path)
-            temp_con.execute(f"DROP SCHEMA IF EXISTS {dataset_name}_staging CASCADE;")
-            temp_con.execute(f"DROP SCHEMA IF EXISTS {dataset_name} CASCADE;")
-            temp_con.execute(f"CREATE SCHEMA IF NOT EXISTS {dataset_name};")
-            temp_con.close()
-        except Exception as exc:
-            logger.warning("Could not pre-drop schema %s: %s", dataset_name, exc)
-
-    # Abort any stale pending packages left behind by earlier aborted runs
+    # Abort any stale pending packages left behind by earlier failed runs
     try:
         pipeline.abort_packages()
     except Exception:
         pass
 
     t0 = time.perf_counter()
-    print("\nStarting extraction and load...")
-    load_info = pipeline.run(source)
+    print(f"\nStarting extraction and load (refresh={refresh})...")
+    load_info = pipeline.run(source, refresh=refresh)  # type: ignore
     duration = round(time.perf_counter() - t0, 2)
 
     print(f"\n✓ Backfill completed in {duration}s!")
@@ -119,9 +104,16 @@ def main():
         help="End backfill date (YYYY-MM-DD), defaults to today",
     )
     parser.add_argument(
+        "--refresh",
+        type=str,
+        choices=["drop_sources", "drop_resources", "drop_data"],
+        default=None,
+        help="dlt native refresh mode: 'drop_sources' (drop tables & state), 'drop_resources', or 'drop_data'",
+    )
+    parser.add_argument(
         "--full-refresh",
         action="store_true",
-        help="Perform a full refresh (drops existing tables and resets pipeline state)",
+        help="Perform a full refresh (alias for --refresh drop_sources)",
     )
     parser.add_argument(
         "--resources",
@@ -143,13 +135,15 @@ def main():
     )
 
     args = parser.parse_args()
+    refresh_mode = "drop_sources" if args.full_refresh else args.refresh
+
     run_backfill(
         start_date=args.start_date,
         end_date=args.end_date,
         resources=args.resources,
         db_path=args.db_path,
         dataset_name=args.dataset,
-        full_refresh=args.full_refresh,
+        refresh=refresh_mode,
     )
 
 
