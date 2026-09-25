@@ -24,6 +24,7 @@ def run_backfill(
     resources: list[str] | None = None,
     db_path: str = "data/warehouse.duckdb",
     dataset_name: str = "raw",
+    full_refresh: bool = False,
 ) -> None:
     end_display = end_date if end_date else "Until data ends (live horizon)"
 
@@ -63,6 +64,23 @@ def run_backfill(
         dataset_name=dataset_name,
     )
 
+    if full_refresh:
+        print("\n⚠️  FULL REFRESH: Resetting local pipeline state and dropping DuckDB destination schemas...")
+        try:
+            pipeline.drop()
+        except Exception as exc:
+            logger.warning("Could not drop pipeline: %s", exc)
+
+        try:
+            import duckdb
+            temp_con = duckdb.connect(db_path)
+            temp_con.execute(f"DROP SCHEMA IF EXISTS {dataset_name}_staging CASCADE;")
+            temp_con.execute(f"DROP SCHEMA IF EXISTS {dataset_name} CASCADE;")
+            temp_con.execute(f"CREATE SCHEMA IF NOT EXISTS {dataset_name};")
+            temp_con.close()
+        except Exception as exc:
+            logger.warning("Could not pre-drop schema %s: %s", dataset_name, exc)
+
     # Abort any stale pending packages left behind by earlier aborted runs
     try:
         pipeline.abort_packages()
@@ -101,6 +119,11 @@ def main():
         help="End backfill date (YYYY-MM-DD), defaults to today",
     )
     parser.add_argument(
+        "--full-refresh",
+        action="store_true",
+        help="Perform a full refresh (drops existing tables and resets pipeline state)",
+    )
+    parser.add_argument(
         "--resources",
         type=str,
         nargs="+",
@@ -126,6 +149,7 @@ def main():
         resources=args.resources,
         db_path=args.db_path,
         dataset_name=args.dataset,
+        full_refresh=args.full_refresh,
     )
 
 

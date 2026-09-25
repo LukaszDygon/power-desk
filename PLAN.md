@@ -55,8 +55,14 @@ Built with DuckDB, `dlt` (data load tool), DBT-style SQL transformation views (R
   - [x] Include verification script / CLI helper (`scripts/register_widget.py`) to test newly created widgets
 
 - [x] **Milestone 7: Verification & Test Suite**
-  - [x] Comprehensive `pytest` test suite (13 passing tests):
+  - [x] Comprehensive `pytest` test suite (14 passing tests):
     - Test `dlt` source configuration & incremental cursor
     - Test settlement period to UTC mapping (standard GMT and BST offsets)
     - Test API endpoints and widget queries
   - [x] Verified dev server boot, static assets, and widget lifecycle
+
+- [x] **Milestone 8: Incremental Backfill CLI & Full Refresh**
+  - [x] Implement `scripts/backfill.py` CLI supporting `--start-date`, `--end-date`, `--resources`, and `--full-refresh`
+  - [x] Support bounded backfill mode and open-ended streaming with `dlt.sources.incremental(lag=0)`
+  - [x] Full refresh mechanism: resets local pipeline state via `pipeline.drop()`, cleans up DuckDB staging/raw schemas, and recreates tables natively via `dlt` to avoid DuckDB's `ALTER TABLE ADD COLUMN` constraint limitations
+  - [x] Automatically refreshes downstream ODS and Marts views upon pipeline completion
