@@ -78,26 +78,55 @@ class BmrsSourceBuilder:
     ) -> Callable[..., Generator[list[dict[str, Any]], None, None]]:
         """Creates an incremental generator function that runs until data ends and stores the pointer."""
 
-        def resource_gen(
+        if end_date:
+            # Bounded historical backfill: extracts exact range and merges on natural key
+            def bounded_resource_gen() -> Generator[list[dict[str, Any]], None, None]:
+                start_dt = datetime.strptime(initial_date[:10], "%Y-%m-%d").date()
+                max_dt = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
+                curr_dt = start_dt
+                step = timedelta(days=config.default_step_days)
+
+                logger.info("Starting bounded backfill for %s from %s to %s", config.name, curr_dt, max_dt)
+                while curr_dt <= max_dt:
+                    chunk_end = min(curr_dt + step - timedelta(days=1), max_dt)
+                    params: dict[str, Any] = {
+                        config.date_param_from: config.format_date(curr_dt),
+                        config.date_param_to: config.format_date(chunk_end),
+                        **config.extra_params,
+                    }
+                    query_str = urllib.parse.urlencode(params)
+                    url = f"{self.api_base}{config.endpoint}?{query_str}"
+                    try:
+                        logger.info("Extracting %s from %s", config.name, url)
+                        payload = fetch_bmrs_json(url)
+                        records: list[dict[str, Any]] = []
+                        if isinstance(payload, dict) and config.records_path:
+                            records = payload.get(config.records_path, [])
+                        elif isinstance(payload, list):
+                            records = payload
+                        if records:
+                            yield records
+                    except Exception as exc:
+                        logger.warning("Failed to fetch %s for %s: %s", config.name, curr_dt, exc)
+                    curr_dt += step
+
+            return bounded_resource_gen
+
+        # Open-ended incremental run: starts from pointer, runs until data ends, stores latest pointer (lag=0)
+        def incremental_resource_gen(
             cursor_val: dlt.sources.incremental[str] = dlt.sources.incremental(
                 config.cursor_field,
                 initial_value=initial_date,
                 lag=config.lag,
             ),
         ) -> Generator[list[dict[str, Any]], None, None]:
-            # Resume from stored pointer if available, else start from initial_date
             raw_start = cursor_val.last_value or initial_date
             if "T" in str(raw_start):
                 start_dt = datetime.fromisoformat(str(raw_start).replace("Z", "+00:00")).date()
             else:
                 start_dt = datetime.strptime(str(raw_start)[:10], "%Y-%m-%d").date()
 
-            # If end_date is specified, stop there; otherwise run until data ends / live horizon
-            if end_date:
-                max_dt = datetime.strptime(end_date[:10], "%Y-%m-%d").date()
-            else:
-                max_dt = date.today() + timedelta(days=2)
-
+            max_dt = date.today() + timedelta(days=2)
             curr_dt = start_dt
             step = timedelta(days=config.default_step_days)
 
@@ -139,7 +168,7 @@ class BmrsSourceBuilder:
                     else:
                         empty_chunks += 1
                         # If end of data reached near current date, stop extraction and keep latest pointer
-                        if not end_date or curr_dt >= date.today() - timedelta(days=1):
+                        if curr_dt >= date.today() - timedelta(days=1):
                             logger.info(
                                 "No further records returned for %s at %s. Storing pointer to latest value: %s",
                                 config.name,
@@ -149,7 +178,7 @@ class BmrsSourceBuilder:
                             break
 
                 except urllib.error.HTTPError as http_err:
-                    if http_err.code in (404, 400) and (not end_date or curr_dt >= date.today() - timedelta(days=1)):
+                    if http_err.code in (404, 400) and curr_dt >= date.today() - timedelta(days=1):
                         logger.info(
                             "Data stream reached end (%s) for %s at %s. Latest stored pointer: %s",
                             http_err,
@@ -164,7 +193,7 @@ class BmrsSourceBuilder:
 
                 curr_dt += step
 
-        return resource_gen
+        return incremental_resource_gen
 
     def build(
         self,

@@ -22,6 +22,46 @@ SEED_DIR = REPO_ROOT / "data" / "seed"
 MODELS_DIR = Path(__file__).resolve().parent / "models"
 
 
+def load_seed_with_dlt(db_path: Path | str, dataset_name: str = "raw") -> None:
+    """Loads seed parquet files via dlt to ensure tables have native dlt schema & metadata."""
+    import dlt
+
+    seed_resources = []
+    resource_defs = [
+        ("raw_fuelinst", ["settlement_date", "settlement_period", "fuel_type", "start_time"]),
+        ("raw_indo", ["settlement_date", "settlement_period"]),
+        ("raw_demand_forecast", ["settlement_date", "settlement_period", "boundary", "publish_time"]),
+        ("raw_windfor", ["start_time", "publish_time"]),
+    ]
+
+    for tbl_name, pk in resource_defs:
+        p_file = SEED_DIR / f"{tbl_name}.parquet"
+        if p_file.exists():
+            def make_res(name=tbl_name, path=p_file, keys=pk):
+                @dlt.resource(name=name, write_disposition="merge", primary_key=keys)
+                def _res():
+                    temp_con = duckdb.connect()
+                    desc = temp_con.execute(f"SELECT * FROM read_parquet('{path.as_posix()}')").description
+                    cols = [d[0] for d in desc]
+                    rows = temp_con.execute(f"SELECT * FROM read_parquet('{path.as_posix()}')").fetchall()
+                    temp_con.close()
+                    yield [dict(zip(cols, r)) for r in rows]
+                return _res
+            seed_resources.append(make_res()())
+
+    if seed_resources:
+        pipeline = dlt.pipeline(
+            pipeline_name="bmrs_backfill",
+            destination=dlt.destinations.duckdb(str(db_path)),
+            dataset_name=dataset_name,
+        )
+        try:
+            pipeline.abort_packages()
+        except Exception:
+            pass
+        pipeline.run(seed_resources)
+
+
 class PowerDeskDB:
     """Encapsulates the DuckDB analytical engine and SQL view layer."""
 
@@ -43,17 +83,21 @@ class PowerDeskDB:
         """Initializes raw tables from seed parquet if not present, and registers all views."""
         con = self.get_connection()
 
-        # Check if raw_fuelinst exists
-        tables = con.execute("SHOW TABLES").fetchall()
+        # Check if dlt tables exist in raw schema
+        tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'raw'").fetchall()
         existing_tables = {t[0] for t in tables}
 
-        raw_tables = ["raw_fuelinst", "raw_indo", "raw_demand_forecast", "raw_windfor"]
-        for tbl in raw_tables:
-            if tbl not in existing_tables:
-                parquet_path = SEED_DIR / f"{tbl}.parquet"
-                if parquet_path.exists():
-                    con.execute(f"CREATE TABLE {tbl} AS SELECT * FROM read_parquet('{parquet_path.as_posix()}')")
-                    logger.info("Loaded seed table %s from %s", tbl, parquet_path.name)
+        if "_dlt_version" not in existing_tables or "raw_fuelinst" not in existing_tables:
+            # Drop incomplete non-dlt tables if any exist
+            for tbl in ["raw_fuelinst", "raw_indo", "raw_itsdo", "raw_demand_forecast", "raw_windfor"]:
+                if tbl in existing_tables:
+                    con.execute(f"DROP TABLE IF EXISTS raw.{tbl};")
+            # Close connection temporarily while dlt pipeline writes
+            if self._con:
+                self._con.close()
+                self._con = None
+            load_seed_with_dlt(self.db_path)
+            con = self.get_connection()
 
         # Apply ODS Views
         ods_dir = MODELS_DIR / "ods"

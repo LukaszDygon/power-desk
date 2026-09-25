@@ -63,6 +63,12 @@ def run_backfill(
         dataset_name=dataset_name,
     )
 
+    # Abort any stale pending packages left behind by earlier aborted runs
+    try:
+        pipeline.abort_packages()
+    except Exception:
+        pass
+
     t0 = time.perf_counter()
     print("\nStarting extraction and load...")
     load_info = pipeline.run(source)
