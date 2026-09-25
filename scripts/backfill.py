@@ -74,7 +74,17 @@ def run_backfill(
 
     t0 = time.perf_counter()
     print(f"\nStarting extraction and load (refresh={refresh})...")
-    load_info = pipeline.run(source, refresh=refresh)  # type: ignore
+    max_retries = 6
+    for attempt in range(1, max_retries + 1):
+        try:
+            load_info = pipeline.run(source, refresh=refresh)  # type: ignore
+            break
+        except Exception as exc:
+            if "lock" in str(exc).lower() and attempt < max_retries:
+                print(f"⚠️  DuckDB file lock held by active reader/server (attempt {attempt}/{max_retries}). Retrying in 1.5s...")
+                time.sleep(1.5)
+            else:
+                raise
     duration = round(time.perf_counter() - t0, 2)
 
     print(f"\n✓ Backfill completed in {duration}s!")
