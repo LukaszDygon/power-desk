@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <!-- Unique Typography & Design System -->
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@600,700,800,900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  
+  <!-- Open-Source Libraries: GridStack.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
+  
+  <!-- Custom Minimalist Analyst Stylesheet -->
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+
+  <!-- Core Open-Source CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+</head>
+<body>
+
+  <!-- Minimalist Top Navigation -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00e5a3" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>POWER DESK</span>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span>DUCKDB 1.5.5 // BMRS</span>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#64748b;">
+        Partition: <span id="warehouse-stats" style="color:#94a3b8;">--</span>
+      </span>
+    </div>
+
+    <div class="topbar-right">
+      <button class="btn-terminal" id="btn-open-lineage">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Data Lineage (DAG)
+      </button>
+      <button class="btn-terminal" id="btn-reset-layout" title="Reset grid cards to default arrangement">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset Grid
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Analyst Filter Bar -->
+  <section class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Settlement Window:</span>
+      <input type="date" id="filter-start-date" class="input-terminal" value="{{ filters.min_date }}">
+      <span style="color:#475569;">&rarr;</span>
+      <input type="date" id="filter-end-date" class="input-terminal" value="{{ filters.max_date }}">
+      <button class="btn-terminal btn-primary" id="btn-apply-filters">
+        Run Filter
+      </button>
+    </div>
+
+    <div class="filter-group" style="gap:6px;">
+      <span class="filter-label">Fuels:</span>
+      <span class="fuel-pill active" style="color:#00e5a3;"><span style="width:6px;height:6px;border-radius:50%;background:#00e5a3;"></span>Wind</span>
+      <span class="fuel-pill active" style="color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>Solar</span>
+      <span class="fuel-pill active" style="color:#818cf8;"><span style="width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>Nuclear</span>
+      <span class="fuel-pill active" style="color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>CCGT</span>
+      <span class="fuel-pill active" style="color:#84cc16;"><span style="width:6px;height:6px;border-radius:50%;background:#84cc16;"></span>Biomass</span>
+      <span class="fuel-pill active" style="color:#0ea5e9;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;"></span>Hydro</span>
+    </div>
+  </section>
+
+  <!-- Dynamic Analyst Grid (GridStack.js) -->
+  <main class="grid-container">
+    <div class="grid-stack"></div>
+  </main>
+
+  <!-- Data Lineage Modal (Cytoscape.js + Dagre) -->
+  <div class="modal-overlay" id="lineage-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5a3" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>End-to-End Pipeline Lineage DAG (Cytoscape.js)</span>
+        </div>
+        <button class="btn-terminal" id="btn-close-lineage">Close Esc</button>
+      </div>
+      <div class="modal-body">
+        <div id="cy-lineage"></div>
+        <div class="lineage-details-panel" id="lineage-node-details">
+          <h4>Select a Node</h4>
+          <p style="color:#64748b;">Click any pipeline stage or view above to inspect its metadata, layer, and description.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Scripts -->
+  <script src="/static/js/chart-theme.js"></script>
+  <script src="/static/js/lineage.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

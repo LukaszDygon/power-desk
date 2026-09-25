@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    { "id": "src_elexon_fuelinst", "label": "Elexon BMRS (FUELINST)", "type": "source", "desc": "Half-hourly generation outturn by fuel type" },
+    { "id": "src_elexon_indo", "label": "Elexon BMRS (INDO)", "type": "source", "desc": "Initial National Demand Outturn" },
+    { "id": "src_elexon_demand_forecast", "label": "Elexon BMRS (Demand Forecast)", "type": "source", "desc": "Day-ahead national demand forecasts" },
+    { "id": "src_elexon_windfor", "label": "Elexon BMRS (WINDFOR)", "type": "source", "desc": "Day-ahead wind generation forecast" },
+
+    { "id": "raw_fuelinst", "label": "raw_fuelinst", "type": "raw_table", "desc": "Preserved raw API records (dlt merge on natural key)" },
+    { "id": "raw_indo", "label": "raw_indo", "type": "raw_table", "desc": "Preserved raw API records (dlt merge on natural key)" },
+    { "id": "raw_demand_forecast", "label": "raw_demand_forecast", "type": "raw_table", "desc": "Preserved raw API records (dlt merge on natural key)" },
+    { "id": "raw_windfor", "label": "raw_windfor", "type": "raw_table", "desc": "Preserved raw API records (dlt merge on natural key)" },
+
+    { "id": "ods_generation_actual", "label": "ods_generation_actual", "type": "ods_view", "desc": "Settlement date + period resolved to UTC timestamp" },
+    { "id": "ods_demand_actual", "label": "ods_demand_actual", "type": "ods_view", "desc": "Settlement date + period resolved to UTC timestamp" },
+    { "id": "ods_demand_forecast", "label": "ods_demand_forecast", "type": "ods_view", "desc": "Deduplicated day-ahead national demand forecast" },
+    { "id": "ods_generation_forecast", "label": "ods_generation_forecast", "type": "ods_view", "desc": "UTC-indexed wind generation forecast" },
+
+    { "id": "mart_generation_mix", "label": "mart_generation_mix", "type": "mart_view", "desc": "Pivoted half-hourly fuel mix and zero-carbon share" },
+    { "id": "mart_demand_vs_forecast", "label": "mart_demand_vs_forecast", "type": "mart_view", "desc": "Natural key join: actual demand vs day-ahead forecast" },
+    { "id": "mart_hourly_summary", "label": "mart_hourly_summary", "type": "mart_view", "desc": "Consolidated hourly rollups and KPI metrics" },
+
+    { "id": "widget_generation_mix", "label": "Widget: Fuel Generation Mix", "type": "widget", "desc": "Stacked area/bar chart by fuel category" },
+    { "id": "widget_demand_comparison", "label": "Widget: Demand vs Forecast", "type": "widget", "desc": "Dual time-series comparison chart" },
+    { "id": "widget_kpi_cards", "label": "Widget: Grid KPIs", "type": "widget", "desc": "Clean share %, Peak Demand, Wind generation" },
+    { "id": "widget_hourly_table", "label": "Widget: Hourly Rollup Table", "type": "widget", "desc": "Dense analyst tabular inspection view" }
+  ],
+  "edges": [
+    { "source": "src_elexon_fuelinst", "target": "raw_fuelinst", "label": "dlt merge" },
+    { "source": "src_elexon_indo", "target": "raw_indo", "label": "dlt merge" },
+    { "source": "src_elexon_demand_forecast", "target": "raw_demand_forecast", "label": "dlt merge" },
+    { "source": "src_elexon_windfor", "target": "raw_windfor", "label": "dlt merge" },
+
+    { "source": "raw_fuelinst", "target": "ods_generation_actual", "label": "view SQL" },
+    { "source": "raw_indo", "target": "ods_demand_actual", "label": "view SQL" },
+    { "source": "raw_demand_forecast", "target": "ods_demand_forecast", "label": "view SQL" },
+    { "source": "raw_windfor", "target": "ods_generation_forecast", "label": "view SQL" },
+
+    { "source": "ods_generation_actual", "target": "mart_generation_mix", "label": "pivot & rollup" },
+    { "source": "ods_demand_actual", "target": "mart_demand_vs_forecast", "label": "natural key join" },
+    { "source": "ods_demand_forecast", "target": "mart_demand_vs_forecast", "label": "natural key join" },
+    { "source": "mart_generation_mix", "target": "mart_hourly_summary", "label": "hourly rollup" },
+    { "source": "mart_demand_vs_forecast", "target": "mart_hourly_summary", "label": "hourly rollup" },
+
+    { "source": "mart_generation_mix", "target": "widget_generation_mix", "label": "query" },
+    { "source": "mart_demand_vs_forecast", "target": "widget_demand_comparison", "label": "query" },
+    { "source": "mart_hourly_summary", "target": "widget_kpi_cards", "label": "query" },
+    { "source": "mart_hourly_summary", "target": "widget_hourly_table", "label": "query" }
+  ]
+}
