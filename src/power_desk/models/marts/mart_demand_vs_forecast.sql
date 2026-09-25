@@ -17,4 +17,5 @@ SELECT
     ) AS absolute_error_pct
 FROM ods_demand_actual a
 FULL OUTER JOIN ods_demand_forecast f
-    ON a.timestamp_utc = f.timestamp_utc;
+    ON a.settlement_date = f.settlement_date 
+   AND a.settlement_period = f.settlement_period;
