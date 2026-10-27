@@ -1,32 +1,32 @@
-technology_code,name,parent_technology_code,fuel_family,is_fossil,is_renewable,is_low_carbon,is_storage,is_interconnector
-fossil,Fossil fuels,,fossil,true,false,false,false,false
-gas,Fossil gas,fossil,gaseous_fossil,true,false,false,false,false
-gas_ccgt,Combined-cycle gas turbine,gas,gaseous_fossil,true,false,false,false,false
-gas_ocgt,Open-cycle gas turbine,gas,gaseous_fossil,true,false,false,false,false
-coal_derived_gas,Coal-derived gas,fossil,gaseous_fossil,true,false,false,false,false
-coal,Coal,fossil,solid_fossil,true,false,false,false,false
-hard_coal,Hard coal,coal,solid_fossil,true,false,false,false,false
-lignite,Lignite (brown coal),coal,solid_fossil,true,false,false,false,false
-peat,Peat,fossil,solid_fossil,true,false,false,false,false
-oil_shale,Oil shale,fossil,solid_fossil,true,false,false,false,false
-oil,Oil,fossil,liquid_fossil,true,false,false,false,false
-nuclear,Nuclear,,nuclear,false,false,true,false,false
-renewable,Renewables,,renewable,false,true,true,false,false
-wind,Wind,renewable,wind,false,true,true,false,false
-wind_onshore,Onshore wind,wind,wind,false,true,true,false,false
-wind_offshore,Offshore wind,wind,wind,false,true,true,false,false
-solar,Solar,renewable,solar,false,true,true,false,false
-hydro,Hydro (excluding pumped storage),renewable,water,false,true,true,false,false
-hydro_run_of_river,Run-of-river and poundage hydro,hydro,water,false,true,true,false,false
-hydro_reservoir,Reservoir hydro,hydro,water,false,true,true,false,false
-marine,Marine (tidal and wave),renewable,water,false,true,true,false,false
-geothermal,Geothermal,renewable,geothermal,false,true,true,false,false
-bioenergy,Bioenergy,renewable,biomass,false,true,true,false,false
-biomass,Biomass,bioenergy,biomass,false,true,true,false,false
-other_renewable,Other renewable,renewable,other,false,true,true,false,false
-storage,Storage,,storage,false,false,false,true,false
-hydro_pumped_storage,Pumped-storage hydro,storage,water,false,false,false,true,false
-battery,Battery storage,storage,electricity,false,false,false,true,false
-interconnector,Interconnector flows,,electricity,false,false,false,false,true
-other,Other,,other,false,false,false,false,false
-waste,Waste,other,waste,false,false,false,false,false
+technology_code,name,parent_technology_code,is_zero_carbon
+fossil,Fossil fuels,,false
+gas,Fossil gas,fossil,false
+gas_ccgt,Combined-cycle gas turbine,gas,false
+gas_ocgt,Open-cycle gas turbine,gas,false
+coal_derived_gas,Coal-derived gas,fossil,false
+coal,Coal,fossil,false
+hard_coal,Hard coal,coal,false
+lignite,Lignite (brown coal),coal,false
+peat,Peat,fossil,false
+oil_shale,Oil shale,fossil,false
+oil,Oil,fossil,false
+nuclear,Nuclear,,true
+renewable,Renewables,,
+wind,Wind,renewable,true
+wind_onshore,Onshore wind,wind,true
+wind_offshore,Offshore wind,wind,true
+solar,Solar,renewable,true
+hydro,Hydro (excluding pumped storage),renewable,true
+hydro_run_of_river,Run-of-river and poundage hydro,hydro,true
+hydro_reservoir,Reservoir hydro,hydro,true
+marine,Marine (tidal and wave),renewable,
+geothermal,Geothermal,renewable,
+bioenergy,Bioenergy,renewable,false
+biomass,Biomass,bioenergy,false
+other_renewable,Other renewable,renewable,
+storage,Storage,,false
+hydro_pumped_storage,Pumped-storage hydro,storage,false
+battery,Battery storage,storage,false
+interconnector,Interconnector flows,,false
+other,Other,,false
+waste,Waste,other,false

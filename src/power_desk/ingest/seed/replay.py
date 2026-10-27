@@ -14,7 +14,7 @@ from unittest.mock import patch
 from power_desk.ingest import http
 from power_desk.ingest.seed import synthetic
 from power_desk.ingest.sources import entsoe_eic
-from power_desk.ingest.sources.entsoe_file_library import FileLibraryClient
+from power_desk.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient, export_file
 from power_desk.settings import DATA_DIR
 
 SEED_DIR = DATA_DIR / "seed"
@@ -65,11 +65,12 @@ class SeedPublishers:
         tag = hashlib.sha256(text.encode()).hexdigest()
         return (None, {"etag": tag}) if etag == tag else (text, {"etag": tag})
 
-    def list_folder(self, folder: str, page_size: int = 500) -> list[dict[str, Any]]:
-        return [
+    def list_folder(self, folder: str, page_size: int = 500) -> list[ExportFile]:
+        listed = [
             {"name": name, "lastUpdatedTimestamp": updated, "size": len(content)}
             for name, (updated, content) in self.exports.get(folder, {}).items()
         ]
+        return [file for item in listed if (file := export_file(item))]
 
     def download(self, folder: str, filename: str) -> bytes:
         self.requests.append(f"{folder}/{filename}")

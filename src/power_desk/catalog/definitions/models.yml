@@ -40,31 +40,77 @@ columns:
     - elexon:glossary/wind-generation-forecast
     links: [entsoe_ddd]
   wind_mw:
-    description: Generation from fuel type WIND, in MW.
+    description: FUELINST fuel type `WIND`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
   solar_mw:
-    description: Solar generation from PVLive (fuel type SOLAR), in MW.
+    description: PVLive `generation_mw` for GB (PES region 0), in MW.
   nuclear_mw:
-    description: Generation from fuel type NUCLEAR, in MW.
+    description: FUELINST fuel type `NUCLEAR`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
   ccgt_gas_mw:
-    description: Generation from combined-cycle gas turbines (fuel type CCGT), in MW.
-  biomass_mw:
-    description: Generation from fuel type BIOMASS, in MW.
-  hydro_mw:
-    description: Hydro generation, run-of-river (NPSHYD) plus pumped storage (PS), in MW. Negative while
-      pumping.
+    description: FUELINST fuel type `CCGT`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  ocgt_gas_mw:
+    description: FUELINST fuel type `OCGT`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  oil_mw:
+    description: FUELINST fuel type `OIL`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
   coal_mw:
-    description: Generation from fuel type COAL, in MW.
+    description: FUELINST fuel type `COAL`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  biomass_mw:
+    description: FUELINST fuel type `BIOMASS`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  hydro_mw:
+    description: FUELINST fuel type `NPSHYD`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  pumped_storage_mw:
+    description: FUELINST fuel type `PS`, in MW; negative while pumping.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
+  other_mw:
+    description: FUELINST fuel type `OTHER`, in MW.
+    refs:
+    - elexon:glossary/fuel-type
+    - elexon:datasets/FUELINST
   imports_mw:
-    description: Net interconnector flow, the sum of all `INT*` fuel types, in MW. Negative when GB exports.
+    description: Net interconnector flow, the sum of the FUELINST `INT*` fuel types, in MW; negative when GB
+      exports.
     refs:
     - elexon:glossary/interconnector
-  other_fossil_mw:
-    description: Generation from OCGT, OIL and OTHER fuel types, in MW.
+    - elexon:datasets/FUELINST
   total_generation_mw:
-    description: Sum over all fuel types including net interconnector flows, in MW.
-  clean_share_pct:
-    description: 'Zero-carbon share: (wind + solar + nuclear + biomass + hydro) / total generation x 100.
-      Can exceed 100 at night, when exports and pumping make the total smaller than the zero-carbon sum.'
+    description: 'NESO GENERATION: "Sum of gas, coal, nuclear, wind, wind embedded, hydro, imports, biomass,
+      others, solar and storage." Here: every FUELINST fuel type plus PVLive solar, counting interconnector
+      imports and storage output only (exports and pumping are not generation), in MW. FUELINST has no
+      embedded wind.'
+    links: [neso_historic_generation_mix]
+  zero_carbon_mw:
+    description: 'NESO ZERO_CARBON: "Zero carbon generation e.g. wind, solar, hydro, nuclear". Here: generation
+      from technologies with `is_zero_carbon` in `dim_technology`, in MW.'
+    links: [neso_historic_generation_mix]
+  zero_carbon_share_pct:
+    description: 'NESO ZERO_CARBON_perc: "Fuel Type as a percentage for zero carbon generation e.g. wind, solar,
+      hydro, nuclear". `zero_carbon_mw` / `total_generation_mw` x 100.'
+    links: [neso_historic_generation_mix]
   actual_demand_mw:
     description: Initial National Demand Outturn for the settlement period, in MW.
     refs:
@@ -91,8 +137,9 @@ columns:
     description: Hourly mean of nuclear generation, in MW.
   avg_gas_mw:
     description: Hourly mean of CCGT generation, in MW.
-  avg_clean_share_pct:
-    description: Hourly mean of the zero-carbon share, in percent.
+  avg_zero_carbon_share_pct:
+    description: Hourly mean of `zero_carbon_share_pct`, in percent.
+    links: [neso_historic_generation_mix]
   peak_demand_mw:
     description: Highest settlement-period national demand within the hour, in MW.
   min_demand_mw:

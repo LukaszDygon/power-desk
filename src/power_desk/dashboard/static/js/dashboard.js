@@ -2,8 +2,21 @@
  * Power Desk — Minimalist Grid & Widget Manager using GridStack.js and Chart.js
  */
 
+const LAYOUT_STORAGE_KEY = "power_desk_layout";
+const FALLBACK_DATE_RANGE = { start_date: "2024-03-01", end_date: "2024-03-07" }; // the seed week
+const AXIS_TITLE_COLOR = "#64748b";
+const DEFAULT_LINE_COLOR = "#38bdf8";
+const CARD_BACKGROUND = "#0d1322";
+
 let grid = null;
 const widgetInstances = new Map(); // widgetId -> { spec, chart, dom }
+
+function showDashboardError(message) {
+  const gridEl = document.querySelector(".grid-stack");
+  if (gridEl) {
+    gridEl.insertAdjacentHTML("beforebegin", `<div class="card-error dashboard-error">${escapeHtml(message)}</div>`);
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   initGrid();
@@ -24,19 +37,16 @@ function initGrid() {
     }
   });
 
-  // Save layout changes to localStorage
-  grid.on("change", (event, items) => {
-    saveGridLayout();
-  });
+  grid.on("change", saveGridLayout);
 }
 
 function saveGridLayout() {
   const layout = grid.save(false);
-  localStorage.setItem("power_desk_layout", JSON.stringify(layout));
+  localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
 }
 
 function loadSavedLayout() {
-  const raw = localStorage.getItem("power_desk_layout");
+  const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -46,18 +56,19 @@ function loadSavedLayout() {
 }
 
 function resetGridLayout() {
-  localStorage.removeItem("power_desk_layout");
+  localStorage.removeItem(LAYOUT_STORAGE_KEY);
   window.location.reload();
 }
 
 async function loadFilterOptions() {
   try {
     const res = await fetch("/api/filters");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const startInput = document.getElementById("filter-start-date");
     const endInput = document.getElementById("filter-end-date");
-    if (startInput && !startInput.value) startInput.value = data.min_date || "2024-03-01";
-    if (endInput && !endInput.value) endInput.value = data.max_date || "2024-03-07";
+    if (startInput && !startInput.value) startInput.value = data.min_date || FALLBACK_DATE_RANGE.start_date;
+    if (endInput && !endInput.value) endInput.value = data.max_date || FALLBACK_DATE_RANGE.end_date;
 
     const tableBadge = document.getElementById("warehouse-stats");
     if (tableBadge && data.table_counts) {
@@ -65,6 +76,7 @@ async function loadFilterOptions() {
     }
   } catch (err) {
     console.warn("Failed to load filter options:", err);
+    showDashboardError(`Filter options unavailable: ${err.message}`);
   }
 }
 
@@ -95,6 +107,7 @@ function setupFilterEvents() {
 async function loadAndRenderWidgets() {
   try {
     const res = await fetch("/api/widgets");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const widgets = await res.json();
     const savedLayout = loadSavedLayout();
 
@@ -119,6 +132,7 @@ async function loadAndRenderWidgets() {
     refreshAllWidgets();
   } catch (err) {
     console.error("Failed to load widgets:", err);
+    showDashboardError(`Widgets unavailable: ${err.message}`);
   }
 }
 
@@ -139,33 +153,32 @@ function createWidgetCard(spec, pos) {
     <div class="grid-stack-item-content">
       <div class="card-header">
         <div class="card-title">
-          <span>${spec.title}</span>
-          <span class="card-timing" id="timing-${spec.id}">-- ms</span>
+          <span>${escapeHtml(spec.title)}</span>
+          <span class="card-timing" id="timing-${escapeHtml(spec.id)}">-- ms</span>
         </div>
         <div class="card-actions">
-          <button class="card-btn" title="Refresh Query" onclick="refreshWidget('${spec.id}')">
+          <button class="card-btn" title="Refresh Query">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           </button>
         </div>
       </div>
-      <div class="card-body" id="body-${spec.id}">
-        <div style="display:flex;height:100%;align-items:center;justify-content:center;color:#64748b;font-family:'JetBrains Mono',monospace;font-size:11px;">
-          Executing query...
-        </div>
+      <div class="card-body" id="body-${escapeHtml(spec.id)}">
+        <div class="card-message">Executing query...</div>
       </div>
     </div>
   `;
+  el.querySelector(".card-btn").addEventListener("click", () => refreshWidget(spec.id));
 
   grid.addWidget(el);
-  widgetInstances.set(spec.id, { spec, chart: null, dom: el });
+  widgetInstances.set(spec.id, { spec: { ...spec, config: spec.config || {} }, chart: null, dom: el });
 }
 
 function getFilterValues() {
   const startInput = document.getElementById("filter-start-date");
   const endInput = document.getElementById("filter-end-date");
   return {
-    start_date: startInput ? startInput.value : "2024-03-01",
-    end_date: endInput ? endInput.value : "2024-03-07"
+    start_date: startInput ? startInput.value : FALLBACK_DATE_RANGE.start_date,
+    end_date: endInput ? endInput.value : FALLBACK_DATE_RANGE.end_date
   };
 }
 
@@ -205,184 +218,126 @@ async function refreshWidget(widgetId) {
     renderWidgetContent(instance, data, bodyEl);
   } catch (err) {
     if (bodyEl) {
-      bodyEl.innerHTML = `
-        <div style="color:#f43f5e;font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px;">
-          Error: ${err.message}
-        </div>
-      `;
+      bodyEl.innerHTML = `<div class="card-error">Error: ${escapeHtml(err.message)}</div>`;
     }
   }
 }
 
-function renderWidgetContent(instance, queryResult, container) {
-  const { spec } = instance;
-  const { columns, rows } = queryResult;
+const RENDERERS = {
+  kpi_cards: renderKpiCards,
+  stacked_area: (instance, result, container) => renderTimeSeries(instance, result, container, { stacked: true }),
+  line: (instance, result, container) => renderTimeSeries(instance, result, container, { stacked: false }),
+  bar: renderBarChart,
+  donut: renderDonutChart,
+  table: renderTable
+};
 
+function renderWidgetContent(instance, queryResult, container) {
   if (instance.chart) {
     instance.chart.destroy();
     instance.chart = null;
   }
-
-  if (spec.type === "kpi_cards") {
-    renderKpiCards(spec, queryResult, container);
-  } else if (spec.type === "stacked_area") {
-    renderStackedAreaChart(instance, queryResult, container);
-  } else if (spec.type === "line") {
-    renderLineChart(instance, queryResult, container);
-  } else if (spec.type === "bar") {
-    renderBarChart(instance, queryResult, container);
-  } else if (spec.type === "donut") {
-    renderDonutChart(instance, queryResult, container);
-  } else if (spec.type === "table") {
-    renderTable(spec, queryResult, container);
-  }
+  const render = RENDERERS[instance.spec.type];
+  if (render) render(instance, queryResult, container);
 }
 
-function renderKpiCards(spec, result, container) {
-  const metrics = (spec.config && spec.config.metrics) || [];
-  const row = result.rows[0] || [];
-  const colMap = {};
-  result.columns.forEach((col, idx) => {
-    colMap[col] = row[idx];
-  });
+function createCanvasContext(container) {
+  container.innerHTML = `<canvas></canvas>`;
+  return container.querySelector("canvas").getContext("2d");
+}
 
-  let html = `<div class="kpi-container">`;
-  metrics.forEach(m => {
-    const val = colMap[m.key] !== undefined ? colMap[m.key] : "--";
-    const formatted = typeof val === "number" ? val.toLocaleString() : val;
-    html += `
+function axisTitle(text) {
+  return { display: true, text, color: AXIS_TITLE_COLOR, font: { size: 10 } };
+}
+
+function columnValues(result, column, fallback) {
+  const idx = result.columns.indexOf(column);
+  return result.rows.map(row => (idx !== -1 ? row[idx] : fallback));
+}
+
+function formatTimeLabel(isoTimestamp) {
+  return isoTimestamp ? isoTimestamp.substring(5, 16).replace("T", " ") : ""; // MM-DD HH:MM
+}
+
+function renderKpiCards(instance, result, container) {
+  const metrics = instance.spec.config.metrics || [];
+  const row = result.rows[0] || [];
+  const values = Object.fromEntries(result.columns.map((col, idx) => [col, row[idx]]));
+
+  const boxes = metrics.map(metric => {
+    const value = values[metric.key] !== undefined ? values[metric.key] : "--";
+    const formatted = typeof value === "number" ? value.toLocaleString() : value;
+    return `
       <div class="kpi-box">
         <div class="kpi-label-row">
-          <span class="kpi-label">${m.label}</span>
-          ${m.badge ? `<span class="kpi-badge">${m.badge}</span>` : ""}
+          <span class="kpi-label">${escapeHtml(metric.label)}</span>
+          ${metric.badge ? `<span class="kpi-badge">${escapeHtml(metric.badge)}</span>` : ""}
         </div>
         <div class="kpi-value-row">
-          <span class="kpi-value">${formatted}</span>
-          <span class="kpi-unit">${m.unit || ""}</span>
+          <span class="kpi-value">${escapeHtml(formatted)}</span>
+          <span class="kpi-unit">${escapeHtml(metric.unit)}</span>
         </div>
       </div>
     `;
   });
-  html += `</div>`;
-  container.innerHTML = html;
+  container.innerHTML = `<div class="kpi-container">${boxes.join("")}</div>`;
 }
 
-function renderStackedAreaChart(instance, result, container) {
-  container.innerHTML = `<canvas></canvas>`;
-  const canvas = container.querySelector("canvas");
-  const ctx = canvas.getContext("2d");
+function stackedAreaStyle(series) {
+  const color = window.EnergyPalette.resolve(series.color) || window.EnergyPalette.getFuelColor(series.label);
+  return { backgroundColor: color, borderColor: color, borderWidth: 1, fill: true, tension: 0.2 };
+}
 
-  const timeCol = instance.spec.config.time_column || result.columns[0];
-  const timeIdx = result.columns.indexOf(timeCol);
-  const labels = result.rows.map(r => {
-    const dt = r[timeIdx];
-    return dt ? dt.substring(5, 16).replace("T", " ") : "";
-  });
+function lineStyle(series) {
+  return {
+    borderColor: window.EnergyPalette.resolve(series.color) || DEFAULT_LINE_COLOR,
+    borderWidth: series.borderWidth || 2,
+    borderDash: series.borderDash || [],
+    fill: false,
+    tension: 0.1
+  };
+}
 
-  const series = instance.spec.config.series || [];
-  const datasets = series.map(s => {
-    const colIdx = result.columns.indexOf(s.column);
-    const data = result.rows.map(r => (colIdx !== -1 ? r[colIdx] : 0));
-    return {
-      label: s.label,
-      data: data,
-      backgroundColor: s.color || window.EnergyPalette.getFuelColor(s.label),
-      borderColor: s.color || window.EnergyPalette.getFuelColor(s.label),
-      borderWidth: 1,
-      fill: true,
-      tension: 0.2,
-      pointRadius: 0
-    };
-  });
+function renderTimeSeries(instance, result, container, { stacked }) {
+  const config = instance.spec.config;
+  const labels = columnValues(result, config.time_column || result.columns[0], "").map(formatTimeLabel);
+  const datasets = (config.series || []).map(series => ({
+    label: series.label,
+    data: columnValues(result, series.column, 0),
+    pointRadius: 0,
+    ...(stacked ? stackedAreaStyle(series) : lineStyle(series))
+  }));
 
-  instance.chart = new Chart(ctx, {
+  instance.chart = new Chart(createCanvasContext(container), {
     type: "line",
     data: { labels, datasets },
     options: {
       interaction: { mode: "index", intersect: false },
       scales: {
-        x: {
-          grid: { display: false },
-          ticks: { maxTicksLimit: 12 }
-        },
-        y: {
-          stacked: true,
-          title: { display: true, text: "MW", color: "#64748b", font: { size: 10 } }
-        }
-      }
-    }
-  });
-}
-
-function renderLineChart(instance, result, container) {
-  container.innerHTML = `<canvas></canvas>`;
-  const canvas = container.querySelector("canvas");
-  const ctx = canvas.getContext("2d");
-
-  const timeCol = instance.spec.config.time_column || result.columns[0];
-  const timeIdx = result.columns.indexOf(timeCol);
-  const labels = result.rows.map(r => {
-    const dt = r[timeIdx];
-    return dt ? dt.substring(5, 16).replace("T", " ") : "";
-  });
-
-  const series = instance.spec.config.series || [];
-  const datasets = series.map(s => {
-    const colIdx = result.columns.indexOf(s.column);
-    const data = result.rows.map(r => (colIdx !== -1 ? r[colIdx] : 0));
-    return {
-      label: s.label,
-      data: data,
-      borderColor: s.color || "#38bdf8",
-      borderWidth: s.borderWidth || 2,
-      borderDash: s.borderDash || [],
-      fill: false,
-      tension: 0.1,
-      pointRadius: 0
-    };
-  });
-
-  instance.chart = new Chart(ctx, {
-    type: "line",
-    data: { labels, datasets },
-    options: {
-      interaction: { mode: "index", intersect: false },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { maxTicksLimit: 12 }
-        },
-        y: {
-          title: { display: true, text: "MW", color: "#64748b", font: { size: 10 } }
-        }
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
+        y: { stacked, title: axisTitle(config.y_title || "MW") }
       }
     }
   });
 }
 
 function renderBarChart(instance, result, container) {
-  container.innerHTML = `<canvas></canvas>`;
-  const canvas = container.querySelector("canvas");
-  const ctx = canvas.getContext("2d");
+  const config = instance.spec.config;
+  const prefix = config.x_label_prefix || "";
+  const labels = columnValues(result, config.x_column || result.columns[0], "").map(x => `${prefix}${x}`);
+  const data = columnValues(result, config.y_column || result.columns[1], 0);
+  const positive = window.EnergyPalette.resolve(config.color_positive) || window.EnergyPalette.DELTA_POSITIVE;
+  const negative = window.EnergyPalette.resolve(config.color_negative) || window.EnergyPalette.DELTA_NEGATIVE;
 
-  const xCol = instance.spec.config.x_column || result.columns[0];
-  const yCol = instance.spec.config.y_column || result.columns[1];
-  const xIdx = result.columns.indexOf(xCol);
-  const yIdx = result.columns.indexOf(yCol);
-
-  const labels = result.rows.map(r => `P${r[xIdx]}`);
-  const data = result.rows.map(r => r[yIdx]);
-  const colors = data.map(val => (val >= 0 ? window.EnergyPalette.DELTA_POSITIVE : window.EnergyPalette.DELTA_NEGATIVE));
-
-  instance.chart = new Chart(ctx, {
+  instance.chart = new Chart(createCanvasContext(container), {
     type: "bar",
     data: {
       labels,
       datasets: [
         {
           label: instance.spec.title,
-          data: data,
-          backgroundColor: colors,
+          data,
+          backgroundColor: data.map(value => (value >= 0 ? positive : negative)),
           borderRadius: 2
         }
       ]
@@ -391,35 +346,26 @@ function renderBarChart(instance, result, container) {
       plugins: { legend: { display: false } },
       scales: {
         x: { grid: { display: false }, ticks: { maxTicksLimit: 24 } },
-        y: { title: { display: true, text: "Delta MW", color: "#64748b", font: { size: 10 } } }
+        y: { title: axisTitle(config.y_title || "MW") }
       }
     }
   });
 }
 
 function renderDonutChart(instance, result, container) {
-  container.innerHTML = `<canvas></canvas>`;
-  const canvas = container.querySelector("canvas");
-  const ctx = canvas.getContext("2d");
+  const config = instance.spec.config;
+  const labels = columnValues(result, config.label_column || result.columns[0], "");
+  const data = columnValues(result, config.value_column || result.columns[1], 0);
 
-  const labelCol = instance.spec.config.label_column || result.columns[0];
-  const valCol = instance.spec.config.value_column || result.columns[1];
-  const labelIdx = result.columns.indexOf(labelCol);
-  const valIdx = result.columns.indexOf(valCol);
-
-  const labels = result.rows.map(r => r[labelIdx]);
-  const data = result.rows.map(r => r[valIdx]);
-  const colors = labels.map(l => window.EnergyPalette.getFuelColor(l));
-
-  instance.chart = new Chart(ctx, {
+  instance.chart = new Chart(createCanvasContext(container), {
     type: "doughnut",
     data: {
       labels,
       datasets: [
         {
-          data: data,
-          backgroundColor: colors,
-          borderColor: "#0d1322",
+          data,
+          backgroundColor: labels.map(label => window.EnergyPalette.getFuelColor(label)),
+          borderColor: CARD_BACKGROUND,
           borderWidth: 2
         }
       ]
@@ -436,26 +382,20 @@ function renderDonutChart(instance, result, container) {
   });
 }
 
-function renderTable(spec, result, container) {
-  const cols = (spec.config && spec.config.columns) || result.columns.map(c => ({ key: c, label: c }));
-  const colIndices = cols.map(c => result.columns.indexOf(c.key));
+function renderTable(instance, result, container) {
+  const columns = instance.spec.config.columns || result.columns.map(key => ({ key, label: key }));
+  const indices = columns.map(column => result.columns.indexOf(column.key));
 
-  let html = `<table class="analyst-table"><thead><tr>`;
-  cols.forEach(c => {
-    html += `<th>${c.label}</th>`;
-  });
-  html += `</tr></thead><tbody>`;
-
-  result.rows.forEach(row => {
-    html += `<tr>`;
-    colIndices.forEach((idx, cIdx) => {
-      const val = idx !== -1 ? row[idx] : "";
-      const formatted = typeof val === "number" ? val.toLocaleString() : (val || "--");
-      html += `<td>${formatted}</td>`;
-    });
-    html += `</tr>`;
-  });
-
-  html += `</tbody></table>`;
-  container.innerHTML = html;
+  const header = columns.map(column => `<th>${escapeHtml(column.label)}</th>`).join("");
+  const body = result.rows
+    .map(row => {
+      const cells = indices.map(idx => {
+        const value = idx !== -1 ? row[idx] : "";
+        const formatted = typeof value === "number" ? value.toLocaleString() : value || "--";
+        return `<td>${escapeHtml(formatted)}</td>`;
+      });
+      return `<tr>${cells.join("")}</tr>`;
+    })
+    .join("");
+  container.innerHTML = `<table class="analyst-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
 }

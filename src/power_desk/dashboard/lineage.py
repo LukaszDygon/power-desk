@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from power_desk.catalog.text import plain_summary
-from power_desk.dashboard.widgets import load_widgets
+from power_desk.dashboard.widgets import Widget, load_widgets
 from power_desk.settings import dbt_manifest_path
 
 MODEL_NODE_TYPES = {"staging": "staging_view", "ods": "ods_view", "marts": "mart_view"}
@@ -21,7 +21,7 @@ def lineage() -> Graph:
     return lineage_from_manifest(json.loads(path.read_text(encoding="utf-8")), load_widgets())
 
 
-def lineage_from_manifest(manifest: dict[str, Any], widgets: list[dict[str, Any]]) -> Graph:
+def lineage_from_manifest(manifest: dict[str, Any], widgets: list[Widget]) -> Graph:
     graph: Graph = {"nodes": [], "edges": []}
     ids = add_sources(graph, manifest) | add_models(graph, manifest)
     add_model_edges(graph, manifest, ids)
@@ -80,21 +80,19 @@ def add_model_edges(graph: Graph, manifest: dict[str, Any], ids: dict[str, str])
         ]
 
 
-def add_widgets(graph: Graph, widgets: list[dict[str, Any]], models: set[str]) -> None:
+def add_widgets(graph: Graph, widgets: list[Widget], models: set[str]) -> None:
     for widget in widgets:
         queried = {
-            name
-            for name in re.findall(r"\b(?:from|join)\s+(?:\w+\.)?(\w+)", widget.get("sql", ""), re.I)
-            if name in models
+            name for name in re.findall(r"\b(?:from|join)\s+(?:\w+\.)?(\w+)", widget.sql, re.I) if name in models
         }
         if queried:
-            widget_id = f"widget_{widget['id']}"
+            widget_id = f"widget_{widget.id}"
             graph["nodes"].append(
                 {
                     "id": widget_id,
-                    "label": f"Widget: {widget['title']}",
+                    "label": f"Widget: {widget.title}",
                     "type": "widget",
-                    "desc": widget.get("description", ""),
+                    "desc": widget.description,
                 }
             )
             graph["edges"] += [{"source": model, "target": widget_id, "label": "query"} for model in sorted(queried)]

@@ -36,11 +36,15 @@ uv run python -m power_desk.catalog.describe <relation>     # columns, units and
 
 | `type` | Use for | `config` keys (defaults: first / second result column) |
 |---|---|---|
-| `line`, `stacked_area` | time series | `time_column`, `series: [{column, label, color?}]` |
-| `bar` | categories, periods, deltas | `x_column`, `y_column` |
+| `line`, `stacked_area` | time series | `time_column`, `series: [{column, label, color?}]`, `y_title?` (default `MW`) |
+| `bar` | categories, periods, deltas | `x_column`, `y_column`, `x_label_prefix?`, `y_title?` (default `MW`), `color_positive?`, `color_negative?` |
 | `donut` | shares of a total | `label_column`, `value_column` |
 | `kpi_cards` | headline numbers (one row) | `metrics: [{key, label, unit?, badge?, trend?}]` |
 | `table` | dense inspection | `columns: [{key, label}]` (optional) |
+
+Colours (`color`, `color_positive`, `color_negative`) name the energy palette (`WIND`, `SOLAR`, `NUCLEAR`,
+`CCGT`, `BIOMASS`, `HYDRO`, `STORAGE`, `COAL`, `IMPORTS`, `DEMAND_ACTUAL`, `DEMAND_FORECAST`, `DELTA_POSITIVE`,
+`DELTA_NEGATIVE`; defined in `dashboard.css` `:root`) or give any CSS colour.
 
 `grid` sets the card's position and size on a 12-column grid: `{x, y, w, h}`.
 

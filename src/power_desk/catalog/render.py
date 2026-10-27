@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from power_desk.catalog import CatalogError
 from power_desk.catalog.providers import PROVIDERS, parse_ref
+
+
+def dataset_doc(table: str) -> str:
+    """Name of a table's doc block."""
+    return f"dataset_{table}"
 
 
 class Catalogue:
@@ -19,11 +25,8 @@ class Catalogue:
     def column_key(self, table: str, column: str) -> str:
         key = self.tables.get(table, {}).get("columns", {}).get(column, column)
         if key not in self.columns:
-            raise KeyError(f"{table}.{column}: no definition `{key}` in catalog/definitions (columns:)")
+            raise CatalogError(f"{table}.{column}: no definition `{key}` in catalog/definitions (columns:)")
         return key
-
-    def dataset_doc(self, table: str) -> str:
-        return f"dataset_{table}"
 
     def resolve(self, ref: str) -> tuple[str, dict[str, Any], str]:
         provider, kind, ident = parse_ref(ref)
@@ -31,8 +34,8 @@ class Catalogue:
         try:
             entry = snapshot["entries"][f"{kind}/{ident}"]
         except KeyError:
-            raise KeyError(
-                f"{ref} missing from snapshots/{provider}.yml; " "run `python -m power_desk.catalog.refresh`"
+            raise CatalogError(
+                f"{ref} missing from snapshots/{provider}.yml; run `python -m power_desk.catalog.refresh`"
             ) from None
         return PROVIDERS[provider].LABELS.get(kind, f"{provider} {kind}"), entry, snapshot["retrieved"]
 
@@ -88,7 +91,7 @@ class Catalogue:
             "catalog/snapshots - do not edit. #}",
         ]
         for table in self.tables:
-            out.append(f"{{% docs {self.dataset_doc(table)} %}}\n{self.dataset_md(table)}\n{{% enddocs %}}")
+            out.append(f"{{% docs {dataset_doc(table)} %}}\n{self.dataset_md(table)}\n{{% enddocs %}}")
         for key in self.columns:
             out.append(f"{{% docs col_{key} %}}\n{self.column_md(key)}\n{{% enddocs %}}")
         return "\n\n".join(out) + "\n"

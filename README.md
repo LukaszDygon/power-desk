@@ -37,6 +37,7 @@ uv run dbt docs generate --project-dir transform --profiles-dir transform
 uv run dbt docs serve --project-dir transform --profiles-dir transform --target-path transform/target
 
 uv run pytest
+uv run pyright                                     # type check src and tests
 ```
 
 ## Settings

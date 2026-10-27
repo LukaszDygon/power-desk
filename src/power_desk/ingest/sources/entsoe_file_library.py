@@ -8,6 +8,8 @@ renews its token before it expires.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import date, timedelta
 import io
 import re
 import time
@@ -20,12 +22,42 @@ import pyarrow as pa
 import pyarrow.csv as pa_csv
 
 from power_desk.ingest.http import USER_AGENT
+from power_desk.ingest.windows import DateRange
 
 TOKEN_URL = "https://keycloak.tp.entsoe.eu/realms/tp/protocol/openid-connect/token"
 CLIENT_ID = "tp-fms-public"
 API_URL = "https://fms.tp.entsoe.eu"
 ROOT = "/TP_export/"
 SOURCE_FILE = "_source_file"
+TOKEN_RENEWAL_MARGIN_SECONDS = 30  # renew this long before the token expires
+MONTHLY_EXPORT = re.compile(r"^(\d{4})_(\d{2})_")
+
+
+@dataclass(frozen=True)
+class ExportFile:
+    """A monthly export; the publisher re-exports it (new `last_updated`) while its month's data changes."""
+
+    name: str
+    month: DateRange
+    last_updated: str
+    size: int | None = None
+
+
+def export_month(name: str) -> DateRange | None:
+    """The calendar month a `<YYYY>_<MM>_...` export covers."""
+    match = MONTHLY_EXPORT.match(name)
+    if not match:
+        return None
+    first = date(int(match[1]), int(match[2]), 1)
+    return DateRange(first, (first + timedelta(days=32)).replace(day=1) - timedelta(days=1))
+
+
+def export_file(item: dict[str, Any]) -> ExportFile | None:
+    """A listed folder item as a monthly export; None for sub-folders and other files (e.g. export logs)."""
+    month = export_month(item["name"]) if item.get("type") != "Folder" else None
+    if month is None:
+        return None
+    return ExportFile(item["name"], month, item.get("lastUpdatedTimestamp") or "", item.get("size"))
 
 
 class FileLibraryClient:
@@ -33,8 +65,8 @@ class FileLibraryClient:
         self._token: str | None = None
         self._expires_at = 0.0
 
-    def list_folder(self, folder: str, page_size: int = 500) -> list[dict[str, Any]]:
-        """Files of a folder: [{name, fileId, size, lastUpdatedTimestamp, ...}]."""
+    def list_folder(self, folder: str, page_size: int = 500) -> list[ExportFile]:
+        """The monthly exports of a folder."""
         items: list[dict[str, Any]] = []
         while True:
             page = self._post(
@@ -48,7 +80,7 @@ class FileLibraryClient:
             ).json()
             items += page.get("contentItemList", [])
             if not page.get("contentItemList") or len(items) >= page["pageInfo"]["total"]:
-                return [item for item in items if item.get("type") != "Folder"]
+                return [file for item in items if (file := export_file(item))]
 
     def download(self, folder: str, filename: str) -> bytes:
         response = self._post(
@@ -83,7 +115,8 @@ class FileLibraryClient:
             )
             response.raise_for_status()
             token = response.json()
-            self._token, self._expires_at = token["access_token"], time.monotonic() + token["expires_in"] - 30
+            self._token = token["access_token"]
+            self._expires_at = time.monotonic() + token["expires_in"] - TOKEN_RENEWAL_MARGIN_SECONDS
         return {"Authorization": f"Bearer {self._token}", "User-Agent": USER_AGENT}
 
 

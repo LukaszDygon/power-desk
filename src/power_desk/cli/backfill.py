@@ -12,10 +12,10 @@ import sys
 
 from power_desk.ingest.pipeline import make_pipeline, make_source, run
 from power_desk.ingest.registry import SOURCES
-from power_desk.ingest.windows import day_windows, to_date
+from power_desk.ingest.spec import RunWindow, SourceSpec
+from power_desk.ingest.windows import DateRange, to_date
 from power_desk.settings import warehouse_path
-from power_desk.transform.dbt import dbt_args, run_dbt
-from power_desk.transform.loads import pending_load_ids
+from power_desk.transform.dbt import DbtRun
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,13 +40,12 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def date_ranges(args: argparse.Namespace) -> list[tuple[str | None, str | None]]:
+def run_windows(args: argparse.Namespace, spec: SourceSpec) -> list[RunWindow]:
+    """The requested window, or its `--chunk-days` chunks."""
     if not args.chunk_days:
-        return [(args.start_date, args.end_date)]
-    return [
-        (first.isoformat(), last.isoformat())
-        for first, last in day_windows(to_date(args.start_date), to_date(args.end_date), args.chunk_days)
-    ]
+        return [spec.window(args.start_date, args.end_date, args.max_days)]
+    requested = DateRange(to_date(args.start_date), to_date(args.end_date))
+    return [spec.window(chunk.first, chunk.last, args.max_days) for chunk in requested.chunks(args.chunk_days)]
 
 
 def main() -> int:
@@ -58,18 +57,12 @@ def main() -> int:
         if args.resources and not resources:
             continue
         pipeline = make_pipeline(name, db_path)
-        for start, end in date_ranges(args):
-            print(
-                run(
-                    pipeline,
-                    make_source(name, start, end, args.max_days, resources),
-                    **({"refresh": args.refresh} if args.refresh else {}),
-                )
-            )
+        for window in run_windows(args, SOURCES[name]):
+            print(run(pipeline, make_source(name, window, resources), refresh=args.refresh))
     if args.skip_dbt:
         return 0
     scope = args.scope or ("all" if args.end_date else "recent")
-    return run_dbt(dbt_args(pending_load_ids(db_path), scope=scope, full_refresh=bool(args.refresh)), db_path)
+    return DbtRun(scope=scope, full_refresh=bool(args.refresh)).run_pending(db_path)
 
 
 if __name__ == "__main__":

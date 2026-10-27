@@ -71,6 +71,7 @@ NIGHTLY_CRON = "0 3 * * *"
 
 
 def check_every_raw_table_scheduled_once() -> None:
+    """Fails unless every raw table loaded by a source is in exactly one ingest job."""
     scheduled = [table for job in INGEST_JOBS for table in job.tables]
     loaded = {table for name in SOURCES for table in make_source(name).resources}
     if len(scheduled) != len(set(scheduled)) or set(scheduled) != loaded:
@@ -78,8 +79,6 @@ def check_every_raw_table_scheduled_once() -> None:
             f"raw tables must be in exactly one ingest job; scheduled {sorted(scheduled)}, loaded {sorted(loaded)}"
         )
 
-
-check_every_raw_table_scheduled_once()
 
 ALL_DBT = AssetSelection.assets(dbt_models)
 

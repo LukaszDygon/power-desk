@@ -270,28 +270,8 @@ A technology group containing `technology_code` (itself at depth 0).
 Next broader technology in the tree; null for top-level groups.
 {% enddocs %}
 
-{% docs col_fuel_family %}
-Primary energy carrier family (e.g. gaseous_fossil, solid_fossil, wind, water, biomass).
-{% enddocs %}
-
-{% docs col_is_fossil %}
-Fossil-fuelled technology.
-{% enddocs %}
-
-{% docs col_is_renewable %}
-Renewable technology.
-{% enddocs %}
-
-{% docs col_is_low_carbon %}
-Counted as low-carbon (renewables and nuclear).
-{% enddocs %}
-
-{% docs col_is_storage %}
-Storage technology (net generation can be negative).
-{% enddocs %}
-
-{% docs col_is_interconnector %}
-Cross-border flow rather than domestic generation.
+{% docs col_is_zero_carbon %}
+NESO, Historic GB Generation Mix, ZERO_CARBON: "Zero carbon generation e.g. wind, solar, hydro, nuclear". True for those technologies and their sub-types; false for the generation NESO reports under other fields (fossil, biomass, storage, imports, other); empty where NESO does not classify the technology.
 {% enddocs %}
 
 {% docs col_source %}
@@ -547,47 +527,63 @@ Forecast generation for the technology over the interval, in MW.
 {% enddocs %}
 
 {% docs col_wind_mw %}
-Generation from fuel type WIND, in MW.
+FUELINST fuel type `WIND`, in MW.
 {% enddocs %}
 
 {% docs col_solar_mw %}
-Solar generation from PVLive (fuel type SOLAR), in MW.
+PVLive `generation_mw` for GB (PES region 0), in MW.
 {% enddocs %}
 
 {% docs col_nuclear_mw %}
-Generation from fuel type NUCLEAR, in MW.
+FUELINST fuel type `NUCLEAR`, in MW.
 {% enddocs %}
 
 {% docs col_ccgt_gas_mw %}
-Generation from combined-cycle gas turbines (fuel type CCGT), in MW.
+FUELINST fuel type `CCGT`, in MW.
 {% enddocs %}
 
-{% docs col_biomass_mw %}
-Generation from fuel type BIOMASS, in MW.
+{% docs col_ocgt_gas_mw %}
+FUELINST fuel type `OCGT`, in MW.
 {% enddocs %}
 
-{% docs col_hydro_mw %}
-Hydro generation, run-of-river (NPSHYD) plus pumped storage (PS), in MW. Negative while pumping.
+{% docs col_oil_mw %}
+FUELINST fuel type `OIL`, in MW.
 {% enddocs %}
 
 {% docs col_coal_mw %}
-Generation from fuel type COAL, in MW.
+FUELINST fuel type `COAL`, in MW.
+{% enddocs %}
+
+{% docs col_biomass_mw %}
+FUELINST fuel type `BIOMASS`, in MW.
+{% enddocs %}
+
+{% docs col_hydro_mw %}
+FUELINST fuel type `NPSHYD`, in MW.
+{% enddocs %}
+
+{% docs col_pumped_storage_mw %}
+FUELINST fuel type `PS`, in MW; negative while pumping.
+{% enddocs %}
+
+{% docs col_other_mw %}
+FUELINST fuel type `OTHER`, in MW.
 {% enddocs %}
 
 {% docs col_imports_mw %}
-Net interconnector flow, the sum of all `INT*` fuel types, in MW. Negative when GB exports.
-{% enddocs %}
-
-{% docs col_other_fossil_mw %}
-Generation from OCGT, OIL and OTHER fuel types, in MW.
+Net interconnector flow, the sum of the FUELINST `INT*` fuel types, in MW; negative when GB exports.
 {% enddocs %}
 
 {% docs col_total_generation_mw %}
-Sum over all fuel types including net interconnector flows, in MW.
+NESO GENERATION: "Sum of gas, coal, nuclear, wind, wind embedded, hydro, imports, biomass, others, solar and storage." Here: every FUELINST fuel type plus PVLive solar, counting interconnector imports and storage output only (exports and pumping are not generation), in MW. FUELINST has no embedded wind.
 {% enddocs %}
 
-{% docs col_clean_share_pct %}
-Zero-carbon share: (wind + solar + nuclear + biomass + hydro) / total generation x 100. Can exceed 100 at night, when exports and pumping make the total smaller than the zero-carbon sum.
+{% docs col_zero_carbon_mw %}
+NESO ZERO_CARBON: "Zero carbon generation e.g. wind, solar, hydro, nuclear". Here: generation from technologies with `is_zero_carbon` in `dim_technology`, in MW.
+{% enddocs %}
+
+{% docs col_zero_carbon_share_pct %}
+NESO ZERO_CARBON_perc: "Fuel Type as a percentage for zero carbon generation e.g. wind, solar, hydro, nuclear". `zero_carbon_mw` / `total_generation_mw` x 100.
 {% enddocs %}
 
 {% docs col_actual_demand_mw %}
@@ -638,8 +634,8 @@ Hourly mean of nuclear generation, in MW.
 Hourly mean of CCGT generation, in MW.
 {% enddocs %}
 
-{% docs col_avg_clean_share_pct %}
-Hourly mean of the zero-carbon share, in percent.
+{% docs col_avg_zero_carbon_share_pct %}
+Hourly mean of `zero_carbon_share_pct`, in percent.
 {% enddocs %}
 
 {% docs col_peak_demand_mw %}

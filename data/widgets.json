@@ -3,7 +3,7 @@
     "id": "kpi_grid_overview",
     "title": "Grid Operational Overview",
     "type": "kpi_cards",
-    "description": "High-level real-time and aggregate power KPIs",
+    "sql": "\n            SELECT \n                ROUND(AVG(avg_zero_carbon_share_pct), 1) as avg_zero_carbon_share,\n                ROUND(MAX(peak_demand_mw)) as max_peak_demand,\n                ROUND(AVG(avg_wind_mw)) as avg_wind_mw,\n                ROUND(AVG(avg_solar_mw)) as avg_solar_mw,\n                ROUND(AVG(avg_demand_mw)) as avg_demand_mw\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n        ",
     "grid": {
       "x": 0,
       "y": 0,
@@ -12,11 +12,11 @@
       "minW": 6,
       "minH": 2
     },
-    "sql": "\n            SELECT \n                ROUND(AVG(avg_clean_share_pct), 1) as avg_clean_share,\n                ROUND(MAX(peak_demand_mw)) as max_peak_demand,\n                ROUND(AVG(avg_wind_mw)) as avg_wind_mw,\n                ROUND(AVG(avg_solar_mw)) as avg_solar_mw,\n                ROUND(AVG(avg_demand_mw)) as avg_demand_mw\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n        ",
+    "description": "High-level real-time and aggregate power KPIs",
     "config": {
       "metrics": [
         {
-          "key": "avg_clean_share",
+          "key": "avg_zero_carbon_share",
           "label": "Zero-Carbon Share",
           "unit": "%",
           "trend": "positive",
@@ -57,7 +57,7 @@
     "id": "generation_mix_timeseries",
     "title": "Power Generation Mix by Fuel (MW)",
     "type": "stacked_area",
-    "description": "Half-hourly generation stacked by primary fuel sources",
+    "sql": "\n            SELECT \n                timestamp_utc,\n                wind_mw,\n                solar_mw,\n                nuclear_mw,\n                ccgt_gas_mw,\n                biomass_mw,\n                hydro_mw,\n                pumped_storage_mw,\n                imports_mw\n            FROM mart_gb_generation_mix\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
     "grid": {
       "x": 0,
       "y": 2,
@@ -66,44 +66,49 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                timestamp_utc,\n                wind_mw,\n                solar_mw,\n                nuclear_mw,\n                ccgt_gas_mw,\n                biomass_mw,\n                hydro_mw,\n                imports_mw\n            FROM mart_gb_generation_mix\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
+    "description": "Half-hourly generation stacked by primary fuel sources",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
         {
           "column": "wind_mw",
           "label": "Wind",
-          "color": "#00e5a3"
+          "color": "WIND"
         },
         {
           "column": "solar_mw",
           "label": "Solar",
-          "color": "#f59e0b"
+          "color": "SOLAR"
         },
         {
           "column": "nuclear_mw",
           "label": "Nuclear",
-          "color": "#818cf8"
+          "color": "NUCLEAR"
         },
         {
           "column": "biomass_mw",
           "label": "Biomass",
-          "color": "#84cc16"
+          "color": "BIOMASS"
         },
         {
           "column": "hydro_mw",
-          "label": "Hydro / PS",
-          "color": "#0ea5e9"
+          "label": "Hydro",
+          "color": "HYDRO"
+        },
+        {
+          "column": "pumped_storage_mw",
+          "label": "Pumped storage",
+          "color": "STORAGE"
         },
         {
           "column": "ccgt_gas_mw",
           "label": "CCGT Gas",
-          "color": "#f97316"
+          "color": "CCGT"
         },
         {
           "column": "imports_mw",
           "label": "Interconnectors",
-          "color": "#94a3b8"
+          "color": "IMPORTS"
         }
       ]
     }
@@ -112,7 +117,7 @@
     "id": "fuel_share_donut",
     "title": "Total Generation Share",
     "type": "donut",
-    "description": "Total energy contribution by fuel type for the selected window",
+    "sql": "\n            SELECT \n                source_code AS fuel_type,\n                ROUND(SUM(generation_mw), 1) as total_mwh\n            FROM ods_generation_actual\n            WHERE source_dataset IN ('FUELINST', 'PVLIVE')\n              AND settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY source_code\n            ORDER BY total_mwh DESC\n        ",
     "grid": {
       "x": 8,
       "y": 2,
@@ -121,7 +126,7 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                source_code AS fuel_type,\n                ROUND(SUM(generation_mw), 1) as total_mwh\n            FROM ods_generation_actual\n            WHERE source_dataset IN ('FUELINST', 'PVLIVE')\n              AND settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY source_code\n            ORDER BY total_mwh DESC\n        ",
+    "description": "Total energy contribution by fuel type for the selected window",
     "config": {
       "label_column": "fuel_type",
       "value_column": "total_mwh"
@@ -131,7 +136,7 @@
     "id": "demand_vs_forecast_line",
     "title": "National Demand: Outturn vs Day-Ahead Forecast",
     "type": "line",
-    "description": "Actual transmission system demand (INDO) compared against forecast",
+    "sql": "\n            SELECT \n                timestamp_utc,\n                actual_demand_mw,\n                forecast_demand_mw,\n                delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
     "grid": {
       "x": 0,
       "y": 7,
@@ -140,20 +145,20 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                timestamp_utc,\n                actual_demand_mw,\n                forecast_demand_mw,\n                delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
+    "description": "Actual transmission system demand (INDO) compared against forecast",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
         {
           "column": "actual_demand_mw",
           "label": "Actual Demand (MW)",
-          "color": "#f8fafc",
+          "color": "DEMAND_ACTUAL",
           "borderWidth": 2
         },
         {
           "column": "forecast_demand_mw",
           "label": "Day-Ahead Forecast (MW)",
-          "color": "#c084fc",
+          "color": "DEMAND_FORECAST",
           "borderWidth": 2,
           "borderDash": [
             4,
@@ -167,7 +172,7 @@
     "id": "forecast_variance_bar",
     "title": "Forecast Imbalance Variance (Delta MW)",
     "type": "bar",
-    "description": "Over/under forecasting delta across settlement periods",
+    "sql": "\n            SELECT \n                settlement_period,\n                ROUND(AVG(delta_mw), 1) as avg_delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY settlement_period\n            ORDER BY settlement_period ASC\n        ",
     "grid": {
       "x": 8,
       "y": 7,
@@ -176,19 +181,21 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                settlement_period,\n                ROUND(AVG(delta_mw), 1) as avg_delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY settlement_period\n            ORDER BY settlement_period ASC\n        ",
+    "description": "Over/under forecasting delta across settlement periods",
     "config": {
       "x_column": "settlement_period",
       "y_column": "avg_delta_mw",
-      "color_positive": "#34d399",
-      "color_negative": "#f43f5e"
+      "x_label_prefix": "P",
+      "y_title": "Delta MW",
+      "color_positive": "DELTA_POSITIVE",
+      "color_negative": "DELTA_NEGATIVE"
     }
   },
   {
     "id": "hourly_analyst_table",
     "title": "Hourly Power Desk Settlement Rollup",
     "type": "table",
-    "description": "High-density tabular ledger of hourly system dispatch and clean shares",
+    "sql": "\n            SELECT \n                hour_utc,\n                avg_demand_mw,\n                avg_forecast_demand_mw,\n                avg_generation_mw,\n                avg_wind_mw,\n                avg_solar_mw,\n                avg_gas_mw,\n                avg_zero_carbon_share_pct\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n            ORDER BY hour_utc DESC\n            LIMIT 48\n        ",
     "grid": {
       "x": 0,
       "y": 12,
@@ -197,7 +204,7 @@
       "minW": 6,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                hour_utc,\n                avg_demand_mw,\n                avg_forecast_demand_mw,\n                avg_generation_mw,\n                avg_wind_mw,\n                avg_solar_mw,\n                avg_gas_mw,\n                avg_clean_share_pct\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n            ORDER BY hour_utc DESC\n            LIMIT 48\n        ",
+    "description": "High-density tabular ledger of hourly system dispatch and zero-carbon shares",
     "config": {
       "columns": [
         {
@@ -229,8 +236,8 @@
           "label": "CCGT (MW)"
         },
         {
-          "key": "avg_clean_share_pct",
-          "label": "Clean %"
+          "key": "avg_zero_carbon_share_pct",
+          "label": "Zero carbon %"
         }
       ]
     }
@@ -248,18 +255,19 @@
       "minW": 3,
       "minH": 2
     },
+    "description": "",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
         {
           "column": "nuclear_mw",
           "label": "Nuclear",
-          "color": "#818cf8"
+          "color": "NUCLEAR"
         },
         {
           "column": "biomass_mw",
           "label": "Biomass",
-          "color": "#84cc16"
+          "color": "BIOMASS"
         }
       ]
     }

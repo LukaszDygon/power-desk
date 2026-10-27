@@ -24,8 +24,25 @@ def relations(manifest: dict) -> dict[str, dict]:
     return {(n.get("identifier") or n.get("alias") or n["name"]): n for n in nodes}
 
 
+def print_relation(name: str, node: dict) -> None:
+    """A relation's description and its columns."""
+    print(f"{node['schema']}.{name}: {plain_summary(node.get('description', ''))}\n")
+    for column, col in node.get("columns", {}).items():
+        print(f"  {column:<28} {plain_summary(col.get('description', ''), paragraphs=1)}")
+
+
+def print_layers(rels: dict[str, dict]) -> None:
+    """Every relation with a one-line summary, by layer."""
+    for layer in LAYERS:
+        names = sorted(n for n, node in rels.items() if node["schema"] == layer)
+        if names:
+            print(f"[{layer}]")
+            for name in names:
+                print(f"  {name:<28} {plain_summary(rels[name].get('description', ''), paragraphs=1)[:110]}")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").partition("\n")[0])
     parser.add_argument("relation", nargs="?", help="relation name, e.g. mart_gb_generation_mix")
     args = parser.parse_args()
 
@@ -37,23 +54,13 @@ def main() -> int:
         )
         return 1
     rels = relations(json.loads(path.read_text(encoding="utf-8")))
-
-    if args.relation:
-        node = rels.get(args.relation)
-        if not node:
-            print(f"unknown relation {args.relation!r}", file=sys.stderr)
-            return 1
-        print(f"{node['schema']}.{args.relation}: {plain_summary(node.get('description', ''))}\n")
-        for name, col in node.get("columns", {}).items():
-            print(f"  {name:<28} {plain_summary(col.get('description', ''), paragraphs=1)}")
+    if not args.relation:
+        print_layers(rels)
         return 0
-
-    for layer in LAYERS:
-        names = sorted(n for n, node in rels.items() if node["schema"] == layer)
-        if names:
-            print(f"[{layer}]")
-            for name in names:
-                print(f"  {name:<28} {plain_summary(rels[name].get('description', ''), paragraphs=1)[:110]}")
+    if args.relation not in rels:
+        print(f"unknown relation {args.relation!r}", file=sys.stderr)
+        return 1
+    print_relation(args.relation, rels[args.relation])
     return 0
 
 

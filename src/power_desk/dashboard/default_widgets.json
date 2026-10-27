@@ -12,11 +12,11 @@
       "minW": 6,
       "minH": 2
     },
-    "sql": "SELECT\nROUND(AVG(avg_clean_share_pct), 1) as avg_clean_share,\nROUND(MAX(peak_demand_mw)) as max_peak_demand,\nROUND(AVG(avg_wind_mw)) as avg_wind_mw,\nROUND(AVG(avg_solar_mw)) as avg_solar_mw,\nROUND(AVG(avg_demand_mw)) as avg_demand_mw\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'",
+    "sql": "SELECT\nROUND(AVG(avg_zero_carbon_share_pct), 1) as avg_zero_carbon_share,\nROUND(MAX(peak_demand_mw)) as max_peak_demand,\nROUND(AVG(avg_wind_mw)) as avg_wind_mw,\nROUND(AVG(avg_solar_mw)) as avg_solar_mw,\nROUND(AVG(avg_demand_mw)) as avg_demand_mw\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'",
     "config": {
       "metrics": [
         {
-          "key": "avg_clean_share",
+          "key": "avg_zero_carbon_share",
           "label": "Zero-Carbon Share",
           "unit": "%",
           "trend": "positive",
@@ -66,44 +66,49 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "SELECT\ntimestamp_utc,\nwind_mw,\nsolar_mw,\nnuclear_mw,\nccgt_gas_mw,\nbiomass_mw,\nhydro_mw,\nimports_mw\nFROM mart_gb_generation_mix\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
+    "sql": "SELECT\ntimestamp_utc,\nwind_mw,\nsolar_mw,\nnuclear_mw,\nccgt_gas_mw,\nbiomass_mw,\nhydro_mw,\npumped_storage_mw,\nimports_mw\nFROM mart_gb_generation_mix\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
         {
           "column": "wind_mw",
           "label": "Wind",
-          "color": "#00e5a3"
+          "color": "WIND"
         },
         {
           "column": "solar_mw",
           "label": "Solar",
-          "color": "#f59e0b"
+          "color": "SOLAR"
         },
         {
           "column": "nuclear_mw",
           "label": "Nuclear",
-          "color": "#818cf8"
+          "color": "NUCLEAR"
         },
         {
           "column": "biomass_mw",
           "label": "Biomass",
-          "color": "#84cc16"
+          "color": "BIOMASS"
         },
         {
           "column": "hydro_mw",
-          "label": "Hydro / PS",
-          "color": "#0ea5e9"
+          "label": "Hydro",
+          "color": "HYDRO"
+        },
+        {
+          "column": "pumped_storage_mw",
+          "label": "Pumped storage",
+          "color": "STORAGE"
         },
         {
           "column": "ccgt_gas_mw",
           "label": "CCGT Gas",
-          "color": "#f97316"
+          "color": "CCGT"
         },
         {
           "column": "imports_mw",
           "label": "Interconnectors",
-          "color": "#94a3b8"
+          "color": "IMPORTS"
         }
       ]
     }
@@ -147,13 +152,13 @@
         {
           "column": "actual_demand_mw",
           "label": "Actual Demand (MW)",
-          "color": "#f8fafc",
+          "color": "DEMAND_ACTUAL",
           "borderWidth": 2
         },
         {
           "column": "forecast_demand_mw",
           "label": "Day-Ahead Forecast (MW)",
-          "color": "#c084fc",
+          "color": "DEMAND_FORECAST",
           "borderWidth": 2,
           "borderDash": [
             4,
@@ -180,15 +185,17 @@
     "config": {
       "x_column": "settlement_period",
       "y_column": "avg_delta_mw",
-      "color_positive": "#34d399",
-      "color_negative": "#f43f5e"
+      "x_label_prefix": "P",
+      "y_title": "Delta MW",
+      "color_positive": "DELTA_POSITIVE",
+      "color_negative": "DELTA_NEGATIVE"
     }
   },
   {
     "id": "hourly_analyst_table",
     "title": "Hourly Power Desk Settlement Rollup",
     "type": "table",
-    "description": "High-density tabular ledger of hourly system dispatch and clean shares",
+    "description": "High-density tabular ledger of hourly system dispatch and zero-carbon shares",
     "grid": {
       "x": 0,
       "y": 12,
@@ -197,7 +204,7 @@
       "minW": 6,
       "minH": 3
     },
-    "sql": "SELECT\nhour_utc,\navg_demand_mw,\navg_forecast_demand_mw,\navg_generation_mw,\navg_wind_mw,\navg_solar_mw,\navg_gas_mw,\navg_clean_share_pct\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\nORDER BY hour_utc DESC\nLIMIT 48",
+    "sql": "SELECT\nhour_utc,\navg_demand_mw,\navg_forecast_demand_mw,\navg_generation_mw,\navg_wind_mw,\navg_solar_mw,\navg_gas_mw,\navg_zero_carbon_share_pct\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\nORDER BY hour_utc DESC\nLIMIT 48",
     "config": {
       "columns": [
         {
@@ -229,8 +236,8 @@
           "label": "CCGT (MW)"
         },
         {
-          "key": "avg_clean_share_pct",
-          "label": "Clean %"
+          "key": "avg_zero_carbon_share_pct",
+          "label": "Zero carbon %"
         }
       ]
     }

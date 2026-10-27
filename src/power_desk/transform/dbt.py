@@ -6,35 +6,53 @@ The orchestrator hands dbt the pending dlt load ids (`--vars dlt_load_ids`), the
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+from typing import Literal
 
 from power_desk.settings import DBT_PROJECT_DIR, REPO_ROOT, backfill_start_date, environment, warehouse_path
+from power_desk.transform.loads import pending_load_ids
 
 DBT_EXECUTABLE = Path(sys.executable).with_name("dbt")
 
 
-def dbt_args(
-    load_ids: list[str],
-    orchestrator_run_id: str | None = None,
-    scope: str = "recent",
-    full_refresh: bool = False,
-    command: str = "build",
-) -> list[str]:
-    variables = {
-        "dlt_load_ids": load_ids,
-        "dlt_scope": scope,
-        **({"orchestrator_run_id": orchestrator_run_id} if orchestrator_run_id else {}),
-    }
-    return [
-        command,
-        "--vars",
-        json.dumps(variables),
-        *(["--full-refresh"] if full_refresh and command == "build" else []),
-    ]
+@dataclass(frozen=True)
+class DbtRun:
+    """A dbt invocation over the pending dlt loads.
+
+    `command`: `build` (models and tests) or `test` (tests only). `scope`: `recent` tests the rows of
+    pending loads only, `all` the whole warehouse. `full_refresh` rebuilds incremental models (`build` only).
+    """
+
+    command: Literal["build", "test"] = "build"
+    scope: Literal["recent", "all"] = "recent"
+    full_refresh: bool = False
+
+    def args(self, load_ids: list[str], orchestrator_run_id: str | None = None) -> list[str]:
+        variables = {
+            "dlt_load_ids": load_ids,
+            "dlt_scope": self.scope,
+            **({"orchestrator_run_id": orchestrator_run_id} if orchestrator_run_id else {}),
+        }
+        return [
+            self.command,
+            "--vars",
+            json.dumps(variables),
+            *(["--full-refresh"] if self.full_refresh and self.command == "build" else []),
+        ]
+
+    def run_pending(
+        self,
+        db_path: Path | str | None = None,
+        target_path: Path | str | None = None,
+        orchestrator_run_id: str | None = None,
+    ) -> int:
+        """Run over the loads pending in the warehouse at `db_path`; returns dbt's exit code."""
+        return run_dbt(self.args(pending_load_ids(db_path), orchestrator_run_id), db_path, target_path)
 
 
 def dbt_env(db_path: Path | str | None = None) -> dict[str, str]:

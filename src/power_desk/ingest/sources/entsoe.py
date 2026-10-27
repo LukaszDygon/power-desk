@@ -3,9 +3,9 @@
 The File Library re-exports a month's file daily while its data changes. Each run lists a data
 item's folder and loads the files new or changed since their last load (the publisher's
 `lastUpdatedTimestamp`, kept in resource state), oldest month first, covering at most
-`max_days_per_run` days of months; `capped` is recorded when more changed files remain. A loaded
+`max_days` days of months; `capped` is recorded when more changed files remain. A loaded
 file replaces every row previously loaded from it (`merge_key` `_source_file`), so revisions and
-withdrawals follow the publication. Bounded backfills (`end_date`) load every file in range and
+withdrawals follow the publication. Bounded backfills (`window.end`) load every file in range and
 leave the state untouched.
 """
 
@@ -15,22 +15,26 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 import logging
-import re
-from typing import Any
 
 import dlt
+from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from power_desk.ingest.sources.entsoe_file_library import SOURCE_FILE, FileLibraryClient, column_name, parse_export
-from power_desk.ingest.spec import SourceSpec
-from power_desk.ingest.windows import to_date
+from power_desk.ingest.sources.entsoe_file_library import (
+    SOURCE_FILE,
+    ExportFile,
+    FileLibraryClient,
+    column_name,
+    parse_export,
+)
+from power_desk.ingest.spec import RunWindow, SourceSpec
+from power_desk.ingest.windows import DateRange, LastWindow
 
 logger = logging.getLogger(__name__)
 
-PARTITION_REPLACE = {"disposition": "merge", "strategy": "delete-insert"}
-FILE_PERIOD = re.compile(r"^(\d{4})_(\d{2})_")
+PARTITION_REPLACE: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
 MAX_DAYS_PER_RUN = 186  # about six monthly files per data item and run
 MTU_START = column_name("DateTime(UTC)")
 
@@ -49,95 +53,76 @@ DATA_ITEMS = (
 )
 
 
-def file_period(name: str) -> tuple[date, date] | None:
-    """First and last day of the month a `<YYYY>_<MM>_...` file covers."""
-    match = FILE_PERIOD.match(name)
-    if not match:
-        return None
-    first = date(int(match[1]), int(match[2]), 1)
-    return first, (first + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+@dataclass(frozen=True)
+class FilePlan:
+    """The files a run loads, oldest month first; `capped` when more changed files remain."""
+
+    files: list[ExportFile]
+    capped: bool = False
+
+    @property
+    def months(self) -> DateRange | None:
+        """The months the files cover."""
+        return DateRange(self.files[0].month.first, self.files[-1].month.last) if self.files else None
 
 
-def plan_files(
-    files: list[dict[str, Any]],
-    loaded: dict[str, str],
-    initial_date: str,
-    end_date: str | None,
-    max_days_per_run: int,
-) -> tuple[list[dict[str, Any]], bool]:
-    """Files this run loads, oldest month first, and whether more changed files remain."""
-    start, end = to_date(initial_date), to_date(end_date) if end_date else None
-    in_range = sorted(
-        (
-            (period, file)
-            for file in files
-            if (period := file_period(file["name"])) and period[1] >= start and not (end and period[0] > end)
-        ),
-        key=lambda candidate: candidate[0],
-    )
-    if end:
-        return [file for _, file in in_range], False
-    changed = [
-        (period, file) for period, file in in_range if loaded.get(file["name"]) != file.get("lastUpdatedTimestamp")
-    ]
+def plan_files(files: list[ExportFile], loaded: dict[str, str], window: RunWindow) -> FilePlan:
+    """Bounded backfills load every file in range; open-ended runs the changed ones, up to `max_days` of months."""
+    requested = DateRange(window.start, window.end or date.max)
+    in_range = sorted((file for file in files if file.month.overlaps(requested)), key=lambda file: file.month.first)
+    if window.bounded:
+        return FilePlan(in_range)
+    changed = [file for file in in_range if loaded.get(file.name) != file.last_updated]
     if not changed:
-        return [], False
-    limit = changed[0][0][0] + timedelta(days=max(max_days_per_run, 1))
-    batch = [file for period, file in changed if period[0] < limit]
-    return batch, len(batch) < len(changed)
+        return FilePlan([])
+    limit = changed[0].month.first + timedelta(days=max(window.max_days, 1))
+    batch = [file for file in changed if file.month.first < limit]
+    return FilePlan(batch, capped=len(batch) < len(changed))
 
 
 def latest_mtu(table: pa.Table, cursor: str | None) -> str | None:
-    latest = pc.max(table[MTU_START]).as_py()
+    latest = pc.max(table[MTU_START]).as_py()  # pyright: ignore[reportAttributeAccessIssue]  # generated at import
     return max(filter(None, [cursor, latest.isoformat() if latest else None]), default=None)
 
 
-def file_partitions(
-    client: FileLibraryClient,
-    item: DataItem,
-    initial_date: str,
-    end_date: str | None,
-    max_days_per_run: int,
-) -> Iterator[pa.Table]:
-    bounded = end_date is not None
-    state = {} if bounded else dlt.current.resource_state()
+def file_partitions(client: FileLibraryClient, item: DataItem, window: RunWindow) -> Iterator[pa.Table]:
+    state = {} if window.bounded else dlt.current.resource_state()
     loaded: dict[str, str] = state.setdefault("source_files", {})
-    batch, capped = plan_files(client.list_folder(item.folder), loaded, initial_date, end_date, max_days_per_run)
-    cursor = state.get("last_window", {}).get("cursor_last_value")
-    for file in batch:
-        logger.info("%s: loading %s (%s bytes zipped)", item.resource, file["name"], file.get("size"))
-        table = parse_export(client.download(item.folder, file["name"]), file["name"])
+    previous: LastWindow = state.get("last_window", {})
+    plan = plan_files(client.list_folder(item.folder), loaded, window)
+    cursor = previous.get("cursor_last_value")
+    for file in plan.files:
+        logger.info("%s: loading %s (%s bytes zipped)", item.resource, file.name, file.size)
+        table = parse_export(client.download(item.folder, file.name), file.name)
         if table.num_rows:
             cursor = latest_mtu(table, cursor)
             yield table
-        loaded[file["name"]] = file.get("lastUpdatedTimestamp")
-    if not bounded:
-        state["last_window"] = window_record(batch, capped, cursor, state.get("last_window", {}))
+        loaded[file.name] = file.last_updated
+    if not window.bounded:
+        state["last_window"] = window_record(plan, cursor, previous)
 
 
-def window_record(
-    batch: list[dict[str, Any]], capped: bool, cursor: str | None, previous: dict[str, Any]
-) -> dict[str, Any]:
-    """The run's `last_window`: months covered, `capped`, and the latest market time unit loaded."""
-    periods = [file_period(file["name"]) for file in batch]
-    return {
-        "first_day": periods[0][0].isoformat() if periods else previous.get("first_day"),
-        "last_day": periods[-1][1].isoformat() if periods else previous.get("last_day"),
-        "capped": capped,
-        "files_loaded": len(batch),
-        "checked_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "cursor_last_value": cursor,
-    }
+def window_record(plan: FilePlan, cursor: str | None, previous: LastWindow) -> LastWindow:
+    """The run's `last_window`: months covered (else the previous run's), `capped`, and the latest MTU loaded."""
+    record = LastWindow(
+        capped=plan.capped,
+        files_loaded=len(plan.files),
+        checked_at=datetime.now(UTC).isoformat(timespec="seconds"),
+        cursor_last_value=cursor,
+    )
+    if months := plan.months:
+        record["first_day"], record["last_day"] = months.first.isoformat(), months.last.isoformat()
+    elif "first_day" in previous and "last_day" in previous:
+        record["first_day"], record["last_day"] = previous["first_day"], previous["last_day"]
+    return record
 
 
 @dlt.source(name="entsoe")
-def entsoe_source(
-    initial_date: str, end_date: str | None = None, max_days_per_run: int = MAX_DAYS_PER_RUN
-) -> list[DltResource]:
+def entsoe_source(window: RunWindow) -> list[DltResource]:
     client = FileLibraryClient()
     return [
         dlt.resource(
-            file_partitions(client, item, initial_date, end_date, max_days_per_run),
+            file_partitions(client, item, window),
             name=item.resource,
             write_disposition=PARTITION_REPLACE,
             merge_key=SOURCE_FILE,

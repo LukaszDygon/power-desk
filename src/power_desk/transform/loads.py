@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import duckdb
+
 from power_desk import warehouse
 from power_desk.settings import dbt_manifest_path, warehouse_path
 
@@ -31,25 +33,30 @@ def pending_load_ids(db_path: Path | str | None = None) -> list[str]:
     if not path.exists():
         return []
     with warehouse.connect(path) as con:
-        if "_dlt_loads" not in warehouse.table_names(con, "raw", base_tables_only=True):
+        if "_dlt_loads" not in warehouse.base_table_names(con, "raw"):
             return []
         tracked = tracked_models()
-        audited = tracked and "dlt_load_audit" in warehouse.table_names(con, "dlt_meta", base_tables_only=True)
-        if not audited:
-            return [
-                row[0]
-                for row in con.execute("select load_id from raw._dlt_loads where status = 0 order by 1").fetchall()
-            ]
-        return [
-            row[0]
-            for row in con.execute(
-                f"""
-            select l.load_id from raw._dlt_loads l
-            where l.status = 0
-              and (select count(distinct a.model_name) from dlt_meta.dlt_load_audit a
-                   where a.load_id = l.load_id and a.model_name in ({", ".join("?" for _ in tracked)})) < ?
-            order by l.load_id
+        if tracked and "dlt_load_audit" in warehouse.base_table_names(con, "dlt_meta"):
+            return _loads_not_audited_by_all(con, tracked)
+        return _completed_loads(con)
+
+
+def _completed_loads(con: duckdb.DuckDBPyConnection) -> list[str]:
+    rows = con.execute("select load_id from raw._dlt_loads where status = 0 order by 1").fetchall()
+    return [load_id for (load_id,) in rows]
+
+
+def _loads_not_audited_by_all(con: duckdb.DuckDBPyConnection, tracked: list[str]) -> list[str]:
+    """Completed loads that some of the `tracked` models have not recorded in their audit yet."""
+    placeholders = ", ".join("?" for _ in tracked)
+    rows = con.execute(
+        f"""
+        select l.load_id from raw._dlt_loads l
+        where l.status = 0
+          and (select count(distinct a.model_name) from dlt_meta.dlt_load_audit a
+               where a.load_id = l.load_id and a.model_name in ({placeholders})) < ?
+        order by l.load_id
         """,
-                [*tracked, len(tracked)],
-            ).fetchall()
-        ]
+        [*tracked, len(tracked)],
+    ).fetchall()
+    return [load_id for (load_id,) in rows]

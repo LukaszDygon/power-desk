@@ -18,11 +18,11 @@ select
     timestamp_utc,
     interval_minutes,
     area_eic_code,
-    'day_ahead',
+    'day_ahead' as forecast_horizon,
     demand_mw,
-    'ENTSOE_6.1.B',
-    null,
-    null,
+    'ENTSOE_6.1.B' as source_dataset,
+    cast(null as date) as settlement_date,
+    cast(null as integer) as settlement_period,
     publish_time_utc,
     _dlt_load_id
 from {{ ref('stg_entsoe__day_ahead_total_load_forecast') }}

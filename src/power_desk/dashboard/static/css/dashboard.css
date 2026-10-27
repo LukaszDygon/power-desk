@@ -13,20 +13,28 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-dim: #64748b;
+  --text-error: #f43f5e;
+  --status-live: #00e5a3;
 
   --font-display: 'Cabinet Grotesk', -apple-system, sans-serif;
   --font-body: 'Geist', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Functional Energy Palette */
+  /* Energy palette: the header fuel pills and every chart (chart-theme.js reads these).
+     Widget configs name a colour by its chart-theme.js key, e.g. "color": "WIND". */
   --energy-wind: #00e5a3;
   --energy-solar: #f59e0b;
   --energy-nuclear: #818cf8;
   --energy-gas: #f97316;
   --energy-biomass: #84cc16;
   --energy-hydro: #0ea5e9;
+  --energy-storage: #7dd3fc;
+  --energy-coal: #475569;
+  --energy-imports: #94a3b8;
   --energy-demand: #f8fafc;
   --energy-forecast: #c084fc;
+  --energy-delta-positive: #34d399;
+  --energy-delta-negative: #f43f5e;
 }
 
 * {
@@ -83,19 +91,19 @@ body {
   gap: 6px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--energy-wind);
-  background: rgba(0, 229, 163, 0.1);
+  color: var(--status-live);
+  background: color-mix(in srgb, var(--status-live) 10%, transparent);
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 229, 163, 0.2);
+  border: 1px solid color-mix(in srgb, var(--status-live) 20%, transparent);
 }
 
 .status-dot {
   width: 6px;
   height: 6px;
-  background-color: var(--energy-wind);
+  background-color: var(--status-live);
   border-radius: 50%;
-  box-shadow: 0 0 6px var(--energy-wind);
+  box-shadow: 0 0 6px var(--status-live);
 }
 
 .topbar-right {
@@ -196,6 +204,13 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.fuel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 /* GridStack Customizations */
 .grid-container {
   padding: 16px 20px 40px;
@@ -279,6 +294,23 @@ body {
   min-height: 0;
 }
 
+.card-message {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.card-error {
+  color: var(--text-error);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px;
+}
+
 /* KPI Cards Layout */
 .kpi-container {
   display: grid;
@@ -316,7 +348,7 @@ body {
   padding: 1px 4px;
   border-radius: 2px;
   background: #1e293b;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .kpi-value-row {
@@ -451,6 +483,27 @@ body {
   color: var(--text-secondary);
   pointer-events: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.lineage-detail-row {
+  margin-bottom: 4px;
+}
+
+.lineage-detail-key {
+  color: var(--text-dim);
+}
+
+.lineage-detail-layer {
+  color: #38bdf8;
+}
+
+.lineage-detail-desc {
+  color: #cbd5e1;
+  margin-top: 6px;
+}
+
+.dashboard-error {
+  margin: 8px 16px 0;
 }
 
 .lineage-details-panel h4 {

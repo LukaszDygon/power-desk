@@ -10,8 +10,7 @@ import pytest
 
 from power_desk.ingest.seed.load import load_seed
 from power_desk.ingest.seed.replay import SEED_START
-from power_desk.transform.dbt import dbt_args, run_dbt
-from power_desk.transform.loads import pending_load_ids
+from power_desk.transform.dbt import DbtRun
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,7 +31,7 @@ def seeded_warehouse(tmp_path_factory: pytest.TempPathFactory, isolated_env: Pat
     root = tmp_path_factory.mktemp("warehouse")
     db = root / "warehouse.duckdb"
     load_seed(db)
-    assert run_dbt(dbt_args(pending_load_ids(db)), db, target_path=root / "target") == 0
+    assert DbtRun().run_pending(db, target_path=root / "target") == 0
     pytest.MonkeyPatch().setenv("POWER_DESK_DBT_MANIFEST", str(root / "target" / "manifest.json"))
     return db
 

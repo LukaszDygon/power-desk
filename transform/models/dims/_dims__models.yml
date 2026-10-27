@@ -254,18 +254,8 @@ models:
               arguments:
                 to: ref('technologies')
                 field: technology_code
-      - name: fuel_family
-        description: "{{ doc('col_fuel_family') }}"
-      - name: is_fossil
-        description: "{{ doc('col_is_fossil') }}"
-      - name: is_renewable
-        description: "{{ doc('col_is_renewable') }}"
-      - name: is_low_carbon
-        description: "{{ doc('col_is_low_carbon') }}"
-      - name: is_storage
-        description: "{{ doc('col_is_storage') }}"
-      - name: is_interconnector
-        description: "{{ doc('col_is_interconnector') }}"
+      - name: is_zero_carbon
+        description: "{{ doc('col_is_zero_carbon') }}"
 
   - name: bridge_technology_hierarchy
     description: |

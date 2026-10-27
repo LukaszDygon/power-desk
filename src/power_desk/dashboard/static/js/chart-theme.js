@@ -2,22 +2,40 @@
  * Functional Energy Color System & Minimalist Analyst Chart Theme for Chart.js
  */
 
-window.EnergyPalette = {
-  WIND: "#00e5a3",
-  SOLAR: "#f59e0b",
-  NUCLEAR: "#818cf8",
-  CCGT: "#f97316",
-  BIOMASS: "#84cc16",
-  HYDRO: "#0ea5e9",
-  COAL: "#475569",
-  IMPORTS: "#94a3b8",
-  DEMAND_ACTUAL: "#f8fafc",
-  DEMAND_FORECAST: "#c084fc",
-  DELTA_POSITIVE: "#34d399",
-  DELTA_NEGATIVE: "#f43f5e",
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
+// The colours are defined once, in dashboard.css (:root). Widget configs refer to them by these
+// keys (e.g. "color": "WIND"); a config may also give any CSS colour.
+const ENERGY_COLORS = {
+  WIND: cssVar("--energy-wind"),
+  SOLAR: cssVar("--energy-solar"),
+  NUCLEAR: cssVar("--energy-nuclear"),
+  CCGT: cssVar("--energy-gas"),
+  BIOMASS: cssVar("--energy-biomass"),
+  HYDRO: cssVar("--energy-hydro"),
+  STORAGE: cssVar("--energy-storage"),
+  COAL: cssVar("--energy-coal"),
+  IMPORTS: cssVar("--energy-imports"),
+  DEMAND_ACTUAL: cssVar("--energy-demand"),
+  DEMAND_FORECAST: cssVar("--energy-forecast"),
+  DELTA_POSITIVE: cssVar("--energy-delta-positive"),
+  DELTA_NEGATIVE: cssVar("--energy-delta-negative")
+};
+const UNKNOWN_FUEL_COLOR = cssVar("--text-secondary");
+
+window.EnergyPalette = {
+  ...ENERGY_COLORS,
+
+  // A palette key from ENERGY_COLORS, or the value itself as a CSS colour (undefined stays undefined).
+  resolve: function(color) {
+    return ENERGY_COLORS[color] || color;
+  },
+
+  // Colour for a fuel code or label from query results, e.g. "CCGT" or "Hydro / PS".
   getFuelColor: function(fuel) {
-    if (!fuel) return "#94a3b8";
+    if (!fuel) return UNKNOWN_FUEL_COLOR;
     const f = fuel.toUpperCase();
     if (f.includes("WIND")) return this.WIND;
     if (f.includes("SOLAR")) return this.SOLAR;
@@ -27,7 +45,7 @@ window.EnergyPalette = {
     if (f.includes("HYD") || f.includes("PS")) return this.HYDRO;
     if (f.includes("COAL")) return this.COAL;
     if (f.includes("INT")) return this.IMPORTS;
-    return "#94a3b8";
+    return UNKNOWN_FUEL_COLOR;
   }
 };
 

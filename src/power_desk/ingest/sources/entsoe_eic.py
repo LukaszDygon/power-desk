@@ -23,13 +23,14 @@ import hashlib
 from html.parser import HTMLParser
 import io
 import logging
-from typing import Any
+from typing import Any, TypedDict
 
 import dlt
+from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk.ingest import http
-from power_desk.ingest.spec import SourceSpec
+from power_desk.ingest.spec import RunWindow, SourceSpec
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,17 @@ BLOB = "https://eepublicdownloads.blob.core.windows.net/cio-lio/csv"
 CODES_URL = f"{BLOB}/CIO_extraction-all-eic-codes.csv"
 FUNCTIONS_URL = f"{BLOB}/eicFunctions.csv"
 ISSUING_OFFICES_URL = "https://www.entsoe.eu/data/energy-identification-codes-eic/"
-SCD2 = {"disposition": "merge", "strategy": "scd2"}
+SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
+
+
+class SourceFileState(TypedDict):
+    """A snapshot file's latest fetch, kept in its dlt resource state as `source_file`."""
+
+    url: str
+    etag: str | None
+    last_modified: str | None
+    sha256: str | None
+    changed: bool
 
 
 def parse_csv(text: str, delimiter: str) -> list[dict[str, str]]:
@@ -48,51 +59,54 @@ def parse_csv(text: str, delimiter: str) -> list[dict[str, str]]:
 class _IssuingOfficeTable(HTMLParser):
     """Rows of the `LIO Code | Name | Country | Website | EIC site | Email | Operates in` table."""
 
+    LEADING_COLUMNS = 6  # LIO Code .. Email; the `Operates in` icons follow
+
     def __init__(self) -> None:
         super().__init__()
         self.rows: list[dict[str, Any]] = []
-        self._row: dict[str, Any] | None = None
-        self._cell: list[str] = []
-        self._cells: list[dict[str, Any]] = []
+        self._in_row = False
         self._in_cell = False
+        self._cell_text: list[str] = []
+        self._cells: list[dict[str, Any]] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        a = dict(attrs)
-        if tag == "tr" and (a.get("id") or "").isdigit():
-            self._row, self._cells = {}, []
-        elif tag == "td" and self._row is not None:
-            self._in_cell, self._cell = True, []
+        attributes = dict(attrs)
+        if tag == "tr" and (attributes.get("id") or "").isdigit():
+            self._in_row, self._cells = True, []
+        elif tag == "td" and self._in_row:
+            self._in_cell, self._cell_text = True, []
             self._cells.append({"text": "", "href": None, "icons": []})
-        elif self._in_cell and tag == "a" and a.get("href"):
-            self._cells[-1]["href"] = a["href"]
+        elif self._in_cell and tag == "a" and attributes.get("href"):
+            self._cells[-1]["href"] = attributes["href"]
         elif self._in_cell and tag == "i":
-            self._cells[-1]["icons"].append(a.get("class") or "")
+            self._cells[-1]["icons"].append(attributes.get("class") or "")
 
     def handle_data(self, data: str) -> None:
         if self._in_cell:
-            self._cell.append(data)
+            self._cell_text.append(data)
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "td" and self._in_cell:
-            self._cells[-1]["text"] = "".join(self._cell).replace("​", "").strip()
+            self._cells[-1]["text"] = "".join(self._cell_text).replace("​", "").strip()
             self._in_cell = False
-        elif tag == "tr" and self._row is not None:
-            c = self._cells
-            if len(c) >= 6:
-                icons = " ".join(i for cell in c[6:] for i in cell["icons"])
-                self.rows.append(
-                    {
-                        "lio_code": c[0]["text"],
-                        "name": c[1]["text"],
-                        "country": c[2]["text"],
-                        "website": c[3]["href"],
-                        "eic_site": c[4]["href"],
-                        "email": (c[5]["href"] or "").removeprefix("mailto:") or None,
-                        "electricity": "ee-icon-elec" in icons,
-                        "gas": "ee-icon-gas" in icons,
-                    }
-                )
-            self._row = None
+        elif tag == "tr" and self._in_row:
+            if len(self._cells) >= self.LEADING_COLUMNS:
+                self.rows.append(self._issuing_office(self._cells))
+            self._in_row = False
+
+    def _issuing_office(self, cells: list[dict[str, Any]]) -> dict[str, Any]:
+        code, name, country, website, eic_site, email = cells[: self.LEADING_COLUMNS]
+        operates_in = " ".join(icon for cell in cells[self.LEADING_COLUMNS :] for icon in cell["icons"])
+        return {
+            "lio_code": code["text"],
+            "name": name["text"],
+            "country": country["text"],
+            "website": website["href"],
+            "eic_site": eic_site["href"],
+            "email": (email["href"] or "").removeprefix("mailto:") or None,
+            "electricity": "ee-icon-elec" in operates_in,
+            "gas": "ee-icon-gas" in operates_in,
+        }
 
 
 def parse_issuing_offices(page_html: str) -> list[dict[str, Any]]:
@@ -123,25 +137,23 @@ def changed_rows(snapshot: Snapshot) -> Iterator[list[dict[str, Any]]]:
     previous = state.get("source_file", {})
     text, validators = http.fetch_if_changed(snapshot.url, etag=previous.get("etag") or None)
     digest = hashlib.sha256(text.encode()).hexdigest() if text is not None else previous.get("sha256")
-    changed = text is not None and digest != previous.get("sha256")
-    state["source_file"] = {
-        "url": snapshot.url,
-        **previous,
-        **{k: v for k, v in validators.items() if v},
-        "sha256": digest,
-        "changed": changed,
-    }
-    if changed:
-        rows = snapshot.parse(text)
+    new_text = text if digest != previous.get("sha256") else None
+    state["source_file"] = SourceFileState(
+        url=snapshot.url,
+        etag=validators.get("etag") or previous.get("etag"),
+        last_modified=validators.get("last_modified") or previous.get("last_modified"),
+        sha256=digest,
+        changed=new_text is not None,
+    )
+    if new_text is not None:
+        rows = snapshot.parse(new_text)
         logger.info("%s: %d rows from %s", snapshot.resource, len(rows), snapshot.url)
         yield rows
 
 
 @dlt.source(name="entsoe_eic")
-def entsoe_eic_source(
-    initial_date: str | None = None, end_date: str | None = None, max_days_per_run: int | None = None
-) -> list[DltResource]:
-    """Snapshots ignore the date arguments of the shared source interface."""
+def entsoe_eic_source(window: RunWindow | None = None) -> list[DltResource]:
+    """Snapshots ignore the run window of the shared source interface."""
     return [
         dlt.resource(changed_rows(snapshot), name=snapshot.resource, write_disposition=SCD2) for snapshot in SNAPSHOTS
     ]

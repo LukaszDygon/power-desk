@@ -20,6 +20,9 @@ def load_seed(db_path: Path | str | None = None, publishers: SeedPublishers | No
     """A bounded backfill of the seed week per source, served by the replayed publishers."""
     with replay(publishers):
         return [
-            run(make_pipeline(name, db_path, export_schema=False), make_source(name, SEED_START, seed_end_date()))
-            for name in SOURCES
+            run(
+                make_pipeline(name, db_path, schemas_dir=None),
+                make_source(name, spec.window(SEED_START, seed_end_date())),
+            )
+            for name, spec in SOURCES.items()
         ]

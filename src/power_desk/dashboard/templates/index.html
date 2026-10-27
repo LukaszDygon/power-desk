@@ -66,12 +66,12 @@
 
     <div class="filter-group" style="gap:6px;">
       <span class="filter-label">Fuels:</span>
-      <span class="fuel-pill active" style="color:#00e5a3;"><span style="width:6px;height:6px;border-radius:50%;background:#00e5a3;"></span>Wind</span>
-      <span class="fuel-pill active" style="color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>Solar</span>
-      <span class="fuel-pill active" style="color:#818cf8;"><span style="width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>Nuclear</span>
-      <span class="fuel-pill active" style="color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>CCGT</span>
-      <span class="fuel-pill active" style="color:#84cc16;"><span style="width:6px;height:6px;border-radius:50%;background:#84cc16;"></span>Biomass</span>
-      <span class="fuel-pill active" style="color:#0ea5e9;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;"></span>Hydro</span>
+      <span class="fuel-pill active" style="color: var(--energy-wind)"><span class="fuel-dot"></span>Wind</span>
+      <span class="fuel-pill active" style="color: var(--energy-solar)"><span class="fuel-dot"></span>Solar</span>
+      <span class="fuel-pill active" style="color: var(--energy-nuclear)"><span class="fuel-dot"></span>Nuclear</span>
+      <span class="fuel-pill active" style="color: var(--energy-gas)"><span class="fuel-dot"></span>CCGT</span>
+      <span class="fuel-pill active" style="color: var(--energy-biomass)"><span class="fuel-dot"></span>Biomass</span>
+      <span class="fuel-pill active" style="color: var(--energy-hydro)"><span class="fuel-dot"></span>Hydro</span>
     </div>
   </section>
 
@@ -94,13 +94,14 @@
         <div id="cy-lineage"></div>
         <div class="lineage-details-panel" id="lineage-node-details">
           <h4>Select a Node</h4>
-          <p style="color:#64748b;">Click any pipeline stage or view above to inspect its metadata, layer, and description.</p>
+          <p class="lineage-detail-key">Click any pipeline stage or view above to inspect its metadata, layer, and description.</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Dashboard Scripts -->
+  <script src="/static/js/html.js"></script>
   <script src="/static/js/chart-theme.js"></script>
   <script src="/static/js/lineage.js"></script>
   <script src="/static/js/dashboard.js"></script>

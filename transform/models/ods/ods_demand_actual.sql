@@ -18,9 +18,9 @@ select
     interval_minutes,
     area_eic_code,
     demand_mw,
-    'ENTSOE_6.1.A',
-    null,
-    null,
+    'ENTSOE_6.1.A' as source_dataset,
+    cast(null as date) as settlement_date,
+    cast(null as integer) as settlement_period,
     publish_time_utc,
     _dlt_load_id
 from {{ ref('stg_entsoe__actual_total_load') }}

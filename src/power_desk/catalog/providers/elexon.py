@@ -13,6 +13,7 @@ import html
 import re
 from typing import Any
 
+from power_desk.catalog import CatalogError
 from power_desk.ingest.http import fetch_json, fetch_text
 
 NAME = "elexon"
@@ -92,7 +93,7 @@ def parse_glossary_page(page_html: str, title: str) -> dict[str, str]:
 def glossary_term(slug: str) -> dict[str, str]:
     matches = fetch_json(GLOSSARY_API, params={"slug": slug, "_fields": "title,link,modified"})
     if not matches:
-        raise KeyError(f"BSC glossary has no term with slug {slug!r}")
+        raise CatalogError(f"BSC glossary has no term with slug {slug!r}")
     entry = matches[0]
     title = html.unescape(entry["title"]["rendered"])
     return {
@@ -109,4 +110,4 @@ def fetch(kind: str, ids: list[str]) -> dict[str, dict[str, str]]:
         return dataset_definitions(fetch_json(OPENAPI_URL), ids)
     if kind == "glossary":
         return {slug: glossary_term(slug) for slug in ids}
-    raise KeyError(f"{NAME}: unknown kind {kind!r} (expected one of {sorted(LABELS)})")
+    raise CatalogError(f"{NAME}: unknown kind {kind!r} (expected one of {sorted(LABELS)})")
