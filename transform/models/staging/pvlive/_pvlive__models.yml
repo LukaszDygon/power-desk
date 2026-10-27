@@ -1,0 +1,28 @@
+models:
+  - name: stg_pvlive__solar
+    description: |
+      PVLive national solar generation per half hour, keyed on the half-hour start and
+      mapped onto UK settlement periods.
+
+      {{ doc('dataset_pvlive') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_pvlive__solar_unique_key
+          arguments:
+            columns: [timestamp_utc]
+      - no_missing_settlement_periods:
+          name: stg_pvlive__solar_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: generation_mw
+        description: "{{ doc('col_pvlive_generation') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

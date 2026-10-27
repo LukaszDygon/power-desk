@@ -9,7 +9,7 @@ from power_desk.app import app
 
 
 @pytest.fixture
-def client():
+def client(dashboard_db):
     return TestClient(app)
 
 
@@ -26,8 +26,8 @@ def test_api_filters(client):
     data = response.json()
     assert "min_date" in data
     assert "max_date" in data
-    assert "WIND" in data["fuel_types"]
-    assert "CCGT" in data["fuel_types"]
+    assert {"WIND", "CCGT", "SOLAR"} <= set(data["fuel_types"])
+    assert (data["min_date"], data["max_date"]) == ("2024-03-01", "2024-03-07")
 
 
 def test_api_lineage(client):
@@ -37,9 +37,14 @@ def test_api_lineage(client):
     assert "nodes" in data
     assert "edges" in data
     node_ids = {n["id"] for n in data["nodes"]}
-    assert "raw_fuelinst" in node_ids
-    assert "ods_generation_actual" in node_ids
-    assert "mart_generation_mix" in node_ids
+    assert {"raw_fuelinst", "raw_pvlive_solar", "ods_generation_actual", "mart_generation_mix"} <= node_ids
+    edges = {(e["source"], e["target"]) for e in data["edges"]}
+    assert ("api_raw_fuelinst", "raw_fuelinst") in edges
+    assert ("raw_pvlive_solar", "stg_pvlive__solar") in edges
+    # an entity unions the staging models of every source that provides it
+    assert {("stg_bmrs__fuelinst", "ods_generation_actual"), ("stg_pvlive__solar", "ods_generation_actual")} <= edges
+    assert ("ods_generation_actual", "mart_generation_mix") in edges
+    assert ("mart_generation_mix", "widget_generation_mix_timeseries") in edges
 
 
 def test_api_query_safe_select(client):

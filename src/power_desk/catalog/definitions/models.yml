@@ -1,0 +1,82 @@
+# Entity (ods), mart and reference-data columns. Shared across sources: an entity column
+# keeps one meaning whichever source feeds it.
+columns:
+  generation_mw:
+    description: Generation for the fuel type in MW, averaged over the 5-minute interval (PVLive half
+      hours spread over their six intervals).
+    refs:
+    - elexon:glossary/instantaneous-generation-by-fuel-type
+  national_demand_mw:
+    description: Initial National Demand Outturn for the settlement period, in MW.
+    refs:
+    - elexon:glossary/initial-national-demand-out-turn
+  transmission_demand_mw:
+    description: Initial Transmission System Demand Outturn for the settlement period, in MW.
+    refs:
+    - elexon:glossary/initial-transmission-system-demand-out-turn
+  forecast_demand_mw:
+    description: Latest published National Demand Forecast for the settlement period, in MW.
+    refs:
+    - elexon:glossary/national-demand-forecast
+  forecast_wind_mw:
+    description: Latest published wind generation forecast for the hour, in MW.
+    refs:
+    - elexon:glossary/wind-generation-forecast
+  wind_mw:
+    description: Generation from fuel type WIND, in MW.
+  solar_mw:
+    description: Solar generation from PVLive (fuel type SOLAR), in MW.
+  nuclear_mw:
+    description: Generation from fuel type NUCLEAR, in MW.
+  ccgt_gas_mw:
+    description: Generation from combined-cycle gas turbines (fuel type CCGT), in MW.
+  biomass_mw:
+    description: Generation from fuel type BIOMASS, in MW.
+  hydro_mw:
+    description: Hydro generation, run-of-river (NPSHYD) plus pumped storage (PS), in MW. Negative while
+      pumping.
+  coal_mw:
+    description: Generation from fuel type COAL, in MW.
+  imports_mw:
+    description: Net interconnector flow, the sum of all `INT*` fuel types, in MW. Negative when GB exports.
+    refs:
+    - elexon:glossary/interconnector
+  other_fossil_mw:
+    description: Generation from OCGT, OIL and OTHER fuel types, in MW.
+  total_generation_mw:
+    description: Sum over all fuel types including net interconnector flows, in MW.
+  clean_share_pct:
+    description: 'Zero-carbon share: (wind + solar + nuclear + biomass + hydro) / total generation x 100.
+      Can exceed 100 at night, when exports and pumping make the total smaller than the zero-carbon sum.'
+  actual_demand_mw:
+    description: Initial National Demand Outturn for the settlement period, in MW.
+    refs:
+    - elexon:glossary/initial-national-demand-out-turn
+  delta_mw:
+    description: Actual minus forecast national demand, in MW (positive = demand above forecast).
+  absolute_error_pct:
+    description: Absolute forecast error as a percentage of actual national demand.
+  hour_utc:
+    description: Start of the hour (UTC).
+  date_utc:
+    description: UTC calendar date of the hour.
+  avg_demand_mw:
+    description: Hourly mean of actual national demand (INDO), in MW.
+  avg_forecast_demand_mw:
+    description: Hourly mean of forecast national demand (NDF), in MW.
+  avg_generation_mw:
+    description: Hourly mean of total generation, in MW.
+  avg_wind_mw:
+    description: Hourly mean of wind generation, in MW.
+  avg_solar_mw:
+    description: Hourly mean of solar generation, in MW.
+  avg_nuclear_mw:
+    description: Hourly mean of nuclear generation, in MW.
+  avg_gas_mw:
+    description: Hourly mean of CCGT generation, in MW.
+  avg_clean_share_pct:
+    description: Hourly mean of the zero-carbon share, in percent.
+  peak_demand_mw:
+    description: Highest settlement-period national demand within the hour, in MW.
+  min_demand_mw:
+    description: Lowest settlement-period national demand within the hour, in MW.

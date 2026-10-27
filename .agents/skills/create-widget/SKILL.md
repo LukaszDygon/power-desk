@@ -2,133 +2,67 @@
 name: create-widget
 description: >-
   Generates, validates, and registers a new analytical card/widget into the
-  Power Desk GridStack dashboard backed by DuckDB ODS and Marts views.
+  Power Desk GridStack dashboard, backed by a SQL query over the dbt marts / ods models.
 ---
 
 # Create Widget Skill
 
-Allows an AI agent to build a new interactive analytical card in the **Power Desk** dashboard.
+Each dashboard card is a widget spec (stored in `data/widgets.json`): a DuckDB query plus a
+visual config. Unqualified names resolve against the `marts`, `ods`, `dims` and `raw` schemas.
 
-## Overview
-Power Desk uses a high-density, resizable grid layout (GridStack.js) where each card executes a DuckDB query against the clean ODS or Marts views.
+## 1. Find the data
 
-Available Views to query:
-- `mart_generation_mix`: `timestamp_utc`, `settlement_date`, `settlement_period`, `wind_mw`, `solar_mw`, `nuclear_mw`, `ccgt_gas_mw`, `biomass_mw`, `hydro_mw`, `coal_mw`, `imports_mw`, `total_generation_mw`, `clean_share_pct`
-- `mart_demand_vs_forecast`: `timestamp_utc`, `settlement_date`, `settlement_period`, `actual_demand_mw`, `forecast_demand_mw`, `delta_mw`, `absolute_error_pct`
-- `mart_hourly_summary`: `hour_utc`, `date_utc`, `avg_demand_mw`, `avg_forecast_demand_mw`, `avg_generation_mw`, `avg_wind_mw`, `avg_solar_mw`, `avg_nuclear_mw`, `avg_gas_mw`, `avg_clean_share_pct`, `peak_demand_mw`, `min_demand_mw`
-- `ods_generation_actual`: `timestamp_utc`, `settlement_date`, `settlement_period`, `fuel_type`, `generation_mw`, `publish_time_utc`
-- `ods_demand_actual`: `timestamp_utc`, `settlement_date`, `settlement_period`, `national_demand_mw`
+Never assume relation or column names; read them from the catalogue:
 
-## Widget Types & Configs
+```bash
+uv run python -m power_desk.catalog.describe                # relations by layer, with descriptions
+uv run python -m power_desk.catalog.describe <relation>     # columns, units and definitions
+```
 
-### 1. `stacked_area` (or `line`)
-Time-series charts using Chart.js with functional energy colors:
+- Prefer `marts` (business grain, incremental, tested), then `ods` entities.
+- Avoid `staging` and `raw`: they are source-specific and may change.
+- Join `dims` tables for labels and roll-ups (e.g. `bridge_*_hierarchy` to aggregate to a broader level).
+- Columns starting with `_` are lineage metadata. Don't chart them.
+
+## 2. Write the query
+
+- Start with `SELECT` or `WITH`; anything else is rejected.
+- Filter on the dashboard's global date range with the placeholders `'{start_date}'` and
+  `'{end_date}'`, against the relation's date column.
+- Order time series by their time column.
+
+## 3. Pick a type and config
+
+| `type` | Use for | `config` keys (defaults: first / second result column) |
+|---|---|---|
+| `line`, `stacked_area` | time series | `time_column`, `series: [{column, label, color?}]` |
+| `bar` | categories, periods, deltas | `x_column`, `y_column` |
+| `donut` | shares of a total | `label_column`, `value_column` |
+| `kpi_cards` | headline numbers (one row) | `metrics: [{key, label, unit?, badge?, trend?}]` |
+| `table` | dense inspection | `columns: [{key, label}]` (optional) |
+
+`grid` sets the card's position and size on a 12-column grid: `{x, y, w, h}`.
+
+Spec shape:
+
 ```json
 {
-  "id": "my_timeseries",
-  "title": "Clean Generation Breakdown",
-  "type": "stacked_area",
+  "id": "unique_slug",
+  "title": "Card title",
+  "type": "line",
+  "description": "What the card shows",
   "grid": { "x": 0, "y": 0, "w": 6, "h": 4 },
-  "sql": "SELECT timestamp_utc, wind_mw, solar_mw, nuclear_mw FROM mart_generation_mix WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' ORDER BY timestamp_utc ASC",
-  "config": {
-    "time_column": "timestamp_utc",
-    "series": [
-      { "column": "wind_mw", "label": "Wind", "color": "#00e5a3" },
-      { "column": "solar_mw", "label": "Solar", "color": "#f59e0b" },
-      { "column": "nuclear_mw", "label": "Nuclear", "color": "#818cf8" }
-    ]
-  }
+  "sql": "SELECT <time_col>, <measure> FROM <relation> WHERE <date_col> >= '{start_date}' AND <date_col> <= '{end_date}' ORDER BY <time_col>",
+  "config": { "time_column": "<time_col>", "series": [{ "column": "<measure>", "label": "<Label>" }] }
 }
 ```
 
-### 2. `bar`
-Variance, delta, or discrete period comparisons:
-```json
-{
-  "id": "period_variance",
-  "title": "Peak Imbalance by Period",
-  "type": "bar",
-  "grid": { "x": 6, "y": 0, "w": 6, "h": 4 },
-  "sql": "SELECT settlement_period, ROUND(AVG(delta_mw), 1) as avg_delta FROM mart_demand_vs_forecast WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' GROUP BY settlement_period ORDER BY settlement_period",
-  "config": {
-    "x_column": "settlement_period",
-    "y_column": "avg_delta"
-  }
-}
+## 4. Register and validate
+
+```bash
+uv run python scripts/register_widget.py --json-file <spec.json>
+# or: --id ... --title ... --type ... --sql ... --config '<json>' [--w 6 --h 4]
 ```
 
-### 3. `donut`
-Categorical share / fuel mix breakdown:
-```json
-{
-  "id": "fuel_donut",
-  "title": "Energy Mix",
-  "type": "donut",
-  "grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
-  "sql": "SELECT fuel_type, SUM(generation_mw) as total FROM ods_generation_actual WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' GROUP BY fuel_type",
-  "config": {
-    "label_column": "fuel_type",
-    "value_column": "total"
-  }
-}
-```
-
-### 4. `kpi_cards`
-Top-level metrics with units and badges:
-```json
-{
-  "id": "grid_kpis",
-  "title": "System Summary",
-  "type": "kpi_cards",
-  "grid": { "x": 0, "y": 0, "w": 12, "h": 2 },
-  "sql": "SELECT ROUND(AVG(clean_share_pct), 1) as clean_pct, ROUND(MAX(total_generation_mw)) as max_gen FROM mart_generation_mix WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'",
-  "config": {
-    "metrics": [
-      { "key": "clean_pct", "label": "Zero-Carbon Share", "unit": "%", "badge": "ESG" },
-      { "key": "max_gen", "label": "Peak Generation", "unit": "MW", "badge": "GRID" }
-    ]
-  }
-}
-```
-
-### 5. `table`
-High-density tabular ledger:
-```json
-{
-  "id": "recent_records",
-  "title": "Latest Dispatches",
-  "type": "table",
-  "grid": { "x": 0, "y": 0, "w": 12, "h": 4 },
-  "sql": "SELECT hour_utc, avg_demand_mw, avg_generation_mw, avg_clean_share_pct FROM mart_hourly_summary WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}' ORDER BY hour_utc DESC LIMIT 20",
-  "config": {
-    "columns": [
-      { "key": "hour_utc", "label": "Hour (UTC)" },
-      { "key": "avg_demand_mw", "label": "Demand (MW)" },
-      { "key": "avg_generation_mw", "label": "Generation (MW)" },
-      { "key": "avg_clean_share_pct", "label": "Clean %" }
-    ]
-  }
-}
-```
-
-## Workflow
-
-1. **Design the SQL Query**:
-   Target `mart_*` or `ods_*` views. Always include date placeholders `{start_date}` and `{end_date}` so the widget reacts to the dashboard's global filter bar.
-2. **Select the Visualization**:
-   Choose the appropriate widget type and define the `config` field mappings.
-3. **Register & Validate**:
-   Run the CLI validator to ensure the SQL query is valid before saving:
-   ```bash
-   uv run python scripts/register_widget.py --json-file <path_to_widget_spec.json>
-   ```
-   Or pass parameters directly:
-   ```bash
-   uv run python scripts/register_widget.py \
-     --id "solar_curtailment_est" \
-     --title "Solar vs Gas Daytime Co-generation" \
-     --type "line" \
-     --sql "SELECT timestamp_utc, solar_mw, ccgt_gas_mw FROM mart_generation_mix WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' ORDER BY timestamp_utc"
-   ```
-4. **Confirm**:
-   The widget is immediately persisted into `data/widgets.json` and rendered in the dashboard.
+The script runs the query over the loaded date range and saves the spec only if it succeeds. The card then
+appears on the dashboard, and in the lineage view as a consumer of the relations it queries.

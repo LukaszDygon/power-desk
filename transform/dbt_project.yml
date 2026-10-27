@@ -1,0 +1,62 @@
+name: power_desk
+version: "1.0.0"
+profile: power_desk
+
+model-paths: [models]
+macro-paths: [macros]
+seed-paths: [seeds]
+test-paths: [tests]
+target-path: target
+clean-targets: [target]
+
+vars:
+  # First date the warehouse must cover; completeness tests start here.
+  backfill_start_date: "{{ env_var('POWER_DESK_START_DATE', '2024-01-01') }}"
+  # Set by the orchestrator (see macros/dlt_loads.sql):
+  #   dlt_load_ids: explicit list of dlt load ids this invocation processes
+  #   dlt_scope: "recent" (default, tests see only pending loads) | "all"
+  #   orchestrator_run_id: Dagster run id, recorded in dlt_meta.dlt_load_audit
+
+on-run-end:
+  - "{{ dlt_mark_loads_processed(results) }}"
+
+models:
+  power_desk:
+    dlt_meta:
+      +schema: dlt_meta
+      +materialized: view
+    # staging/<source>/: 1:1 typed views over one source's raw tables (stg_<source>__<table>)
+    staging:
+      +schema: staging
+      +materialized: view
+      +meta:
+        dlt_recent_column: _dlt_load_id
+    # ods/: source-agnostic entities; each unions the staging models that provide it
+    ods:
+      +schema: ods
+      +materialized: view
+      +meta:
+        dlt_recent_column: _dlt_load_id
+    # dims/: conformed dimensions + hierarchy bridges (reference data, every version kept)
+    dims:
+      +schema: dims
+      +materialized: table
+    # marts/: incremental business tables built on ods entities
+    marts:
+      +schema: marts
+      +materialized: incremental
+      +incremental_strategy: delete+insert
+      +meta:
+        dlt_tracked: true
+        dlt_recent_column: _last_dlt_load_id
+
+# Curated dimensions (seeds/dims) and publisher-code mappings (seeds/mappings) live in the
+# same schema as the published dimensions they extend.
+seeds:
+  power_desk:
+    +schema: dims
+
+data_tests:
+  power_desk:
+    +store_failures: true
+    +schema: test_failures

@@ -1,0 +1,11 @@
+border_area_eic_code,area_from_eic_code,area_to_eic_code,interconnector,is_hvdc
+10Y1001C--001065,10YGB----------A,10YFR-RTE------C,IFA,true
+10Y1001C--00093P,10YGB----------A,10YFR-RTE------C,IFA2,true
+10Y1001C--00097H,10YGB----------A,10YFR-RTE------C,ElecLink,true
+10Y1001C--000190,10YGB----------A,10YBE----------2,Nemo Link,true
+10YDOM-1001A0028,10YGB----------A,10YNL----------L,BritNed,true
+10Y1001C--001405,10YGB----------A,10YNO-2--------T,North Sea Link,true
+45Y000000000009X,10YGB----------A,10YDK-1--------W,Viking Link,true
+10YDOM-1010A024Y,10YGB----------A,10Y1001A1001A59C,Moyle,true
+10YDOM-1010A025W,10YGB----------A,10Y1001A1001A59C,East West Interconnector,true
+10Y1001C--001502,10YGB----------A,10Y1001A1001A59C,Greenlink,true

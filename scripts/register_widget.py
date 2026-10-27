@@ -13,9 +13,10 @@ from power_desk.widgets import add_or_update_widget
 
 
 def validate_sql(sql: str) -> dict:
-    """Verifies that the SQL executes against DuckDB with sample dates."""
+    """Verifies that the SQL executes against DuckDB over the warehouse's loaded date range."""
     db = get_db()
-    test_sql = sql.replace("{start_date}", "2024-03-01").replace("{end_date}", "2024-03-07")
+    options = db.get_filter_options()
+    test_sql = sql.replace("{start_date}", options["min_date"]).replace("{end_date}", options["max_date"])
     return db.execute_query(test_sql)
 
 

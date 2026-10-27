@@ -1,0 +1,79 @@
+# Platform-wide definitions: freshness presets, dlt engine tables, lineage and audit columns,
+# and columns every staging / entity model shares.
+freshness:
+  actuals:
+    warn_after:
+      count: 2
+      period: hour
+    error_after:
+      count: 6
+      period: hour
+  forecasts:
+    warn_after:
+      count: 6
+      period: hour
+    error_after:
+      count: 24
+      period: hour
+dlt_tables:
+  _dlt_loads: One row per dlt load package; `status = 0` marks a completed load.
+  _dlt_pipeline_state: Versioned dlt pipeline state, including incremental cursors; dlt restores it from
+    here, so runs resume from the warehouse even when the local pipeline directory is gone.
+columns:
+  _dlt_load_id:
+    description: dlt load package that last wrote the row; joins to `dlt_meta.dlt_loads.load_id`. dbt
+      processes and tests only rows from pending load ids.
+  _dlt_id:
+    description: dlt row key, unique per row.
+  load_id:
+    description: dlt load package id (epoch seconds as text), stamped on every row as `_dlt_load_id`.
+  schema_name:
+    description: dlt schema (pipeline source) that produced the load, e.g. `bmrs`, `pvlive`.
+  status:
+    description: dlt load status; 0 = completed. Only completed loads are processed by dbt.
+  inserted_at:
+    description: Time dlt recorded the load in `_dlt_loads`.
+  loaded_at:
+    description: Load time derived from the load id.
+  schema_version_hash:
+    description: Hash of the dlt schema version used by the load.
+  model_name:
+    description: Tracked dbt model (a mart) that processed the load.
+  dbt_invocation_id:
+    description: dbt invocation that processed the load.
+  orchestrator_run_id:
+    description: Dagster run that triggered the dbt invocation (empty for manual runs).
+  processed_at:
+    description: Time the load was marked processed for the model.
+  pipeline_name:
+    description: dlt pipeline the state belongs to.
+  version:
+    description: Version counter of the stored record.
+  engine_version:
+    description: dlt engine version that wrote the record.
+  state:
+    description: Compressed dlt pipeline state, including the incremental cursors and last fetch windows.
+  created_at:
+    description: Time the state version was written.
+  version_hash:
+    description: Content hash of the stored state.
+  _source_rows:
+    description: Number of upstream rows aggregated into this row (fan-out guard).
+  _fuel_types:
+    description: Distinct fuel types aggregated into this row; equals `_source_rows` unless a fuel is
+      duplicated.
+  _last_dlt_load_id:
+    description: Latest dlt load id that contributed to this row; drives incremental rebuilds and test
+      scoping.
+  _dbt_invocation_id:
+    description: dbt invocation that last (re)built this row; joins to `dlt_meta.dlt_load_audit.dbt_invocation_id`.
+  _dbt_updated_at:
+    description: Time this row was last (re)built.
+  timestamp_utc:
+    description: Start of the row's interval as a UTC timestamp; the interval length is the model's grain
+      (see the model description).
+  publish_time_utc:
+    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+  source_dataset:
+    description: Source feed (dataset code) the row comes from. Entity models union the staging models
+      of every source that provides the entity.

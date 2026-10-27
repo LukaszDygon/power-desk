@@ -1,0 +1,314 @@
+models:
+  - name: dim_eic_code
+    description: |
+      Every EIC (all object types), one row per published version.
+
+      {{ doc('dataset_eic_codes') }}
+    data_tests:
+      - dlt_unique:
+          name: dim_eic_code_unique_version
+          arguments:
+            columns: [eic_code, valid_from]
+    columns:
+      - name: eic_code
+        description: "{{ doc('col_eic_code') }}"
+      - name: eic_type
+        description: "{{ doc('col_eic_type') }}"
+      - name: eic_type_name
+        description: "{{ doc('col_eic_type_name') }}"
+      - name: issuing_office_code
+        description: "{{ doc('col_issuing_office_code') }}"
+      - name: issuing_office_name
+        description: "{{ doc('col_issuing_office_name') }}"
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: parent_eic_code
+        description: "{{ doc('col_parent_eic_code') }}"
+      - name: responsible_party_eic_code
+        description: "{{ doc('col_responsible_party_eic_code') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: roles
+        description: "{{ doc('col_roles') }}"
+      - name: has_valid_check_character
+        description: "{{ doc('col_has_valid_check_character') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: dim_area
+    description: |
+      Areas at every granularity (EIC object type Y), one row per version, with flags for common roles.
+    data_tests:
+      - dlt_unique:
+          name: dim_area_unique_version
+          arguments:
+            columns: [area_eic_code, valid_from]
+    columns:
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: roles
+        description: "{{ doc('col_roles') }}"
+      - name: is_bidding_zone
+        description: "{{ doc('col_is_bidding_zone') }}"
+      - name: is_control_area
+        description: "{{ doc('col_is_control_area') }}"
+      - name: is_scheduling_area
+        description: "{{ doc('col_is_scheduling_area') }}"
+      - name: is_market_balance_area
+        description: "{{ doc('col_is_market_balance_area') }}"
+      - name: is_lfc_area
+        description: "{{ doc('col_is_lfc_area') }}"
+      - name: is_lfc_block
+        description: "{{ doc('col_is_lfc_block') }}"
+      - name: is_member_state
+        description: "{{ doc('col_is_member_state') }}"
+      - name: is_synchronous_area
+        description: "{{ doc('col_is_synchronous_area') }}"
+      - name: is_capacity_calculation_region
+        description: "{{ doc('col_is_capacity_calculation_region') }}"
+      - name: is_border_area
+        description: "{{ doc('col_is_border_area') }}"
+      - name: is_bidding_zone_border
+        description: "{{ doc('col_is_bidding_zone_border') }}"
+      - name: is_market_area
+        description: "{{ doc('col_is_market_area') }}"
+      - name: is_metering_grid_area
+        description: "{{ doc('col_is_metering_grid_area') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: bridge_area_role
+    description: |
+      Area x role, per area version, with the role's official definition.
+    data_tests:
+      - dlt_unique:
+          name: bridge_area_role_unique
+          arguments:
+            columns: [area_eic_code, valid_from, role]
+    columns:
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: role
+        description: "{{ doc('col_role') }}"
+      - name: role_definition
+        description: "{{ doc('col_role_definition') }}"
+
+  - name: bridge_area_hierarchy
+    description: |
+      Each current area with itself and every containing area.
+    data_tests:
+      - dlt_unique:
+          name: bridge_area_hierarchy_unique
+          arguments:
+            columns: [area_eic_code, ancestor_area_eic_code]
+    columns:
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: ancestor_area_eic_code
+        description: "{{ doc('col_ancestor_area_eic_code') }}"
+      - name: depth
+        description: "{{ doc('col_depth') }}"
+
+  - name: dim_border
+    description: |
+      Borders between areas, with the connected areas where known.
+    data_tests:
+      - dlt_unique:
+          name: dim_border_unique_version
+          arguments:
+            columns: [border_area_eic_code, valid_from]
+    columns:
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: area_from_eic_code
+        description: "{{ doc('col_area_from_eic_code') }}"
+      - name: area_to_eic_code
+        description: "{{ doc('col_area_to_eic_code') }}"
+      - name: interconnector
+        description: "{{ doc('col_interconnector') }}"
+      - name: is_hvdc
+        description: "{{ doc('col_is_hvdc') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: dim_party
+    description: |
+      Parties (EIC object type X), one row per version.
+    data_tests:
+      - dlt_unique:
+          name: dim_party_unique_version
+          arguments:
+            columns: [party_eic_code, valid_from]
+    columns:
+      - name: party_eic_code
+        description: "{{ doc('col_party_eic_code') }}"
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: roles
+        description: "{{ doc('col_roles') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: dim_resource
+    description: |
+      Resource objects (EIC object type W), one row per version.
+    data_tests:
+      - dlt_unique:
+          name: dim_resource_unique_version
+          arguments:
+            columns: [resource_eic_code, valid_from]
+    columns:
+      - name: resource_eic_code
+        description: "{{ doc('col_resource_eic_code') }}"
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: roles
+        description: "{{ doc('col_roles') }}"
+      - name: parent_resource_eic_code
+        description: "{{ doc('col_parent_resource_eic_code') }}"
+      - name: responsible_party_eic_code
+        description: "{{ doc('col_responsible_party_eic_code') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: bridge_resource_hierarchy
+    description: |
+      Each current resource with itself and every containing resource.
+    data_tests:
+      - dlt_unique:
+          name: bridge_resource_hierarchy_unique
+          arguments:
+            columns: [resource_eic_code, ancestor_eic_code]
+    columns:
+      - name: resource_eic_code
+        description: "{{ doc('col_resource_eic_code') }}"
+      - name: ancestor_eic_code
+        description: "{{ doc('col_ancestor_eic_code') }}"
+      - name: depth
+        description: "{{ doc('col_depth') }}"
+
+  - name: dim_technology
+    description: |
+      Canonical technologies, a tree from broad groups to specific technologies.
+    data_tests:
+      - dlt_unique:
+          name: dim_technology_unique
+          arguments:
+            columns: [technology_code]
+    columns:
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: parent_technology_code
+        description: "{{ doc('col_parent_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: dim_technology_known_parent
+              arguments:
+                to: ref('technologies')
+                field: technology_code
+      - name: fuel_family
+        description: "{{ doc('col_fuel_family') }}"
+      - name: is_fossil
+        description: "{{ doc('col_is_fossil') }}"
+      - name: is_renewable
+        description: "{{ doc('col_is_renewable') }}"
+      - name: is_low_carbon
+        description: "{{ doc('col_is_low_carbon') }}"
+      - name: is_storage
+        description: "{{ doc('col_is_storage') }}"
+      - name: is_interconnector
+        description: "{{ doc('col_is_interconnector') }}"
+
+  - name: bridge_technology_hierarchy
+    description: |
+      Each technology with itself and every broader group.
+    data_tests:
+      - dlt_unique:
+          name: bridge_technology_hierarchy_unique
+          arguments:
+            columns: [technology_code, ancestor_technology_code]
+    columns:
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+      - name: ancestor_technology_code
+        description: "{{ doc('col_ancestor_technology_code') }}"
+      - name: depth
+        description: "{{ doc('col_depth') }}"
+
+  - name: dim_source_dataset
+    description: |
+      Published datasets and code lists, with the entity they feed, native grain and default area.
+    data_tests:
+      - dlt_unique:
+          name: dim_source_dataset_unique
+          arguments:
+            columns: [source_dataset]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source
+        description: "{{ doc('col_source') }}"
+      - name: kind
+        description: "{{ doc('col_kind') }}"
+      - name: publisher
+        description: "{{ doc('col_publisher') }}"
+      - name: entity
+        description: "{{ doc('col_entity') }}"
+      - name: native_interval_minutes
+        description: "{{ doc('col_native_interval_minutes') }}"
+      - name: default_area_eic_code
+        description: "{{ doc('col_default_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: dim_source_dataset_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code

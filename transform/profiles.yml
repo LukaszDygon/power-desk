@@ -1,0 +1,16 @@
+# One target per environment, selected by POWER_DESK_ENV (dev | prod). The orchestrator and
+# scripts always pass the absolute warehouse path in POWER_DESK_DUCKDB_PATH; the defaults
+# below apply to manual runs from the repo root.
+power_desk:
+  target: "{{ env_var('POWER_DESK_ENV', 'dev') }}"
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('POWER_DESK_DUCKDB_PATH', 'data/warehouse_dev.duckdb') }}"
+      schema: main
+      threads: 4
+    prod:
+      type: duckdb
+      path: "{{ env_var('POWER_DESK_DUCKDB_PATH', 'data/warehouse_prod.duckdb') }}"
+      schema: main
+      threads: 4

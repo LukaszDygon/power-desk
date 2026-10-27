@@ -45,3 +45,15 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# dbt
+transform/target/
+transform/logs/
+transform/dbt_packages/
+
+# Dagster (DAGSTER_HOME=.dagster/<env>; only the instance config is tracked)
+.dagster/*/*
+!.dagster/*/dagster.yaml
+
+# Local secrets (dlt reads source__* credentials from the environment); see .env.example
+.env

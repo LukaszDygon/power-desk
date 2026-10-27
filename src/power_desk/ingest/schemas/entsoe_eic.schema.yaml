@@ -1,0 +1,252 @@
+version: 2
+version_hash: IyFNt8V3XcHDrPUOrl45ztLFYTlG6gSybR8LndRbOfw=
+engine_version: 11
+name: entsoe_eic
+tables:
+  _dlt_version:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_name:
+        data_type: text
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: false
+      schema:
+        data_type: text
+        nullable: false
+    write_disposition: skip
+    resource: _dlt_version
+    description: Created by DLT. Tracks schema updates
+  _dlt_loads:
+    columns:
+      load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      schema_name:
+        data_type: text
+        nullable: true
+      status:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_version_hash:
+        data_type: text
+        nullable: true
+    write_disposition: skip
+    resource: _dlt_loads
+    description: Created by DLT. Tracks completed loads
+  raw_eic_codes:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      eic_code:
+        data_type: text
+        nullable: true
+      eic_display_name:
+        data_type: text
+        nullable: true
+      eic_long_name:
+        data_type: text
+        nullable: true
+      eic_parent:
+        data_type: text
+        nullable: true
+      eic_responsible_party:
+        data_type: text
+        nullable: true
+      eic_status:
+        data_type: text
+        nullable: true
+      market_participant_postal_code:
+        data_type: text
+        nullable: true
+      market_participant_iso_country_code:
+        data_type: text
+        nullable: true
+      market_participant_vat_code:
+        data_type: text
+        nullable: true
+      eic_type_function_list:
+        data_type: text
+        nullable: true
+      type:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: raw_eic_codes
+    x-normalizer:
+      seen-data: true
+  raw_eic_functions:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      eic_function:
+        data_type: text
+        nullable: true
+      eic_type:
+        data_type: text
+        nullable: true
+      definition:
+        data_type: text
+        nullable: true
+      valid_in_market:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: raw_eic_functions
+    x-normalizer:
+      seen-data: true
+  raw_eic_issuing_offices:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      lio_code:
+        data_type: text
+        nullable: true
+      name:
+        data_type: text
+        nullable: true
+      country:
+        data_type: text
+        nullable: true
+      website:
+        data_type: text
+        nullable: true
+      eic_site:
+        data_type: text
+        nullable: true
+      email:
+        data_type: text
+        nullable: true
+      electricity:
+        data_type: bool
+        nullable: true
+      gas:
+        data_type: bool
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: raw_eic_issuing_offices
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+settings:
+  detections:
+  - iso_timestamp
+  default_hints:
+    not_null:
+    - _dlt_id
+    - _dlt_root_id
+    - _dlt_parent_id
+    - _dlt_list_idx
+    - _dlt_load_id
+    parent_key:
+    - _dlt_parent_id
+    root_key:
+    - _dlt_root_id
+    unique:
+    - _dlt_id
+    row_key:
+    - _dlt_id
+normalizers:
+  names: snake_case
+  json:
+    module: dlt.common.normalizers.json.relational
+previous_hashes:
+- QnncZrRPtRcgDLhZ8mYOno31b79NkgTvcoj5EMb8c/w=
+- QScg30KZyOdJf31m+DJSat9Zw/ZBW2PfLdFpYAY+ah8=

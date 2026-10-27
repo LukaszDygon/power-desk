@@ -1,0 +1,7 @@
+child_area_eic_code,parent_area_eic_code,relation,notes
+10YGB----------A,10Y1001A1001A92E,part_of,GB bidding zone / control area within the UK member state
+10Y1001A1001A016,10Y1001A1001A92E,part_of,Northern Ireland control area within the UK member state
+10Y1001A1001A016,10Y1001A1001A59C,part_of,Northern Ireland control area within the all-island SEM bidding zone
+10YIE-1001A00010,10Y1001A1001A59C,part_of,Ireland control area within the all-island SEM bidding zone
+10YDE-VE-------2,10Y1001A1001A82H,part_of,50Hertz control area within the DE_LU bidding zone
+10YLU-CEGEDEL-NQ,10Y1001A1001A82H,part_of,Luxembourg control area within the DE_LU bidding zone

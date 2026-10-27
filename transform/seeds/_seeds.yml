@@ -1,0 +1,198 @@
+seeds:
+  - name: technologies
+    description: |
+      Canonical technology tree.
+    data_tests:
+      - dlt_unique:
+          name: technologies_unique
+          arguments:
+            columns: [technology_code]
+    columns:
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: parent_technology_code
+        description: "{{ doc('col_parent_technology_code') }}"
+      - name: fuel_family
+        description: "{{ doc('col_fuel_family') }}"
+      - name: is_fossil
+        description: "{{ doc('col_is_fossil') }}"
+      - name: is_renewable
+        description: "{{ doc('col_is_renewable') }}"
+      - name: is_low_carbon
+        description: "{{ doc('col_is_low_carbon') }}"
+      - name: is_storage
+        description: "{{ doc('col_is_storage') }}"
+      - name: is_interconnector
+        description: "{{ doc('col_is_interconnector') }}"
+
+  - name: eic_code_types
+    description: |
+      EIC object types.
+    data_tests:
+      - dlt_unique:
+          name: eic_code_types_unique
+          arguments:
+            columns: [eic_type]
+    columns:
+      - name: eic_type
+        description: "{{ doc('col_eic_type') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: description
+        description: "{{ doc('col_description') }}"
+
+  - name: area_hierarchy
+    description: |
+      Curated containment links between areas where EIC publishes no parent.
+    data_tests:
+      - dlt_unique:
+          name: area_hierarchy_unique
+          arguments:
+            columns: [child_area_eic_code, parent_area_eic_code]
+    columns:
+      - name: child_area_eic_code
+        description: "{{ doc('col_child_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: area_hierarchy_known_child
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: parent_area_eic_code
+        description: "{{ doc('col_parent_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: area_hierarchy_known_parent
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: relation
+        description: "{{ doc('col_relation') }}"
+      - name: notes
+        description: "{{ doc('col_notes') }}"
+
+  - name: border_endpoints
+    description: |
+      Areas on each side of a border area.
+    data_tests:
+      - dlt_unique:
+          name: border_endpoints_unique
+          arguments:
+            columns: [border_area_eic_code]
+    columns:
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: border_endpoints_known_border
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: area_from_eic_code
+        description: "{{ doc('col_area_from_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: border_endpoints_known_from_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: area_to_eic_code
+        description: "{{ doc('col_area_to_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: border_endpoints_known_to_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: interconnector
+        description: "{{ doc('col_interconnector') }}"
+      - name: is_hvdc
+        description: "{{ doc('col_is_hvdc') }}"
+
+  - name: source_datasets
+    description: |
+      Datasets and code lists known to the warehouse.
+    data_tests:
+      - dlt_unique:
+          name: source_datasets_unique
+          arguments:
+            columns: [source_dataset]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source
+        description: "{{ doc('col_source') }}"
+      - name: kind
+        description: "{{ doc('col_kind') }}"
+      - name: publisher
+        description: "{{ doc('col_publisher') }}"
+      - name: entity
+        description: "{{ doc('col_entity') }}"
+      - name: native_interval_minutes
+        description: "{{ doc('col_native_interval_minutes') }}"
+      - name: default_area_eic_code
+        description: "{{ doc('col_default_area_eic_code') }}"
+
+  - name: map_technology
+    description: |
+      Publisher technology codes mapped onto canonical technologies.
+    data_tests:
+      - dlt_unique:
+          name: map_technology_unique
+          arguments:
+            columns: [source_dataset, source_code]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: map_technology_known_dataset
+              arguments:
+                to: ref('source_datasets')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: map_technology_known_technology
+              arguments:
+                to: ref('technologies')
+                field: technology_code
+      - name: expected_every_period
+        description: "{{ doc('col_expected_every_period') }}"
+      - name: notes
+        description: "{{ doc('col_notes') }}"
+
+  - name: map_border
+    description: |
+      Publisher interconnector codes mapped onto border areas.
+    data_tests:
+      - dlt_unique:
+          name: map_border_unique
+          arguments:
+            columns: [source_dataset, source_code]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: map_border_known_dataset
+              arguments:
+                to: ref('source_datasets')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: map_border_known_border
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: notes
+        description: "{{ doc('col_notes') }}"

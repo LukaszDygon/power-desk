@@ -1,0 +1,48 @@
+models:
+  - name: dlt_loads
+    description: dlt load packages (`raw._dlt_loads`) with `loaded_at` derived from the load id.
+    columns:
+      - name: load_id
+        description: "{{ doc('col_load_id') }}"
+        data_tests: [unique, not_null]
+      - name: schema_name
+        description: "{{ doc('col_schema_name') }}"
+      - name: status
+        description: "{{ doc('col_status') }}"
+      - name: inserted_at
+        description: "{{ doc('col_inserted_at') }}"
+      - name: loaded_at
+        description: "{{ doc('col_loaded_at') }}"
+      - name: schema_version_hash
+        description: "{{ doc('col_schema_version_hash') }}"
+
+  - name: dlt_load_audit
+    description: >
+      Lineage of dlt loads through dbt: which tracked model processed which load,
+      in which dbt invocation and orchestrator (Dagster) run.
+    data_tests:
+      - dlt_unique:
+          name: dlt_load_audit_unique_load_model
+          arguments:
+            columns: [load_id, model_name]
+    columns:
+      - name: load_id
+        description: "{{ doc('col_load_id') }}"
+      - name: model_name
+        description: "{{ doc('col_model_name') }}"
+      - name: dbt_invocation_id
+        description: "{{ doc('col_dbt_invocation_id') }}"
+      - name: orchestrator_run_id
+        description: "{{ doc('col_orchestrator_run_id') }}"
+      - name: processed_at
+        description: "{{ doc('col_processed_at') }}"
+
+  - name: dlt_pending_loads
+    description: Completed loads that at least one tracked model has not processed yet.
+    columns:
+      - name: load_id
+        description: "{{ doc('col_load_id') }}"
+      - name: schema_name
+        description: "{{ doc('col_schema_name') }}"
+      - name: loaded_at
+        description: "{{ doc('col_loaded_at') }}"

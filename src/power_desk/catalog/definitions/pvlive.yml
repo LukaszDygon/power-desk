@@ -1,0 +1,20 @@
+# Source `pvlive` (Sheffield Solar PVLive): dbt source, raw table and PVLive-specific fields.
+sources:
+  pvlive:
+    description: Sheffield Solar PVLive national solar outturn, loaded by the `pvlive` dlt pipeline.
+tables:
+  raw_pvlive_solar:
+    name: pvlive
+    title: GB national solar generation outturn (PVLive)
+    description: Sheffield Solar PVLive estimate of GB solar PV generation, national total (PES region
+      0), one row per half hour keyed on the half-hour *ending* time. Not an Elexon dataset; FUELINST
+      carries no solar, so PVLive provides the SOLAR fuel type downstream.
+    url: https://www.solar.sheffield.ac.uk/pvlive/
+    freshness: actuals
+columns:
+  pes_id:
+    description: PVLive region id (PES / GSP group); 0 = GB national total, the only region loaded.
+  datetime_gmt:
+    description: End of the half-hour interval (UTC). dlt incremental cursor.
+  pvlive_generation:
+    description: Estimated GB solar PV generation for the half hour, in MW.

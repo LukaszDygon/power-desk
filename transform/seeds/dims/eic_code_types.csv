@@ -1,0 +1,8 @@
+eic_type,name,description
+X,Party,"A legal entity with a VAT identification number or another unique identification code (e.g. LEI, company registration number)."
+Y,Area,"A delimited domain, uniquely identified for a specific purpose, where energy consumption, production or trade may be determined: geographical or market areas such as control areas, balance groups, bidding zones, balancing areas."
+Z,Measurement point,"A physical or logical point where energy is measured or calculated."
+W,Resource object,"An object used for production, consumption or storage of energy (e.g. generation unit, production unit, LNG terminal, gas storage); excludes passive grid elements such as lines or transformers."
+T,Tie-line,"A connecting object such as an interconnection line, line, busbar coupler or transformer."
+V,Location,"A physical or logical place where a party could be located, or an IT system operated by one or more parties; always has a responsible party."
+A,Substation,"A substation or topological node."

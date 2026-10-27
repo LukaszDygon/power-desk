@@ -1,0 +1,144 @@
+models:
+  - name: stg_entsoe_eic__codes
+    description: |
+      EIC codes, one row per published version.
+
+      {{ doc('dataset_eic_codes') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe_eic__codes_unique_version
+          arguments:
+            columns: [eic_code, valid_from]
+      - dlt_unique:
+          name: stg_entsoe_eic__codes_one_current_version
+          config: {where: "is_current"}
+          arguments:
+            columns: [eic_code]
+      - dlt_unique:
+          name: stg_entsoe_eic__codes_unique_display_name
+          config: {where: "is_current and display_name is not null", severity: warn}
+          arguments:
+            columns: [eic_type, display_name]
+      - expression_is_true:
+          name: stg_entsoe_eic__codes_check_character
+          config: {severity: warn}
+          arguments:
+            expression: "has_valid_check_character"
+    columns:
+      - name: eic_code
+        description: "{{ doc('col_eic_code') }}"
+      - name: eic_type
+        description: "{{ doc('col_eic_type') }}"
+        data_tests:
+          - relationships:
+              name: stg_entsoe_eic__codes_known_type
+              config: {severity: warn}
+              arguments:
+                to: ref('eic_code_types')
+                field: eic_type
+      - name: issuing_office_code
+        description: "{{ doc('col_issuing_office_code') }}"
+        data_tests:
+          - relationships:
+              name: stg_entsoe_eic__codes_known_issuing_office
+              config: {severity: warn}
+              arguments:
+                to: ref('stg_entsoe_eic__issuing_offices')
+                field: issuing_office_code
+      - name: display_name
+        description: "{{ doc('col_display_name') }}"
+      - name: long_name
+        description: "{{ doc('col_long_name') }}"
+      - name: parent_eic_code
+        description: "{{ doc('col_parent_eic_code') }}"
+      - name: responsible_party_eic_code
+        description: "{{ doc('col_responsible_party_eic_code') }}"
+      - name: status
+        description: "{{ doc('col_status') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: postal_code
+        description: "{{ doc('col_postal_code') }}"
+      - name: vat_code
+        description: "{{ doc('col_vat_code') }}"
+      - name: roles
+        description: "{{ doc('col_roles') }}"
+      - name: has_valid_check_character
+        description: "{{ doc('col_has_valid_check_character') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe_eic__functions
+    description: |
+      EIC functions, one row per published version.
+
+      {{ doc('dataset_eic_functions') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe_eic__functions_unique_version
+          arguments:
+            columns: [role, eic_type, market, valid_from]
+    columns:
+      - name: role
+        description: "{{ doc('col_role') }}"
+      - name: eic_type
+        description: "{{ doc('col_eic_type') }}"
+      - name: role_definition
+        description: "{{ doc('col_role_definition') }}"
+      - name: market
+        description: "{{ doc('col_market') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe_eic__issuing_offices
+    description: |
+      EIC Local Issuing Offices, one row per published version.
+
+      {{ doc('dataset_eic_issuing_offices') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe_eic__issuing_offices_unique_version
+          arguments:
+            columns: [issuing_office_code, valid_from]
+      - dlt_unique:
+          name: stg_entsoe_eic__issuing_offices_one_current_version
+          config: {where: "is_current"}
+          arguments:
+            columns: [issuing_office_code]
+    columns:
+      - name: issuing_office_code
+        description: "{{ doc('col_issuing_office_code') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: country_code
+        description: "{{ doc('col_country_code') }}"
+      - name: website_url
+        description: "{{ doc('col_website_url') }}"
+      - name: eic_site_url
+        description: "{{ doc('col_eic_site_url') }}"
+      - name: email
+        description: "{{ doc('col_email') }}"
+      - name: operates_electricity
+        description: "{{ doc('col_operates_electricity') }}"
+      - name: operates_gas
+        description: "{{ doc('col_operates_gas') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

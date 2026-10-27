@@ -87,6 +87,14 @@ async function initLineageGraph() {
           }
         },
         {
+          selector: 'node[type = "staging_view"]',
+          style: {
+            "border-color": "#64748b",
+            "color": "#94a3b8",
+            "background-color": "rgba(100, 116, 139, 0.08)"
+          }
+        },
+        {
           selector: 'node[type = "ods_view"]',
           style: {
             "border-color": "#06b6d4",

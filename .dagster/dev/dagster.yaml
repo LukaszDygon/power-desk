@@ -1,0 +1,10 @@
+# Local Dagster instance for POWER_DESK_ENV=dev (DAGSTER_HOME=.dagster/dev). Run history lives next to this file.
+concurrency:
+  runs:
+    # dlt and dbt both write to one DuckDB file: one run at a time.
+    max_concurrent_runs: 1
+  pools:
+    # `duckdb_warehouse` pool used by every dlt and dbt asset.
+    default_limit: 1
+telemetry:
+  enabled: false

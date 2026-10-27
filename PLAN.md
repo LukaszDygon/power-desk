@@ -1,7 +1,7 @@
 # Power Desk — Implementation Plan & Progress Tracker
 
 **Power Desk** is a minimalist analyst dashboard for UK Power & Energy Data.
-Built with DuckDB, `dlt` (data load tool), DBT-style SQL transformation views (Raw $\to$ ODS $\to$ Marts), GridStack.js resizable card grid, Cytoscape.js lineage graph, and an AI agent skill for on-the-fly analytical widget generation.
+Built with DuckDB, `dlt` (data load tool), dbt v2 (Raw $\to$ ODS $\to$ Marts), Dagster orchestration, GridStack.js resizable card grid, Cytoscape.js lineage graph, and an AI agent skill for on-the-fly analytical widget generation.
 
 ---
 
@@ -66,3 +66,12 @@ Built with DuckDB, `dlt` (data load tool), DBT-style SQL transformation views (R
   - [x] Support bounded backfill mode and open-ended streaming with `dlt.sources.incremental(lag=0)`
   - [x] Full refresh mechanism: resets local pipeline state via `pipeline.drop()`, cleans up DuckDB staging/raw schemas, and recreates tables natively via `dlt` to avoid DuckDB's `ALTER TABLE ADD COLUMN` constraint limitations
   - [x] Automatically refreshes downstream ODS and Marts views upon pipeline completion
+
+- [x] **Milestone 9: dbt + Dagster orchestration** ([architecture](docs/architecture.md))
+  - [x] dbt v2 project (`raw` → `staging` → `ods` → `marts`), incremental marts scoped to pending dlt loads, load-id audit lineage
+  - [x] Duplication guards and completeness tests at every layer
+  - [x] Dagster jobs/schedules/catch-up derived from a source registry and an ingest-job registry
+
+- [x] **Milestone 10: Catalogue from official definitions**
+  - [x] Per-source definition files, provider snapshots, one generated dbt doc block per definition
+  - [x] Generation and tests fail on undocumented tables or columns

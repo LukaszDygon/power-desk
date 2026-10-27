@@ -1,0 +1,8 @@
+source_dataset,source,kind,publisher,entity,native_interval_minutes,default_area_eic_code
+FUELINST,bmrs,dataset,Elexon,generation_actual,5,10YGB----------A
+PVLIVE,pvlive,dataset,Sheffield Solar,generation_actual,30,10YGB----------A
+INDO,bmrs,dataset,Elexon,demand_actual,30,10YGB----------A
+ITSDO,bmrs,dataset,Elexon,demand_ts_actual,30,10YGB----------A
+NDF,bmrs,dataset,Elexon,demand_forecast,30,10YGB----------A
+WINDFOR,bmrs,dataset,Elexon,generation_forecast,60,10YGB----------A
+ENTSOE_PSR,entsoe,code_list,ENTSO-E,,,

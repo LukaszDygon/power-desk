@@ -5,6 +5,12 @@ description = "Minimalist analyst dashboard for UK Power & Energy Data using Duc
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dagster>=1.13.27",
+    "dagster-dbt>=0.29.27",
+    "dagster-dg-cli>=1.13.27",
+    "dagster-dlt>=0.29.27",
+    "dagster-webserver>=1.13.27",
+    "dbt-oss>=2.0.8",
     "dlt[duckdb]>=1.0.0",
     "duckdb>=1.1.0",
     "fastapi>=0.115.0",
@@ -26,3 +32,11 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "power_desk"
+defs_module = "power_desk.orchestration"
+code_location_target_module = "power_desk.orchestration.definitions"

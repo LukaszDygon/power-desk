@@ -1,0 +1,149 @@
+# Source `entsoe_eic` (ENTSO-E Energy Identification Codes): dbt source, raw tables and EIC fields.
+# Wording follows ENTSO-E's EIC Reference Manual, EIC data exchange implementation guide and
+# "Mandatory attributes of the EIC codes"; role definitions come from the EIC functions list.
+links:
+  eic_manual:
+    title: EIC Reference Manual 5.5
+    url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+  eic_implementation_guide:
+    title: EIC data exchange implementation guide 1.2
+    url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
+  eic_attributes:
+    title: Mandatory attributes of the EIC codes
+    url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
+  eic_functions:
+    title: EIC functions and definitions
+    url: https://www.entsoe.eu/data/eic-functions/
+  eic_issuing_offices:
+    title: EIC Local Issuing Offices
+    url: https://www.entsoe.eu/data/energy-identification-codes-eic/
+
+sources:
+  entsoe_eic:
+    description: >-
+      ENTSO-E Energy Identification Codes published by the Central Issuing Office, loaded by the
+      `entsoe_eic` dlt pipeline as scd2 snapshots (every published version kept).
+tables:
+  raw_eic_codes:
+    name: eic_codes
+    title: EIC approved codes (central registry)
+    description: >-
+      The active codes of the central EIC registry, including codes issued by Local Issuing Offices.
+      EIC is a fixed-length 16-character scheme identifying parties, areas, measurement points,
+      resource objects, tie-lines, locations and substations in European energy data exchange. A code
+      that disappears from the publication is closed (`_dlt_valid_to`), not deleted.
+    url: https://www.entsoe.eu/data/energy-identification-codes-eic/eic-approved-codes/
+    links: [eic_manual, eic_implementation_guide, eic_attributes]
+    columns: {type: eic_type, eic_status: eic_status, eic_parent: parent_eic_code, eic_responsible_party: responsible_party_eic_code,
+              market_participant_iso_country_code: country_code, market_participant_postal_code: postal_code,
+              market_participant_vat_code: vat_code, eic_type_function_list: roles, eic_display_name: display_name,
+              eic_long_name: long_name}
+  raw_eic_functions:
+    name: eic_functions
+    title: EIC functions and definitions
+    description: >-
+      The permitted functions (roles) of EIC codes. Only a restricted list of functions can be
+      assigned to a code, based on its code type; the list is maintained by ENTSO-E WG EDI.
+    url: https://www.entsoe.eu/data/eic-functions/
+    links: [eic_functions, eic_manual]
+    columns: {eic_function: role, definition: role_definition, valid_in_market: market}
+  raw_eic_issuing_offices:
+    name: eic_issuing_offices
+    title: EIC Local Issuing Offices
+    description: >-
+      Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique
+      two-character code that begins every EIC it issues. Parsed from the Local Issuing Offices
+      table on the EIC page.
+    url: https://www.entsoe.eu/data/energy-identification-codes-eic/
+    links: [eic_issuing_offices, eic_manual]
+    columns: {lio_code: issuing_office_code, name: issuing_office_name, country: country_code, website: website_url,
+              eic_site: eic_site_url, electricity: operates_electricity, gas: operates_gas}
+
+columns:
+  eic_code:
+    description: >-
+      Energy Identification Code: 16 characters, made of 2 characters identifying the issuing office,
+      1 character for the object type, 12 characters allocated by the issuing office to identify the
+      object, and 1 check character. Use it as a complete string; do not derive meaning from its parts.
+    links: [eic_manual]
+  eic_type:
+    description: >-
+      EIC object type as published: X party, Y area, Z measurement point, W resource object,
+      T tie-line, V location, A substation (definitions in the `eic_code_types` seed).
+    links: [eic_manual]
+  eic_type_name:
+    description: Name of the EIC object type.
+    links: [eic_manual]
+  eic_status:
+    description: Status of the code in the central registry; the published extract contains active codes only.
+    links: [eic_attributes]
+  display_name:
+    description: >-
+      Display name: at most 16 characters (A-Z, 0-9, `-`, `+`, `_`), unique within the central
+      registry per EIC object type; recommended to start with the country code (e.g. `DE_LU`, `GB`).
+    links: [eic_manual, eic_implementation_guide]
+  long_name:
+    description: EIC name (long name), at most 100 characters; for parties, the registered legal entity name.
+    links: [eic_implementation_guide, eic_manual]
+  parent_eic_code:
+    description: >-
+      EIC parent: the code of the parent entity, defining a hierarchy between two codes of the same
+      type (e.g. a company and its subsidiary, a production unit and its generating unit, an area and
+      a subarea). Sparse.
+    links: [eic_implementation_guide]
+  responsible_party_eic_code:
+    description: >-
+      EIC responsible party: the party (EIC type X) responsible for the object, e.g. a production unit
+      and its owner, an area and its owner; mandatory for locations (V). Not used between two X codes.
+    links: [eic_implementation_guide]
+  country_code:
+    description: Country published with the code or issuing office (ISO 3166 code), where given.
+    links: [eic_attributes]
+  postal_code:
+    description: Postal code of the registered address, where published.
+    links: [eic_attributes]
+  vat_code:
+    description: VAT number, or another unique identification code where VAT is not mandatory (at most 25 characters).
+    links: [eic_implementation_guide, eic_attributes]
+  roles:
+    description: >-
+      EIC functions held by the code, published as a comma-separated list. At least one function is
+      mandatory, and only functions permitted for the code's object type can be assigned. A code can hold
+      several roles at once, e.g. bidding zone, control area and scheduling area.
+    links: [eic_functions, eic_implementation_guide]
+  role:
+    description: One EIC function (role), from the list maintained by ENTSO-E WG EDI.
+    links: [eic_functions]
+  role_definition:
+    description: Official definition of the role in the EIC functions list (null where ENTSO-E publishes none).
+    links: [eic_functions]
+  market:
+    description: Market the role is valid in (Electricity or Gas).
+    links: [eic_functions]
+  issuing_office_code:
+    description: >-
+      Two-character code assigned by the Central Issuing Office to a Local Issuing Office; every EIC an
+      office allocates begins with it.
+    links: [eic_manual, eic_issuing_offices]
+  issuing_office_name:
+    description: Name of the Local Issuing Office.
+    links: [eic_issuing_offices]
+  website_url:
+    description: Main website of the issuing office.
+  eic_site_url:
+    description: Issuing office page about EIC codes.
+  email:
+    description: Contact address of the issuing office.
+  operates_electricity:
+    description: Issuing office allocates codes for the electricity sector.
+  operates_gas:
+    description: Issuing office allocates codes for the gas sector.
+  has_valid_check_character:
+    description: >-
+      The 16th character matches the ENTSO-E check-character algorithm computed from the first 15
+      (validation only, as ENTSO-E permits). A few published codes fail it.
+    links: [eic_implementation_guide]
+  _dlt_valid_from:
+    description: Time this version of the record was first loaded (scd2).
+  _dlt_valid_to:
+    description: Time this version stopped appearing in the publication; null while current (scd2).

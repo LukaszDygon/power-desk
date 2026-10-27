@@ -1,0 +1,82 @@
+# Source `bmrs` (Elexon Insights API): dbt source, raw tables and BMRS-specific fields.
+sources:
+  bmrs:
+    description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
+tables:
+  raw_fuelinst:
+    name: fuelinst
+    refs:
+    - elexon:datasets/FUELINST
+    - elexon:glossary/instantaneous-generation-by-fuel-type
+    freshness: actuals
+    columns:
+      generation: fuelinst_generation
+  raw_indo:
+    name: indo
+    refs:
+    - elexon:datasets/INDO
+    - elexon:glossary/initial-national-demand-out-turn
+    freshness: actuals
+    columns:
+      demand: indo_demand
+  raw_itsdo:
+    name: itsdo
+    refs:
+    - elexon:datasets/ITSDO
+    - elexon:glossary/initial-transmission-system-demand-out-turn
+    freshness: actuals
+    columns:
+      demand: itsdo_demand
+  raw_demand_forecast:
+    name: ndf
+    refs:
+    - elexon:datasets/NDF
+    - elexon:glossary/national-demand-forecast
+    freshness: forecasts
+    columns:
+      demand: ndf_demand
+  raw_windfor:
+    name: windfor
+    refs:
+    - elexon:datasets/WINDFOR
+    - elexon:glossary/wind-generation-forecast
+    freshness: forecasts
+    columns:
+      generation: windfor_generation
+      start_time: windfor_start_time
+columns:
+  dataset:
+    description: Elexon dataset code of the record (e.g. `FUELINST`, `INDO`).
+  publish_time:
+    description: 'Time Elexon published the record (UTC). dlt incremental cursor: each run resumes from
+      the latest value seen.'
+  start_time:
+    description: 'Start of the interval the value applies to (UTC): the 5-minute interval for FUELINST,
+      the settlement period for INDO, ITSDO and NDF.'
+    refs:
+    - elexon:glossary/spot-time
+  windfor_start_time:
+    description: Start of the forecast hour (UTC).
+  boundary:
+    description: Forecast boundary; `N` = national (the only boundary used downstream).
+  fuelinst_generation:
+    description: Average generation over the 5-minute interval for the fuel type, in MW.
+    refs:
+    - elexon:glossary/instantaneous-generation-by-fuel-type
+  indo_demand:
+    description: Initial National Demand Outturn for the settlement period, in MW (half-hour average).
+    refs:
+    - elexon:glossary/initial-national-demand-out-turn
+  itsdo_demand:
+    description: Initial Transmission System Demand Outturn for the settlement period, in MW (half-hour
+      average).
+    refs:
+    - elexon:glossary/initial-transmission-system-demand-out-turn
+  ndf_demand:
+    description: National Demand Forecast for the settlement period, in MW (average).
+    refs:
+    - elexon:glossary/national-demand-forecast
+  windfor_generation:
+    description: Forecast wind generation for the hour, in MW.
+    refs:
+    - elexon:glossary/wind-generation-forecast

@@ -1,0 +1,137 @@
+# Conformed dimensions, hierarchy bridges and the mappings from publisher codes onto them.
+columns:
+  # --- versioning (scd2 reference data) ---------------------------------------------------
+  valid_from:
+    description: Start of the version's validity (UTC); join facts as-of their timestamp.
+  valid_to:
+    description: End of the version's validity (UTC); null while current.
+  is_current:
+    description: The version is in the latest publication.
+  # --- area ---------------------------------------------------------------------------------
+  area_eic_code:
+    description: >-
+      EIC (object type Y) of the area the row belongs to or describes: a delimited domain where energy
+      consumption, production or trade may be determined, at any level from metering grid area to
+      bidding zone, market area or synchronous area.
+    links: [eic_manual]
+  ancestor_area_eic_code:
+    description: >-
+      An area containing `area_eic_code` (itself at depth 0), via published EIC parents and the curated
+      `area_hierarchy` seed.
+  child_area_eic_code:
+    description: Contained area in a curated hierarchy link.
+  parent_area_eic_code:
+    description: Containing area in a curated hierarchy link.
+  relation:
+    description: Kind of hierarchy link (`part_of`, curated) or `eic_parent` (published by EIC).
+  depth:
+    description: Number of hierarchy links between the row and its ancestor (0 = itself).
+  is_bidding_zone:
+    description: Area holds the Bidding Zone role.
+    refs: [entsoe:eic-functions/bidding-zone]
+  is_control_area:
+    description: Area holds the Control Area role.
+    refs: [entsoe:eic-functions/control-area]
+  is_scheduling_area:
+    description: Area holds the Scheduling Area role.
+    refs: [entsoe:eic-functions/scheduling-area]
+  is_market_balance_area:
+    description: Area holds the Market Balance Area role (used on codes; not in ENTSO-E's published function list).
+  is_lfc_area:
+    description: Area holds the LFC (load-frequency control) Area role.
+    refs: [entsoe:eic-functions/lfc-area]
+  is_lfc_block:
+    description: Area holds the LFC Block role.
+    refs: [entsoe:eic-functions/lfc-block]
+  is_member_state:
+    description: Area holds the Member State role.
+    refs: [entsoe:eic-functions/member-state]
+  is_synchronous_area:
+    description: Area holds the Synchronous Area role.
+    refs: [entsoe:eic-functions/synchronous-area]
+  is_capacity_calculation_region:
+    description: Area holds the Capacity Calculation Region role.
+    refs: [entsoe:eic-functions/capacity-calculation-region]
+  is_border_area:
+    description: Area holds the Border Area role (a border or interconnector between areas).
+    refs: [entsoe:eic-functions/border-area]
+  is_bidding_zone_border:
+    description: Area holds the Bidding Zone Border role.
+    refs: [entsoe:eic-functions/bidding-zone-border]
+  is_market_area:
+    description: Area holds the Market Area role.
+    refs: [entsoe:eic-functions/market-area]
+  is_metering_grid_area:
+    description: Area holds the Metering Grid Area role.
+    refs: [entsoe:eic-functions/metering-grid-area]
+  # --- border -------------------------------------------------------------------------------
+  border_area_eic_code:
+    description: >-
+      EIC area with the Border Area role (one per border, often one per interconnector) that the row's
+      flow crosses.
+    refs: [entsoe:eic-functions/border-area]
+  area_from_eic_code:
+    description: Area on the reference side of the border (flows are positive into it when published as imports).
+  area_to_eic_code:
+    description: Area on the far side of the border.
+  interconnector:
+    description: Name of the interconnector forming the border, where it is a single asset.
+  is_hvdc:
+    description: The border is an HVDC link.
+  # --- party / resource ---------------------------------------------------------------------
+  party_eic_code:
+    description: EIC (object type X) of a party, a legal entity with a VAT number or other unique identification code.
+    links: [eic_manual]
+  resource_eic_code:
+    description: >-
+      EIC (object type W) of a resource object used for production, consumption or storage of energy
+      (e.g. generation unit, production unit); the smallest published asset granularity.
+    links: [eic_manual]
+  parent_resource_eic_code:
+    description: Published EIC parent of the resource, e.g. the production unit of a generating unit.
+    links: [eic_implementation_guide]
+  ancestor_eic_code:
+    description: A resource containing `resource_eic_code` (itself at depth 0), following published EIC parents.
+    links: [eic_implementation_guide]
+  # --- technology ---------------------------------------------------------------------------
+  technology_code:
+    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+  ancestor_technology_code:
+    description: A technology group containing `technology_code` (itself at depth 0).
+  parent_technology_code:
+    description: Next broader technology in the tree; null for top-level groups.
+  fuel_family:
+    description: Primary energy carrier family (e.g. gaseous_fossil, solid_fossil, wind, water, biomass).
+  is_fossil:
+    description: Fossil-fuelled technology.
+  is_renewable:
+    description: Renewable technology.
+  is_low_carbon:
+    description: Counted as low-carbon (renewables and nuclear).
+  is_storage:
+    description: Storage technology (net generation can be negative).
+  is_interconnector:
+    description: Cross-border flow rather than domestic generation.
+  # --- source datasets and mappings ---------------------------------------------------------
+  source:
+    description: dlt source (pipeline) that loads the dataset.
+  kind:
+    description: "`dataset` (loaded data) or `code_list` (a publisher's code list used only for mapping)."
+  publisher:
+    description: Organisation publishing the dataset or code list.
+  entity:
+    description: ODS entity the dataset feeds.
+  native_interval_minutes:
+    description: Interval length the dataset is published at, in minutes.
+  default_area_eic_code:
+    description: Area the dataset covers when its rows carry no area code.
+  source_code:
+    description: Code as published by the source (`*` = the whole dataset).
+  expected_every_period:
+    description: The code must appear in every period of the dataset (completeness test).
+  notes:
+    description: Curator's note on the mapping.
+  name:
+    description: Name of the row's subject.
+  description:
+    description: Description of the row's subject.

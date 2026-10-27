@@ -1,42 +1,45 @@
 # Power Desk ⚡
 
-A high-density minimalist analyst dashboard for UK Power & Energy Data.
+An analyst dashboard for power and energy data, on a local dlt → DuckDB → dbt warehouse
+orchestrated by Dagster.
 
-## Features
-- **ELT Pipeline (`dlt`):** Elexon BMRS source builder with raw data preservation and incremental merge on natural keys.
-- **DBT-style Modeling:** DuckDB SQL Views for ODS and Marts with settlement period to UTC natural key resolution.
-- **Analyst Terminal Grid:** Draggable, resizable cards powered by GridStack.js.
-- **Open-Source Lineage:** DAG visualization via Cytoscape.js and Dagre.
-- **Functional Energy Palette:** Meaningful colors for generation fuels (Wind, Solar, Nuclear, CCGT, Demand, Forecast).
-- **Agent Widget Skill:** Extensible `.agents/skills/create-widget/SKILL.md` allowing AI agents to generate and mount new analytical cards.
+- [Architecture](docs/architecture.md): layers, dimensions, load-id contract, data quality, catalogue
+- [Add a data source](.agents/skills/add-source/SKILL.md) · [Add a dashboard widget](.agents/skills/create-widget/SKILL.md)
 
-## Commands & Workflow
+## Layout
 
-Data ingestion and server execution are completely decoupled:
-
-### 1. Run Web Dashboard (Read-Only Server)
-```bash
-uv run uvicorn power_desk.app:app --port 8888 --reload
 ```
-*The server purely handles queries and UI rendering with zero data-loading side effects.*
-
-### 2. Load Seed Data (Independent Task)
-```bash
-uv run python scripts/load_seed.py
-```
-*Loads the curated 7-day realistic power datasets into DuckDB via `dlt` and registers SQL views.*
-*Optionally pass `--generate` to re-synthesize the parquet files.*
-
-### 3. Incremental Backfill (Independent Task)
-```bash
-# Incremental stream until data ends (lag=0)
-uv run python scripts/backfill.py --start-date 2024-03-01
-
-# Full refresh / schema rebuild
-uv run python scripts/backfill.py --refresh drop_sources --start-date 2024-03-01 --end-date 2024-03-07
+src/power_desk/ingest/          dlt sources and their registry (pipelines.py); exported dlt schemas
+src/power_desk/orchestration/   Dagster assets; ingest jobs and schedules (jobs.py)
+src/power_desk/catalog/         definitions, provider snapshots, dbt sources/docs generator
+transform/                      dbt project: staging, ods, dims, marts, dlt_meta; seeds (dims, mappings)
+src/power_desk/app.py           read-only dashboard
 ```
 
-### 4. Run Test Suite
+## Commands
+
 ```bash
+uv run python scripts/dagster.py                 # orchestrator, http://localhost:3000
+uv run uvicorn power_desk.app:app --port 8888    # dashboard
+uv run python scripts/load_seed.py               # sample data -> dlt -> dbt (dev only)
+uv run python scripts/backfill.py [--pipelines <source>] [--start-date <d> --end-date <d> --chunk-days 31]
+
+uv run dbt build --project-dir transform --profiles-dir transform
+uv run python -m power_desk.catalog.refresh      # refresh official definitions (network)
+uv run python -m power_desk.catalog.generate     # regenerate dbt sources and doc blocks
+uv run python -m power_desk.catalog.describe [relation]
+uv run dbt docs generate --project-dir transform --profiles-dir transform
+uv run dbt docs serve --project-dir transform --profiles-dir transform --target-path transform/target
+
 uv run pytest
 ```
+
+## Settings
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `POWER_DESK_ENV` | `dev` | `dev` or `prod`: warehouse `data/warehouse_<env>.duckdb`, dbt target, dlt state, Dagster instance `.dagster/<env>` |
+| `POWER_DESK_DUCKDB_PATH` | | explicit warehouse file |
+| `POWER_DESK_START_DATE` | `2024-01-01` | first date the warehouse must cover (completeness) |
+
+One-off data migrations live in `scripts/migrations/`.

@@ -1,0 +1,44 @@
+source_dataset,source_code,technology_code,expected_every_period,notes
+FUELINST,CCGT,gas_ccgt,true,
+FUELINST,OCGT,gas_ocgt,true,
+FUELINST,OIL,oil,true,
+FUELINST,COAL,coal,true,BMRS does not distinguish hard coal from lignite
+FUELINST,NUCLEAR,nuclear,true,
+FUELINST,WIND,wind,true,Transmission-metered onshore and offshore wind; no split published
+FUELINST,PS,hydro_pumped_storage,true,
+FUELINST,NPSHYD,hydro,true,Non-pumped hydro: run-of-river and reservoir combined
+FUELINST,BIOMASS,biomass,true,
+FUELINST,OTHER,other,true,
+FUELINST,INTFR,interconnector,false,See map_border
+FUELINST,INTIFA2,interconnector,false,See map_border
+FUELINST,INTELEC,interconnector,false,See map_border
+FUELINST,INTNEM,interconnector,false,See map_border
+FUELINST,INTNED,interconnector,false,See map_border
+FUELINST,INTNSL,interconnector,false,See map_border
+FUELINST,INTVKL,interconnector,false,See map_border
+FUELINST,INTIRL,interconnector,false,See map_border
+FUELINST,INTEW,interconnector,false,See map_border
+FUELINST,INTGRNL,interconnector,false,See map_border
+PVLIVE,SOLAR,solar,true,PVLive national solar estimate
+WINDFOR,*,wind,false,Forecast covers all wind power park modules
+ENTSOE_PSR,B01,biomass,false,ENTSO-E PsrType code list
+ENTSOE_PSR,B02,lignite,false,
+ENTSOE_PSR,B03,coal_derived_gas,false,
+ENTSOE_PSR,B04,gas,false,
+ENTSOE_PSR,B05,hard_coal,false,
+ENTSOE_PSR,B06,oil,false,
+ENTSOE_PSR,B07,oil_shale,false,
+ENTSOE_PSR,B08,peat,false,
+ENTSOE_PSR,B09,geothermal,false,
+ENTSOE_PSR,B10,hydro_pumped_storage,false,
+ENTSOE_PSR,B11,hydro_run_of_river,false,
+ENTSOE_PSR,B12,hydro_reservoir,false,
+ENTSOE_PSR,B13,marine,false,
+ENTSOE_PSR,B14,nuclear,false,
+ENTSOE_PSR,B15,other_renewable,false,
+ENTSOE_PSR,B16,solar,false,
+ENTSOE_PSR,B17,waste,false,
+ENTSOE_PSR,B18,wind_offshore,false,
+ENTSOE_PSR,B19,wind_onshore,false,
+ENTSOE_PSR,B20,other,false,
+ENTSOE_PSR,B25,storage,false,Energy storage (technology not specified)
