@@ -44,9 +44,6 @@ class TransformConfig(Config):
     command: Literal["build", "test"] = "build"
     docs: bool = False  # regenerate the dbt docs catalogue afterwards
 
-    def dbt_run(self) -> DbtRun:
-        return DbtRun(command=self.command, scope=self.scope, full_refresh=self.full_refresh)
-
 
 def unloaded_raw_tables() -> list[tuple[str, str]]:
     """(dbt source, table) of every declared raw table without a warehouse table yet."""
@@ -77,7 +74,8 @@ def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource, config: Tran
     if ("dlt", "_dlt_loads") in unloaded:
         context.log.info("No dlt load has completed yet; nothing to transform.")
         return
-    args = config.dbt_run().args(pending_load_ids(), context.run.run_id)
+    dbt_run = DbtRun(command=config.command, scope=config.scope, full_refresh=config.full_refresh)
+    args = dbt_run.args(pending_load_ids(), context.run.run_id)
     if unloaded:
         context.log.warning(f"Skipping tests downstream of unloaded raw tables: {[table for _, table in unloaded]}")
         args += ["--exclude", tests_downstream_of(unloaded)]

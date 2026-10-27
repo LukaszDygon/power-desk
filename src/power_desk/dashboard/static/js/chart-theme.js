@@ -49,45 +49,39 @@ window.EnergyPalette = {
   }
 };
 
-// Configure Global Chart.js Defaults for Analyst Terminal
-if (window.Chart) {
-  Chart.defaults.color = "#94a3b8";
-  Chart.defaults.font.family = "'JetBrains Mono', monospace";
-  Chart.defaults.font.size = 10;
-  Chart.defaults.maintainAspectRatio = false;
-  Chart.defaults.responsive = true;
-  Chart.defaults.animation.duration = 200;
+Chart.defaults.color = "#94a3b8";
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 10;
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.responsive = true;
+Chart.defaults.animation.duration = 200;
 
-  // Crisp Tooltip
-  Chart.defaults.plugins.tooltip.backgroundColor = "#080c14";
-  Chart.defaults.plugins.tooltip.borderColor = "#334155";
-  Chart.defaults.plugins.tooltip.borderWidth = 1;
-  Chart.defaults.plugins.tooltip.titleColor = "#f8fafc";
-  Chart.defaults.plugins.tooltip.bodyColor = "#cbd5e1";
-  Chart.defaults.plugins.tooltip.padding = 8;
-  Chart.defaults.plugins.tooltip.boxPadding = 4;
-  Chart.defaults.plugins.tooltip.usePointStyle = true;
-  Chart.defaults.plugins.tooltip.titleFont = {
-    family: "'Cabinet Grotesk', sans-serif",
-    size: 11,
-    weight: "700"
-  };
-  Chart.defaults.plugins.tooltip.bodyFont = {
-    family: "'JetBrains Mono', monospace",
-    size: 10
-  };
+Chart.defaults.plugins.tooltip.backgroundColor = "#080c14";
+Chart.defaults.plugins.tooltip.borderColor = "#334155";
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.titleColor = "#f8fafc";
+Chart.defaults.plugins.tooltip.bodyColor = "#cbd5e1";
+Chart.defaults.plugins.tooltip.padding = 8;
+Chart.defaults.plugins.tooltip.boxPadding = 4;
+Chart.defaults.plugins.tooltip.usePointStyle = true;
+Chart.defaults.plugins.tooltip.titleFont = {
+  family: "'Cabinet Grotesk', sans-serif",
+  size: 11,
+  weight: "700"
+};
+Chart.defaults.plugins.tooltip.bodyFont = {
+  family: "'JetBrains Mono', monospace",
+  size: 10
+};
 
-  // Subtle Legend
-  Chart.defaults.plugins.legend.labels.boxWidth = 10;
-  Chart.defaults.plugins.legend.labels.boxHeight = 10;
-  Chart.defaults.plugins.legend.labels.padding = 10;
-  Chart.defaults.plugins.legend.labels.color = "#94a3b8";
-  Chart.defaults.plugins.legend.labels.font = {
-    family: "'JetBrains Mono', monospace",
-    size: 10
-  };
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.boxHeight = 10;
+Chart.defaults.plugins.legend.labels.padding = 10;
+Chart.defaults.plugins.legend.labels.color = "#94a3b8";
+Chart.defaults.plugins.legend.labels.font = {
+  family: "'JetBrains Mono', monospace",
+  size: 10
+};
 
-  // Minimal Grid Scales
-  Chart.defaults.scale.grid.color = "rgba(30, 41, 59, 0.4)";
-  Chart.defaults.scale.grid.tickColor = "rgba(30, 41, 59, 0.4)";
-}
+Chart.defaults.scale.grid.color = "rgba(30, 41, 59, 0.4)";
+Chart.defaults.scale.grid.tickColor = "rgba(30, 41, 59, 0.4)";

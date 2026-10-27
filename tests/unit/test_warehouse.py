@@ -1,38 +1,33 @@
+import duckdb
 import pytest
 
-from power_desk.warehouse import LockRetry, retry_while_locked
-
-NO_WAIT = LockRetry(timeout_seconds=1.0, interval_seconds=0.0)
+from power_desk import warehouse
 
 
-def test_retry_while_locked_retries_lock_errors_until_the_action_succeeds():
-    attempts, retries = [], []
+def test_connect_retries_while_the_warehouse_is_locked(monkeypatch, tmp_path):
+    attempts = []
+    real_connect = duckdb.connect
 
-    def flaky() -> str:
+    def locked_once(*args, **kwargs):
         attempts.append(1)
-        if len(attempts) < 3:
-            raise OSError("IO Error: Could not set lock on file")
-        return "done"
+        if len(attempts) == 1:
+            raise duckdb.IOException("IO Error: Could not set lock on file")
+        return real_connect(*args, **kwargs)
 
-    assert retry_while_locked(flaky, NO_WAIT, before_retry=lambda: retries.append(1)) == "done"
-    assert (len(attempts), len(retries)) == (3, 2)
+    monkeypatch.setattr(duckdb, "connect", locked_once)
+    with warehouse.connect(tmp_path / "w.duckdb", read_only=False) as con:
+        assert con.execute("select 1").fetchall() == [(1,)]
+    assert len(attempts) == 2
 
 
-def test_retry_while_locked_raises_other_errors_at_once():
+def test_connect_raises_other_errors_at_once(monkeypatch, tmp_path):
     attempts = []
 
-    def broken() -> None:
+    def broken(*args, **kwargs):
         attempts.append(1)
-        raise ValueError("syntax error")
+        raise duckdb.IOException("IO Error: Cannot open file")
 
-    with pytest.raises(ValueError, match="syntax error"):
-        retry_while_locked(broken, NO_WAIT)
+    monkeypatch.setattr(duckdb, "connect", broken)
+    with pytest.raises(duckdb.IOException, match="Cannot open file"), warehouse.connect(tmp_path / "w.duckdb"):
+        pass
     assert len(attempts) == 1
-
-
-def test_retry_while_locked_gives_up_after_the_timeout():
-    def locked() -> None:
-        raise OSError("Conflicting lock is held")
-
-    with pytest.raises(OSError, match="Conflicting lock"):
-        retry_while_locked(locked, LockRetry(timeout_seconds=0.0, interval_seconds=0.0))

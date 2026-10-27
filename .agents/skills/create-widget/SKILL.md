@@ -27,9 +27,9 @@ uv run python -m power_desk.catalog.describe <relation>     # columns, units and
 
 ## 2. Write the query
 
-- Start with `SELECT` or `WITH`; anything else is rejected.
-- Filter on the dashboard's global date range with the placeholders `'{start_date}'` and
-  `'{end_date}'`, against the relation's date column.
+- Queries run read-only in a DuckDB sandbox: they can read the warehouse and nothing else.
+- Filter on the dashboard's global date range with the date parameters `$start_date` and
+  `$end_date` (unquoted), against the relation's date column.
 - Order time series by their time column.
 
 ## 3. Pick a type and config
@@ -57,7 +57,7 @@ Spec shape:
   "type": "line",
   "description": "What the card shows",
   "grid": { "x": 0, "y": 0, "w": 6, "h": 4 },
-  "sql": "SELECT <time_col>, <measure> FROM <relation> WHERE <date_col> >= '{start_date}' AND <date_col> <= '{end_date}' ORDER BY <time_col>",
+  "sql": "SELECT <time_col>, <measure> FROM <relation> WHERE <date_col> >= $start_date AND <date_col> <= $end_date ORDER BY <time_col>",
   "config": { "time_column": "<time_col>", "series": [{ "column": "<measure>", "label": "<Label>" }] }
 }
 ```

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 import sys
@@ -21,7 +22,7 @@ def parse_widget() -> Widget:
     parser.add_argument("--id")
     parser.add_argument("--title")
     parser.add_argument("--type", choices=get_args(WidgetType), default="line")
-    parser.add_argument("--sql", help="DuckDB query with {start_date} / {end_date} placeholders")
+    parser.add_argument("--sql", help="DuckDB query; may use the parameters $start_date / $end_date")
     parser.add_argument("--w", type=int, default=6, help="grid width (1-12 columns)")
     parser.add_argument("--h", type=int, default=4, help="grid height")
     parser.add_argument("--config", default="{}", help="visual configuration (JSON)")
@@ -44,11 +45,10 @@ def parse_widget() -> Widget:
 def main() -> int:
     widget = parse_widget()
     options = queries.filter_options()
+    first, last = (date.fromisoformat(day) if day else None for day in (options["min_date"], options["max_date"]))
     try:
-        result = queries.run_query(
-            queries.bind_dates(widget.sql, start_date=options["min_date"], end_date=options["max_date"])
-        )
-    except (ValueError, duckdb.Error) as exc:
+        result = queries.run_query(widget.sql, first, last)
+    except duckdb.Error as exc:
         print(f"✗ {widget.id}: query failed: {exc}", file=sys.stderr)
         return 1
     print(f"✓ {widget.id}: {result['row_count']} rows, columns {result['columns']} ({result['duration_ms']} ms)")

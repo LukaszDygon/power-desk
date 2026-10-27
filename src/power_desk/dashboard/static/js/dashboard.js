@@ -12,10 +12,9 @@ let grid = null;
 const widgetInstances = new Map(); // widgetId -> { spec, chart, dom }
 
 function showDashboardError(message) {
-  const gridEl = document.querySelector(".grid-stack");
-  if (gridEl) {
-    gridEl.insertAdjacentHTML("beforebegin", `<div class="card-error dashboard-error">${escapeHtml(message)}</div>`);
-  }
+  document
+    .querySelector(".grid-stack")
+    .insertAdjacentHTML("beforebegin", `<div class="card-error dashboard-error">${escapeHtml(message)}</div>`);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -67,13 +66,9 @@ async function loadFilterOptions() {
     const data = await res.json();
     const startInput = document.getElementById("filter-start-date");
     const endInput = document.getElementById("filter-end-date");
-    if (startInput && !startInput.value) startInput.value = data.min_date || FALLBACK_DATE_RANGE.start_date;
-    if (endInput && !endInput.value) endInput.value = data.max_date || FALLBACK_DATE_RANGE.end_date;
-
-    const tableBadge = document.getElementById("warehouse-stats");
-    if (tableBadge && data.table_counts) {
-      tableBadge.textContent = `${data.table_counts.bmrs__fuelinst || 0} rows`;
-    }
+    if (!startInput.value) startInput.value = data.min_date || FALLBACK_DATE_RANGE.start_date;
+    if (!endInput.value) endInput.value = data.max_date || FALLBACK_DATE_RANGE.end_date;
+    document.getElementById("warehouse-stats").textContent = `${data.table_counts.bmrs__fuelinst || 0} rows`;
   } catch (err) {
     console.warn("Failed to load filter options:", err);
     showDashboardError(`Filter options unavailable: ${err.message}`);
@@ -81,27 +76,10 @@ async function loadFilterOptions() {
 }
 
 function setupFilterEvents() {
-  const applyBtn = document.getElementById("btn-apply-filters");
-  if (applyBtn) {
-    applyBtn.addEventListener("click", () => {
-      refreshAllWidgets();
-    });
-  }
-
-  const resetLayoutBtn = document.getElementById("btn-reset-layout");
-  if (resetLayoutBtn) {
-    resetLayoutBtn.addEventListener("click", resetGridLayout);
-  }
-
-  const lineageBtn = document.getElementById("btn-open-lineage");
-  if (lineageBtn) {
-    lineageBtn.addEventListener("click", openLineageModal);
-  }
-
-  const closeLineageBtn = document.getElementById("btn-close-lineage");
-  if (closeLineageBtn) {
-    closeLineageBtn.addEventListener("click", closeLineageModal);
-  }
+  document.getElementById("btn-apply-filters").addEventListener("click", refreshAllWidgets);
+  document.getElementById("btn-reset-layout").addEventListener("click", resetGridLayout);
+  document.getElementById("btn-open-lineage").addEventListener("click", openLineageModal);
+  document.getElementById("btn-close-lineage").addEventListener("click", closeLineageModal);
 }
 
 async function loadAndRenderWidgets() {
@@ -109,26 +87,9 @@ async function loadAndRenderWidgets() {
     const res = await fetch("/api/widgets");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const widgets = await res.json();
-    const savedLayout = loadSavedLayout();
-
-    for (const w of widgets) {
-      // Apply saved position if present
-      let pos = w.grid;
-      if (savedLayout) {
-        const savedItem = savedLayout.find(i => i.id === w.id);
-        if (savedItem) {
-          pos = {
-            x: savedItem.x,
-            y: savedItem.y,
-            w: savedItem.w,
-            h: savedItem.h
-          };
-        }
-      }
-      createWidgetCard(w, pos);
-    }
-
-    // Trigger initial data load for all widgets
+    const savedLayout = loadSavedLayout(); // before adding cards: their "change" events save the default layout
+    widgets.forEach(createWidgetCard);
+    if (savedLayout) grid.load(savedLayout, false); // update the cards' positions, matched by id
     refreshAllWidgets();
   } catch (err) {
     console.error("Failed to load widgets:", err);
@@ -136,18 +97,17 @@ async function loadAndRenderWidgets() {
   }
 }
 
-function createWidgetCard(spec, pos) {
-  const cardId = `widget-${spec.id}`;
+function createWidgetCard(spec) {
   const el = document.createElement("div");
   el.className = "grid-stack-item";
-  el.id = cardId;
+  el.id = `widget-${spec.id}`;
   el.setAttribute("gs-id", spec.id);
-  el.setAttribute("gs-x", pos.x || 0);
-  el.setAttribute("gs-y", pos.y || 0);
-  el.setAttribute("gs-w", pos.w || 6);
-  el.setAttribute("gs-h", pos.h || 4);
-  el.setAttribute("gs-min-w", pos.minW || 3);
-  el.setAttribute("gs-min-h", pos.minH || 2);
+  el.setAttribute("gs-x", spec.grid.x);
+  el.setAttribute("gs-y", spec.grid.y);
+  el.setAttribute("gs-w", spec.grid.w);
+  el.setAttribute("gs-h", spec.grid.h);
+  el.setAttribute("gs-min-w", spec.grid.minW);
+  el.setAttribute("gs-min-h", spec.grid.minH);
 
   el.innerHTML = `
     <div class="grid-stack-item-content">
@@ -170,16 +130,7 @@ function createWidgetCard(spec, pos) {
   el.querySelector(".card-btn").addEventListener("click", () => refreshWidget(spec.id));
 
   grid.addWidget(el);
-  widgetInstances.set(spec.id, { spec: { ...spec, config: spec.config || {} }, chart: null, dom: el });
-}
-
-function getFilterValues() {
-  const startInput = document.getElementById("filter-start-date");
-  const endInput = document.getElementById("filter-end-date");
-  return {
-    start_date: startInput ? startInput.value : FALLBACK_DATE_RANGE.start_date,
-    end_date: endInput ? endInput.value : FALLBACK_DATE_RANGE.end_date
-  };
+  widgetInstances.set(spec.id, { spec, chart: null, dom: el });
 }
 
 async function refreshAllWidgets() {
@@ -189,21 +140,16 @@ async function refreshAllWidgets() {
 
 async function refreshWidget(widgetId) {
   const instance = widgetInstances.get(widgetId);
-  if (!instance) return;
-
-  const { spec } = instance;
-  const filters = getFilterValues();
   const bodyEl = document.getElementById(`body-${widgetId}`);
-  const timingEl = document.getElementById(`timing-${widgetId}`);
 
   try {
     const res = await fetch("/api/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sql: spec.sql,
-        start_date: filters.start_date,
-        end_date: filters.end_date
+        sql: instance.spec.sql,
+        start_date: document.getElementById("filter-start-date").value,
+        end_date: document.getElementById("filter-end-date").value
       })
     });
 
@@ -213,13 +159,10 @@ async function refreshWidget(widgetId) {
     }
 
     const data = await res.json();
-    if (timingEl) timingEl.textContent = `${data.duration_ms}ms (${data.row_count}r)`;
-
+    document.getElementById(`timing-${widgetId}`).textContent = `${data.duration_ms}ms (${data.row_count}r)`;
     renderWidgetContent(instance, data, bodyEl);
   } catch (err) {
-    if (bodyEl) {
-      bodyEl.innerHTML = `<div class="card-error">Error: ${escapeHtml(err.message)}</div>`;
-    }
+    bodyEl.innerHTML = `<div class="card-error">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 

@@ -15,7 +15,7 @@ import dlt
 
 from power_desk.ingest.pipeline import DATASET_NAME, make_pipeline, make_source, resource_progress
 from power_desk.ingest.registry import SOURCES
-from power_desk.ingest.spec import RunWindow, SourceSpec
+from power_desk.ingest.spec import RunWindow
 from power_desk.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_run_if_locked
 
 
@@ -38,9 +38,6 @@ class IngestConfig(Config):
     max_days_per_run: int | None = None
     refresh: str | None = None  # dlt refresh mode: drop_sources | drop_resources | drop_data
 
-    def window(self, spec: SourceSpec) -> RunWindow:
-        return spec.window(self.start_date, self.end_date, self.max_days_per_run)
-
 
 def minutes_behind(cursor: Any, now: datetime | None = None) -> float | None:
     if not cursor:
@@ -60,9 +57,8 @@ def load_metadata(pipeline: dlt.Pipeline, window: RunWindow) -> dict[str, Any]:
     }
 
 
-def progress_metadata(pipeline: dlt.Pipeline, source_name: str, resource: str) -> dict[str, Any]:
+def progress_metadata(progress: dict[str, Any]) -> dict[str, Any]:
     """An open-ended run's progress: cursor, lag, window and whether it was capped."""
-    progress = resource_progress(pipeline, source_name).get(resource, {})
     lag = minutes_behind(progress.get("cursor_last_value"))
     return {
         "cursor_last_value": str(progress.get("cursor_last_value") or ""),
@@ -83,7 +79,7 @@ def source_assets(name: str):
     )
     def ingest(context: AssetExecutionContext, dlt: DagsterDltResource, config: IngestConfig) -> Iterator[Any]:
         pipeline = make_pipeline(name)
-        window = config.window(SOURCES[name])
+        window = SOURCES[name].window(config.start_date, config.end_date, config.max_days_per_run)
         source = make_source(name, window)
         try:
             results = list(dlt.run(context=context, dlt_source=source, dlt_pipeline=pipeline, refresh=config.refresh))
@@ -92,9 +88,10 @@ def source_assets(name: str):
             raise
         for result in results:
             assert result.asset_key is not None  # dagster-dlt materializes one asset per resource
+            progress = resource_progress(pipeline, source.name).get(result.asset_key.path[-1], {})
             metadata = {**(result.metadata or {}), **load_metadata(pipeline, window)}
             if not window.bounded:
-                metadata |= progress_metadata(pipeline, source.name, result.asset_key.path[-1])
+                metadata |= progress_metadata(progress)
             yield MaterializeResult(asset_key=result.asset_key, metadata=metadata)
 
     return ingest

@@ -17,17 +17,17 @@ from typing import Any
 import dlt
 from dlt.common.pipeline import LoadInfo
 from dlt.sources import DltSource
+from tenacity import RetryCallState, Retrying, retry_if_exception, stop_after_delay, wait_fixed
 
 from power_desk.ingest.registry import SOURCES
 from power_desk.ingest.spec import RunWindow
 from power_desk.settings import pipelines_dir, warehouse_path
-from power_desk.warehouse import LockRetry, retry_while_locked
+from power_desk.warehouse import is_lock_error
 
 logger = logging.getLogger(__name__)
 
 DATASET_NAME = "raw"
 SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
-LOAD_RETRY = LockRetry(timeout_seconds=7.5, interval_seconds=1.5)
 
 
 def make_pipeline(name: str, db_path: Path | str | None = None, schemas_dir: Path | None = SCHEMAS_DIR) -> dlt.Pipeline:
@@ -54,13 +54,20 @@ def make_source(name: str, window: RunWindow | None = None, resources: list[str]
 
 
 def run(pipeline: dlt.Pipeline, source: DltSource, **kwargs: Any) -> LoadInfo:
-    """`pipeline.run`, retried while a reader holds the warehouse lock."""
+    """`pipeline.run`, retried for up to 7.5 s while a reader holds the warehouse lock."""
 
-    def drop_partial_load() -> None:
-        logger.warning("warehouse locked, retrying in %ss", LOAD_RETRY.interval_seconds)
+    def drop_partial_load(_: RetryCallState) -> None:
+        logger.warning("warehouse locked, retrying")
         pipeline.drop_pending_packages()
 
-    return retry_while_locked(lambda: pipeline.run(source, **kwargs), LOAD_RETRY, before_retry=drop_partial_load)
+    retry = Retrying(
+        retry=retry_if_exception(is_lock_error),
+        stop=stop_after_delay(7.5),
+        wait=wait_fixed(1.5),
+        before_sleep=drop_partial_load,
+        reraise=True,
+    )
+    return retry(pipeline.run, source, **kwargs)
 
 
 def resource_progress(pipeline: dlt.Pipeline, source_name: str) -> dict[str, dict[str, Any]]:

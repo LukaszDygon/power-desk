@@ -48,7 +48,7 @@ class SeedPublishers:
         files = {url: (seed_dir / "entsoe_eic" / name).read_text(encoding="utf-8") for url, name in EIC_FILES.items()}
         return cls(synthetic.generate(start_date, num_days), files, exports)
 
-    def fetch_json(self, url: str, params: dict[str, Any] | None = None, timeout: int = 30) -> Any:
+    def fetch_json(self, url: str, params: dict[str, Any] | None = None) -> Any:
         self.requests.append(url)
         params = params or {}
         if "pvlive" in url:
@@ -57,15 +57,13 @@ class SeedPublishers:
         first, last = params["publishDateTimeFrom"], params["publishDateTimeTo"]
         return {"data": [r for r in self.records[url.rsplit("/", 1)[1]] if first <= r["publishTime"] <= last]}
 
-    def fetch_if_changed(
-        self, url: str, etag: str | None = None, timeout: int = 120
-    ) -> tuple[str | None, dict[str, str]]:
+    def fetch_if_changed(self, url: str, etag: str | None = None) -> tuple[str | None, dict[str, str]]:
         self.requests.append(url)
         text = self.files[url]
         tag = hashlib.sha256(text.encode()).hexdigest()
         return (None, {"etag": tag}) if etag == tag else (text, {"etag": tag})
 
-    def list_folder(self, folder: str, page_size: int = 500) -> list[ExportFile]:
+    def list_folder(self, folder: str) -> list[ExportFile]:
         listed = [
             {"name": name, "lastUpdatedTimestamp": updated, "size": len(content)}
             for name, (updated, content) in self.exports.get(folder, {}).items()

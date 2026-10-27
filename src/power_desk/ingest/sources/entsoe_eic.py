@@ -23,7 +23,7 @@ import hashlib
 from html.parser import HTMLParser
 import io
 import logging
-from typing import Any, TypedDict
+from typing import Any
 
 import dlt
 from dlt.common.schema.typing import TMergeDispositionDict
@@ -39,16 +39,6 @@ CODES_URL = f"{BLOB}/CIO_extraction-all-eic-codes.csv"
 FUNCTIONS_URL = f"{BLOB}/eicFunctions.csv"
 ISSUING_OFFICES_URL = "https://www.entsoe.eu/data/energy-identification-codes-eic/"
 SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
-
-
-class SourceFileState(TypedDict):
-    """A snapshot file's latest fetch, kept in its dlt resource state as `source_file`."""
-
-    url: str
-    etag: str | None
-    last_modified: str | None
-    sha256: str | None
-    changed: bool
 
 
 def parse_csv(text: str, delimiter: str) -> list[dict[str, str]]:
@@ -138,13 +128,13 @@ def changed_rows(snapshot: Snapshot) -> Iterator[list[dict[str, Any]]]:
     text, validators = http.fetch_if_changed(snapshot.url, etag=previous.get("etag") or None)
     digest = hashlib.sha256(text.encode()).hexdigest() if text is not None else previous.get("sha256")
     new_text = text if digest != previous.get("sha256") else None
-    state["source_file"] = SourceFileState(
-        url=snapshot.url,
-        etag=validators.get("etag") or previous.get("etag"),
-        last_modified=validators.get("last_modified") or previous.get("last_modified"),
-        sha256=digest,
-        changed=new_text is not None,
-    )
+    state["source_file"] = {
+        "url": snapshot.url,
+        "etag": validators.get("etag") or previous.get("etag"),
+        "last_modified": validators.get("last_modified") or previous.get("last_modified"),
+        "sha256": digest,
+        "changed": new_text is not None,
+    }
     if new_text is not None:
         rows = snapshot.parse(new_text)
         logger.info("%s: %d rows from %s", snapshot.resource, len(rows), snapshot.url)

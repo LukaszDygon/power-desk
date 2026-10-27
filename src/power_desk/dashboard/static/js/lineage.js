@@ -83,9 +83,7 @@ function toCytoscapeElements(graph) {
 }
 
 function showNodeDetails(node) {
-  const details = document.getElementById("lineage-node-details");
-  if (!details) return;
-  details.innerHTML = `
+  document.getElementById("lineage-node-details").innerHTML = `
     <h4>${escapeHtml(node.data("label"))}</h4>
     <p class="lineage-detail-row"><span class="lineage-detail-key">Layer:</span> <code class="lineage-detail-layer">${escapeHtml(node.data("type"))}</code></p>
     <p class="lineage-detail-row"><span class="lineage-detail-key">Identifier:</span> <code>${escapeHtml(node.data("id"))}</code></p>
@@ -95,8 +93,6 @@ function showNodeDetails(node) {
 
 async function initLineageGraph() {
   const container = document.getElementById("cy-lineage");
-  if (!container) return;
-
   try {
     const res = await fetch("/api/lineage");
     if (!res.ok) throw new Error(`lineage request failed (HTTP ${res.status})`);
@@ -115,9 +111,7 @@ async function initLineageGraph() {
 }
 
 function openLineageModal() {
-  const modal = document.getElementById("lineage-modal");
-  if (!modal) return;
-  modal.classList.add("open");
+  document.getElementById("lineage-modal").classList.add("open");
   setTimeout(() => {
     if (!cyLineage) {
       initLineageGraph();
@@ -129,6 +123,5 @@ function openLineageModal() {
 }
 
 function closeLineageModal() {
-  const modal = document.getElementById("lineage-modal");
-  if (modal) modal.classList.remove("open");
+  document.getElementById("lineage-modal").classList.remove("open");
 }

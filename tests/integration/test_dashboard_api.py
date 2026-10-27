@@ -21,12 +21,15 @@ def test_page_and_filters_describe_the_loaded_week(client):
     assert {"WIND", "CCGT", "SOLAR"} <= set(filters["fuel_types"])
 
 
-def test_query_binds_dates_and_rejects_anything_but_select(client):
-    sql = "select count(*) from mart_gb_hourly_summary where date_utc between '{start_date}' and '{end_date}'"
+def test_query_binds_dates_and_can_only_read_the_warehouse(client, tmp_path):
+    sql = "select count(*) from mart_gb_hourly_summary where date_utc between $start_date and $end_date"
     result = client.post("/api/query", json={"sql": sql, "start_date": "2024-03-01", "end_date": "2024-03-07"}).json()
     assert result["rows"] == [[168]]
+    assert client.post("/api/query", json={"sql": sql, "start_date": "x' or 1=1 --"}).status_code == 422
     assert client.post("/api/query", json={"sql": "drop table raw.bmrs__fuelinst"}).status_code == 400
-    assert client.post("/api/query", json={"sql": sql, "start_date": "x' or 1=1 --"}).status_code == 400
+    escape = f"select 1; copy (select 1) to '{tmp_path / 'out.csv'}'"
+    assert client.post("/api/query", json={"sql": escape}).status_code == 400
+    assert not (tmp_path / "out.csv").exists()
 
 
 def test_lineage_runs_from_publisher_to_widget(client):

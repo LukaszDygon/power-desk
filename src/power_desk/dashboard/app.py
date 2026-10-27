@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import uvicorn
 
 from power_desk import warehouse
@@ -27,9 +28,8 @@ templates = Jinja2Templates(directory=HERE / "templates")
 
 class Query(BaseModel):
     sql: str
-    params: list[Any] = Field(default_factory=list)
-    start_date: str | None = None
-    end_date: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -68,13 +68,10 @@ def delete_widget(widget_id: str) -> dict[str, Any]:
 def query(payload: Query) -> dict[str, Any]:
     """400 for a query the warehouse rejects, 503 while the warehouse stays locked by a load."""
     try:
-        sql = queries.bind_dates(payload.sql, start_date=payload.start_date, end_date=payload.end_date)
-        return queries.run_query(sql, payload.params)
+        return queries.run_query(payload.sql, payload.start_date, payload.end_date)
     except duckdb.Error as exc:
         status = 503 if warehouse.is_lock_error(exc) else 400
         raise HTTPException(status_code=status, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def main() -> None:

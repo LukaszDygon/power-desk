@@ -5,26 +5,15 @@ DuckDB allows one writer per file: readers and loads retry while dlt or dbt hold
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path
-import time
+from typing import Any
 
 import duckdb
+from tenacity import Retrying, retry_if_exception, stop_after_delay, wait_fixed
 
 from power_desk.settings import warehouse_path
-
-
-@dataclass(frozen=True)
-class LockRetry:
-    """How long to keep retrying while another process holds the warehouse lock."""
-
-    timeout_seconds: float
-    interval_seconds: float
-
-
-CONNECT_RETRY = LockRetry(timeout_seconds=10.0, interval_seconds=0.15)
 
 
 def is_lock_error(error: BaseException | str | None) -> bool:
@@ -32,29 +21,15 @@ def is_lock_error(error: BaseException | str | None) -> bool:
     return "could not set lock" in text or "conflicting lock" in text
 
 
-def retry_while_locked[T](
-    action: Callable[[], T], retry: LockRetry, before_retry: Callable[[], None] | None = None
-) -> T:
-    """`action()`, retried while it fails on the warehouse lock until `retry.timeout_seconds` have passed."""
-    deadline = time.monotonic() + retry.timeout_seconds
-    while True:
-        try:
-            return action()
-        except Exception as exc:
-            if not is_lock_error(exc) or time.monotonic() >= deadline:
-                raise
-        if before_retry:
-            before_retry()
-        time.sleep(retry.interval_seconds)
-
-
 @contextmanager
 def connect(
-    path: Path | str | None = None, read_only: bool = True, retry: LockRetry = CONNECT_RETRY
+    path: Path | str | None = None, read_only: bool = True, config: dict[str, Any] | None = None
 ) -> Iterator[duckdb.DuckDBPyConnection]:
-    """A connection to the warehouse, retried while another process holds its lock."""
-    location = Path(path or warehouse_path()).as_posix()
-    con = retry_while_locked(lambda: duckdb.connect(location, read_only=read_only), retry)
+    """A connection to the warehouse, retried for up to 10 s while another process holds its lock."""
+    retry = Retrying(
+        retry=retry_if_exception(is_lock_error), stop=stop_after_delay(10), wait=wait_fixed(0.15), reraise=True
+    )
+    con = retry(duckdb.connect, Path(path or warehouse_path()).as_posix(), read_only=read_only, config=config or {})
     try:
         yield con
     finally:

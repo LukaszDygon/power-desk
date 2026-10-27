@@ -1,10 +1,12 @@
+from datetime import date
 from pathlib import Path
 import re
 
+import duckdb
 import pytest
 
 from power_desk.dashboard.lineage import lineage_from_manifest
-from power_desk.dashboard.queries import bind_dates, run_query
+from power_desk.dashboard.queries import run_query
 from power_desk.dashboard.widgets import DEFAULTS, Widget, load_widgets
 
 STATIC = Path(__file__).parents[2] / "src" / "power_desk" / "dashboard" / "static"
@@ -37,15 +39,32 @@ MANIFEST = {
 }
 
 
-def test_bind_dates_accepts_iso_dates_only():
-    assert bind_dates("where d >= '{start_date}'", start_date="2024-03-01") == "where d >= '2024-03-01'"
-    with pytest.raises(ValueError):
-        bind_dates("where d >= '{start_date}'", start_date="2024-03-01' or 1=1 --")
+@pytest.fixture
+def warehouse_file(tmp_path: Path) -> Path:
+    db = tmp_path / "w.duckdb"
+    with duckdb.connect(str(db)) as con:
+        for schema in ("marts", "ods", "dims", "raw"):
+            con.execute(f"create schema {schema}")
+        con.execute(
+            "create table marts.days as select date '2024-03-01' + cast(i as integer) as day from range(3) t(i)"
+        )
+    return db
 
 
-def test_run_query_rejects_statements_other_than_select():
-    with pytest.raises(ValueError, match="only SELECT"):
-        run_query("drop table raw.bmrs__indo")
+def test_run_query_binds_only_the_dates_the_query_uses(warehouse_file):
+    sql = "select count(*) from days where day >= $start_date"
+    assert run_query(sql, start_date=date(2024, 3, 2), end_date=date(2024, 3, 3), db_path=warehouse_file)["rows"] == [
+        [2]
+    ]
+    assert run_query("select 1", start_date=date(2024, 3, 2), db_path=warehouse_file)["rows"] == [[1]]
+
+
+def test_run_query_can_only_read_the_warehouse(warehouse_file, tmp_path):
+    with pytest.raises(duckdb.Error):
+        run_query("drop table days", db_path=warehouse_file)
+    with pytest.raises(duckdb.Error):
+        run_query(f"select 1; copy (select 1) to '{tmp_path / 'out.csv'}'", db_path=warehouse_file)
+    assert not (tmp_path / "out.csv").exists()
 
 
 def test_lineage_links_publisher_raw_models_and_widgets():

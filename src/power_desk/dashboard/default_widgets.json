@@ -12,7 +12,7 @@
       "minW": 6,
       "minH": 2
     },
-    "sql": "SELECT\nROUND(AVG(avg_zero_carbon_share_pct), 1) as avg_zero_carbon_share,\nROUND(MAX(peak_demand_mw)) as max_peak_demand,\nROUND(AVG(avg_wind_mw)) as avg_wind_mw,\nROUND(AVG(avg_solar_mw)) as avg_solar_mw,\nROUND(AVG(avg_demand_mw)) as avg_demand_mw\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'",
+    "sql": "SELECT\nROUND(AVG(avg_zero_carbon_share_pct), 1) as avg_zero_carbon_share,\nROUND(MAX(peak_demand_mw)) as max_peak_demand,\nROUND(AVG(avg_wind_mw)) as avg_wind_mw,\nROUND(AVG(avg_solar_mw)) as avg_solar_mw,\nROUND(AVG(avg_demand_mw)) as avg_demand_mw\nFROM mart_gb_hourly_summary\nWHERE date_utc >= $start_date AND date_utc <= $end_date",
     "config": {
       "metrics": [
         {
@@ -66,7 +66,7 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "SELECT\ntimestamp_utc,\nwind_mw,\nsolar_mw,\nnuclear_mw,\nccgt_gas_mw,\nbiomass_mw,\nhydro_mw,\npumped_storage_mw,\nimports_mw\nFROM mart_gb_generation_mix\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
+    "sql": "SELECT\ntimestamp_utc,\nwind_mw,\nsolar_mw,\nnuclear_mw,\nccgt_gas_mw,\nbiomass_mw,\nhydro_mw,\npumped_storage_mw,\nimports_mw\nFROM mart_gb_generation_mix\nWHERE settlement_date >= $start_date AND settlement_date <= $end_date\nORDER BY timestamp_utc ASC",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
@@ -126,7 +126,7 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "SELECT\nsource_code AS fuel_type,\nROUND(SUM(generation_mw), 1) as total_mwh\nFROM ods_generation_actual\nWHERE source_dataset IN ('FUELINST', 'PVLIVE')\nAND settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nGROUP BY source_code\nORDER BY total_mwh DESC",
+    "sql": "SELECT\nsource_code AS fuel_type,\nROUND(SUM(generation_mw), 1) as total_mwh\nFROM ods_generation_actual\nWHERE source_dataset IN ('FUELINST', 'PVLIVE')\nAND settlement_date >= $start_date AND settlement_date <= $end_date\nGROUP BY source_code\nORDER BY total_mwh DESC",
     "config": {
       "label_column": "fuel_type",
       "value_column": "total_mwh"
@@ -145,7 +145,7 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "SELECT\ntimestamp_utc,\nactual_demand_mw,\nforecast_demand_mw,\ndelta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
+    "sql": "SELECT\ntimestamp_utc,\nactual_demand_mw,\nforecast_demand_mw,\ndelta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= $start_date AND settlement_date <= $end_date\nORDER BY timestamp_utc ASC",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
@@ -181,7 +181,7 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "SELECT\nsettlement_period,\nROUND(AVG(delta_mw), 1) as avg_delta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nGROUP BY settlement_period\nORDER BY settlement_period ASC",
+    "sql": "SELECT\nsettlement_period,\nROUND(AVG(delta_mw), 1) as avg_delta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= $start_date AND settlement_date <= $end_date\nGROUP BY settlement_period\nORDER BY settlement_period ASC",
     "config": {
       "x_column": "settlement_period",
       "y_column": "avg_delta_mw",
@@ -204,7 +204,7 @@
       "minW": 6,
       "minH": 3
     },
-    "sql": "SELECT\nhour_utc,\navg_demand_mw,\navg_forecast_demand_mw,\navg_generation_mw,\navg_wind_mw,\navg_solar_mw,\navg_gas_mw,\navg_zero_carbon_share_pct\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\nORDER BY hour_utc DESC\nLIMIT 48",
+    "sql": "SELECT\nhour_utc,\navg_demand_mw,\navg_forecast_demand_mw,\navg_generation_mw,\navg_wind_mw,\navg_solar_mw,\navg_gas_mw,\navg_zero_carbon_share_pct\nFROM mart_gb_hourly_summary\nWHERE date_utc >= $start_date AND date_utc <= $end_date\nORDER BY hour_utc DESC\nLIMIT 48",
     "config": {
       "columns": [
         {

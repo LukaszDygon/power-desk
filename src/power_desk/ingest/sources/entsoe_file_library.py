@@ -30,6 +30,7 @@ API_URL = "https://fms.tp.entsoe.eu"
 ROOT = "/TP_export/"
 SOURCE_FILE = "_source_file"
 TOKEN_RENEWAL_MARGIN_SECONDS = 30  # renew this long before the token expires
+LIST_PAGE_SIZE = 500
 MONTHLY_EXPORT = re.compile(r"^(\d{4})_(\d{2})_")
 
 
@@ -65,7 +66,7 @@ class FileLibraryClient:
         self._token: str | None = None
         self._expires_at = 0.0
 
-    def list_folder(self, folder: str, page_size: int = 500) -> list[ExportFile]:
+    def list_folder(self, folder: str) -> list[ExportFile]:
         """The monthly exports of a folder."""
         items: list[dict[str, Any]] = []
         while True:
@@ -75,7 +76,7 @@ class FileLibraryClient:
                 json={
                     "path": f"{ROOT}{folder}/",
                     "sorterList": [{"key": "periodCovered.from", "ascending": True}],
-                    "pageInfo": {"pageIndex": len(items) // page_size, "pageSize": page_size},
+                    "pageInfo": {"pageIndex": len(items) // LIST_PAGE_SIZE, "pageSize": LIST_PAGE_SIZE},
                 },
             ).json()
             items += page.get("contentItemList", [])

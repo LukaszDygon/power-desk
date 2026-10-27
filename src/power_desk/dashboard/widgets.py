@@ -1,4 +1,4 @@
-"""Widget registry: dashboard cards, each a SQL query with `{start_date}` / `{end_date}` placeholders.
+"""Widget registry: dashboard cards, each a SQL query that may use the parameters `$start_date` / `$end_date`.
 
 The registry is `data/widgets.json`; without it, the dashboard starts from `default_widgets.json`.
 """

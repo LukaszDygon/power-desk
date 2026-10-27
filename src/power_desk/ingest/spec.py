@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
-from typing import Protocol
 
 from dlt.sources import DltSource
 
@@ -35,12 +35,6 @@ class RunWindow:
         return replace(self, start=self.start - padding, end=self.end + padding if self.end else None)
 
 
-class SourceBuilder(Protocol):
-    """The `@dlt.source` function of a source module."""
-
-    def __call__(self, window: RunWindow) -> DltSource: ...
-
-
 @dataclass(frozen=True)
 class SourceSpec:
     """A dlt source and its run limits; `name` is the dlt source, schema and pipeline name.
@@ -50,7 +44,7 @@ class SourceSpec:
     """
 
     name: str
-    build: SourceBuilder
+    build: Callable[[RunWindow], DltSource]  # the source module's `@dlt.source` function
     max_days_per_run: int = 7
     window_padding_days: int = 0
 

@@ -1,4 +1,8 @@
-"""Read-only queries over the warehouse; unqualified names resolve against marts, ods, dims and raw."""
+"""Read-only queries over the warehouse; unqualified names resolve against marts, ods, dims and raw.
+
+Connections are read-only and sandboxed by DuckDB (no file, network or extension access, settings
+locked), so widget SQL can read the warehouse and nothing else.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +18,7 @@ from power_desk.settings import warehouse_path
 
 SEARCH_PATH = "marts,ods,dims,raw,main"
 GB_DATASETS = ("FUELINST", "PVLIVE")
-DATE_PLACEHOLDERS = ("start_date", "end_date")
+SANDBOX = {"enable_external_access": False, "lock_configuration": True}
 MAX_SETTLEMENT_PERIODS = 50  # the autumn clock-change day
 COUNTED_TABLES = (
     ("raw", "bmrs__fuelinst"),
@@ -24,22 +28,16 @@ COUNTED_TABLES = (
 )
 
 
-def bind_dates(sql: str, **dates: str | None) -> str:
-    """Replace `{start_date}` / `{end_date}` with ISO dates (anything else is rejected)."""
-    for name in DATE_PLACEHOLDERS:
-        if value := dates.get(name):
-            sql = sql.replace("{" + name + "}", date.fromisoformat(value).isoformat())
-    return sql
-
-
-def run_query(sql: str, params: list[Any] | None = None, db_path: Path | None = None) -> dict[str, Any]:
-    """Columns, JSON-ready rows and duration of a read-only SELECT / WITH query."""
-    if not sql.strip().upper().startswith(("SELECT", "WITH")):
-        raise ValueError("only SELECT or WITH queries are allowed")
+def run_query(
+    sql: str, start_date: date | None = None, end_date: date | None = None, db_path: Path | None = None
+) -> dict[str, Any]:
+    """Columns, JSON-ready rows and duration of a query; it may use the parameters `$start_date` / `$end_date`."""
+    dates = {"start_date": start_date, "end_date": end_date}
+    params = {name: value for name, value in dates.items() if f"${name}" in sql}
     started = time.perf_counter()
-    with warehouse.connect(db_path) as con:
+    with warehouse.connect(db_path, config=SANDBOX) as con:
         con.execute(f"SET search_path = '{SEARCH_PATH}'")
-        cursor = con.execute(sql, params or [])
+        cursor = con.execute(sql, params)
         columns = [d[0] for d in cursor.description or []]
         rows = [[v.isoformat() if hasattr(v, "isoformat") else v for v in row] for row in cursor.fetchall()]
     return {
@@ -62,7 +60,7 @@ def filter_options(db_path: Path | None = None) -> dict[str, Any]:
     }
     if not Path(db_path or warehouse_path()).exists():
         return options
-    with warehouse.connect(db_path) as con:
+    with warehouse.connect(db_path, config=SANDBOX) as con:
         if "mart_gb_generation_mix" not in warehouse.table_names(con, "marts"):
             return options
         return {**options, **_date_range(con), "fuel_types": _fuel_types(con), "table_counts": _table_counts(con)}
