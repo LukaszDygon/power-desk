@@ -122,7 +122,8 @@ columns:
   entity:
     description: ODS entity the dataset feeds.
   native_interval_minutes:
-    description: Interval length the dataset is published at, in minutes.
+    description: Interval length the dataset is published at, in minutes; empty where it varies by area
+      or over time (see the rows' `interval_minutes`).
   default_area_eic_code:
     description: Area the dataset covers when its rows carry no area code.
   source_code:

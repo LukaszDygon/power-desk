@@ -3,7 +3,7 @@ models:
     description: |
       Every EIC (all object types), one row per published version.
 
-      {{ doc('dataset_eic_codes') }}
+      {{ doc('dataset_entsoe_eic__codes') }}
     data_tests:
       - dlt_unique:
           name: dim_eic_code_unique_version

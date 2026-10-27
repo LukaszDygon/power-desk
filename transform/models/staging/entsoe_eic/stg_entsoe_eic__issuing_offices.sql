@@ -9,4 +9,4 @@ select
     gas as operates_gas,
     {{ scd2_validity() }},
     _dlt_load_id
-from {{ source('entsoe_eic', 'raw_eic_issuing_offices') }}
+from {{ dlt_source('entsoe_eic', 'entsoe_eic__issuing_offices') }}

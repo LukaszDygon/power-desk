@@ -3,40 +3,35 @@ sources:
   bmrs:
     description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
 tables:
-  raw_fuelinst:
-    name: fuelinst
+  bmrs__fuelinst:
     refs:
     - elexon:datasets/FUELINST
     - elexon:glossary/instantaneous-generation-by-fuel-type
     freshness: actuals
     columns:
       generation: fuelinst_generation
-  raw_indo:
-    name: indo
+  bmrs__indo:
     refs:
     - elexon:datasets/INDO
     - elexon:glossary/initial-national-demand-out-turn
     freshness: actuals
     columns:
       demand: indo_demand
-  raw_itsdo:
-    name: itsdo
+  bmrs__itsdo:
     refs:
     - elexon:datasets/ITSDO
     - elexon:glossary/initial-transmission-system-demand-out-turn
     freshness: actuals
     columns:
       demand: itsdo_demand
-  raw_demand_forecast:
-    name: ndf
+  bmrs__ndf:
     refs:
     - elexon:datasets/NDF
     - elexon:glossary/national-demand-forecast
     freshness: forecasts
     columns:
       demand: ndf_demand
-  raw_windfor:
-    name: windfor
+  bmrs__windfor:
     refs:
     - elexon:datasets/WINDFOR
     - elexon:glossary/wind-generation-forecast

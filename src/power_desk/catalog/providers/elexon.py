@@ -13,7 +13,7 @@ import html
 import re
 from typing import Any
 
-from dlt.sources.helpers import requests
+from power_desk.ingest.http import fetch_json, fetch_text
 
 NAME = "elexon"
 LABELS = {"datasets": "Elexon Insights API", "glossary": "Elexon BSC Glossary"}
@@ -21,7 +21,6 @@ LABELS = {"datasets": "Elexon Insights API", "glossary": "Elexon BSC Glossary"}
 OPENAPI_URL = "https://data.elexon.co.uk/swagger/v1/swagger.json"
 API_BASE = "https://data.elexon.co.uk/bmrs/api/v1"
 GLOSSARY_API = "https://www.elexon.co.uk/bsc/wp-json/wp/v2/glossary"
-HEADERS = {"User-Agent": "PowerDesk/1.0 (data catalogue)"}
 
 # Paragraphs of the OpenAPI descriptions that explain query parameters, not the data.
 API_USAGE_NOTES = re.compile(
@@ -29,12 +28,6 @@ API_USAGE_NOTES = re.compile(
     re.IGNORECASE,
 )
 GLOSSARY_SECTIONS = ("BSC defined definition", "BSC documentation", "Further information", "Related terms")
-
-
-def get(url: str, **params: Any) -> requests.Response:
-    response = requests.get(url, params=params or None, headers=HEADERS, timeout=60)
-    response.raise_for_status()
-    return response
 
 
 def clean_paragraphs(text: str) -> list[str]:
@@ -77,17 +70,17 @@ def parse_glossary_page(page_html: str, title: str) -> dict[str, str]:
     end = text.find("Suggest content changes", start)
     if start < 0 or end < 0:
         raise ValueError(f"glossary page layout not recognised for {title!r}")
-    block = text[start + len(heading):end].strip()
+    block = text[start + len(heading) : end].strip()
 
     parts: dict[str, str] = {}
     acronym = re.match(r"Acronym:\s*(\S+)\s*", block)
     if acronym:
         parts["acronym"] = acronym.group(1)
-        block = block[acronym.end():]
+        block = block[acronym.end() :]
     pattern = "|".join(re.escape(s) for s in GLOSSARY_SECTIONS)
     pieces = re.split(rf"^({pattern})$", block, flags=re.MULTILINE)
     parts["summary"] = pieces[0].strip()
-    for marker, content in zip(pieces[1::2], pieces[2::2]):
+    for marker, content in zip(pieces[1::2], pieces[2::2], strict=False):
         key = {"BSC defined definition": "definition", "BSC documentation": "reference"}.get(marker)
         if key:
             parts[key] = content.strip()
@@ -97,14 +90,14 @@ def parse_glossary_page(page_html: str, title: str) -> dict[str, str]:
 
 
 def glossary_term(slug: str) -> dict[str, str]:
-    matches = get(GLOSSARY_API, slug=slug, _fields="title,link,modified").json()
+    matches = fetch_json(GLOSSARY_API, params={"slug": slug, "_fields": "title,link,modified"})
     if not matches:
         raise KeyError(f"BSC glossary has no term with slug {slug!r}")
     entry = matches[0]
     title = html.unescape(entry["title"]["rendered"])
     return {
         "title": title,
-        **parse_glossary_page(get(entry["link"]).text, title),
+        **parse_glossary_page(fetch_text(entry["link"]), title),
         "url": entry["link"],
         "modified": entry["modified"][:10],
     }
@@ -113,7 +106,7 @@ def glossary_term(slug: str) -> dict[str, str]:
 def fetch(kind: str, ids: list[str]) -> dict[str, dict[str, str]]:
     """Normalised entries {title, summary, [acronym, definition, reference], url} by id."""
     if kind == "datasets":
-        return dataset_definitions(get(OPENAPI_URL).json(), ids)
+        return dataset_definitions(fetch_json(OPENAPI_URL), ids)
     if kind == "glossary":
         return {slug: glossary_term(slug) for slug in ids}
     raise KeyError(f"{NAME}: unknown kind {kind!r} (expected one of {sorted(LABELS)})")

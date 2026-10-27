@@ -1,51 +1,106 @@
-"""Ingest job registry: which raw tables are refreshed together, and how often.
+"""Ingest jobs: which raw tables are refreshed together, how often, and the Dagster jobs built from them.
 
-Each entry becomes a Dagster job (its dlt assets + every dbt model), a UTC cron schedule,
-a cursor-lag asset check per raw table and a branch of the catch-up sensor. Group tables
-by publication cadence; a new source usually adds its tables to an existing job or adds
-one entry here. Raw tables are named after their dlt resources (`raw/<resource>`).
+Each ingest job materializes its raw tables and then every dbt model (marts process only pending
+loads, so untouched ones are cheap no-ops). Group raw tables by publication cadence; every raw
+table belongs to exactly one ingest job.
 """
 
 from dataclasses import dataclass
+
+from dagster import AssetKey, AssetSelection, RunConfig, define_asset_job
+
+from power_desk.ingest.pipeline import DATASET_NAME, make_source
+from power_desk.ingest.registry import SOURCES
+from power_desk.orchestration.dbt_assets import TransformConfig, dbt_models
 
 
 @dataclass(frozen=True)
 class IngestJob:
     name: str
-    schedule: str  # schedule name
+    schedule: str
     cron: str  # UTC
-    tables: tuple[str, ...]  # dlt resource / raw table names, from any source
-    # cursor-lag check warns beyond this (publication cadence + slack); None for snapshot sources
-    max_cursor_lag_minutes: int | None
+    tables: tuple[str, ...]  # raw tables (dlt resources), from any source
+    max_cursor_lag_minutes: int | None  # lag check threshold (cadence + slack); None for snapshots
     description: str
 
+    @property
+    def asset_keys(self) -> list[AssetKey]:
+        return [AssetKey([DATASET_NAME, table]) for table in self.tables]
 
-INGEST_JOBS: tuple[IngestJob, ...] = (
+
+INGEST_JOBS = (
     IngestJob(
-        name="ingest_actuals",
-        schedule="actuals_halfhourly",
-        cron="5,35 * * * *",
-        tables=("raw_fuelinst", "raw_indo", "raw_itsdo", "raw_pvlive_solar"),
+        "ingest_actuals",
+        "actuals_halfhourly",
+        "5,35 * * * *",
+        ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "pvlive__solar"),
         max_cursor_lag_minutes=120,
-        description="Outturn data published every few minutes to half-hourly.",
+        description="Outturn published every few minutes to half-hourly.",
     ),
     IngestJob(
-        name="ingest_forecasts",
-        schedule="forecasts_3h",
-        cron="15 */3 * * *",
-        tables=("raw_demand_forecast", "raw_windfor"),
+        "ingest_forecasts",
+        "forecasts_3h",
+        "15 */3 * * *",
+        ("bmrs__ndf", "bmrs__windfor"),
         max_cursor_lag_minutes=360,
         description="Forecasts published a few times a day.",
     ),
     IngestJob(
-        name="refresh_reference",
-        schedule="reference_daily",
-        cron="0 6 * * *",  # ENTSO-E regenerates the EIC files around midnight UTC
-        tables=("raw_eic_codes", "raw_eic_functions", "raw_eic_issuing_offices"),
+        "ingest_daily_exports",
+        "daily_exports_6h",
+        "50 */6 * * *",
+        (
+            "entsoe__actual_total_load",
+            "entsoe__day_ahead_total_load_forecast",
+            "entsoe__generation_per_type",
+            "entsoe__wind_solar_forecast",
+        ),
+        max_cursor_lag_minutes=36 * 60,
+        description="Monthly files re-exported daily around 05:40 UTC; unchanged files are skipped.",
+    ),
+    IngestJob(
+        "refresh_reference",
+        "reference_daily",
+        "0 6 * * *",
+        ("entsoe_eic__codes", "entsoe_eic__functions", "entsoe_eic__issuing_offices"),
         max_cursor_lag_minutes=None,
-        description="Reference data snapshots (scd2), skipped when the published file is unchanged.",
+        description="Reference snapshots (scd2), skipped while unchanged.",
     ),
 )
-
-# Full-scope test run over the whole warehouse (completeness from the start date) + dbt docs.
 NIGHTLY_CRON = "0 3 * * *"
+
+
+def check_every_raw_table_scheduled_once() -> None:
+    scheduled = [table for job in INGEST_JOBS for table in job.tables]
+    loaded = {table for name in SOURCES for table in make_source(name).resources}
+    if len(scheduled) != len(set(scheduled)) or set(scheduled) != loaded:
+        raise ValueError(
+            f"raw tables must be in exactly one ingest job; scheduled {sorted(scheduled)}, loaded {sorted(loaded)}"
+        )
+
+
+check_every_raw_table_scheduled_once()
+
+ALL_DBT = AssetSelection.assets(dbt_models)
+
+ingest_jobs = {
+    job.name: define_asset_job(
+        job.name,
+        selection=AssetSelection.assets(*job.asset_keys) | ALL_DBT,
+        description=f"{job.description} Then dbt, for the pending loads.",
+    )
+    for job in INGEST_JOBS
+}
+dbt_nightly = define_asset_job(
+    "dbt_nightly",
+    selection=ALL_DBT,
+    config=RunConfig(ops={"dbt_models": TransformConfig(scope="all", command="test", docs=True)}),
+    description="Every dbt test over the whole warehouse (completeness from the start date), then dbt docs.",
+)
+backfill = define_asset_job(
+    "backfill",
+    selection=AssetSelection.all(),
+    description="Configurable ingest + dbt: ops.<source>_ingest.config.{start_date,end_date,refresh}; "
+    "ops.dbt_models.config.scope=all tests the full range.",
+)
+JOBS = [*ingest_jobs.values(), dbt_nightly, backfill]

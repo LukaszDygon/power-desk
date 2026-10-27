@@ -2,7 +2,8 @@
 
 Each definitions file may contain the sections `sources`, `tables`, `columns`,
 `dlt_tables`, `freshness` and `links` (named official documents, cited by tables and columns
-via `links: [name]`); keys must be unique across files. One file per source
+via `links: [name]` or `links: [{link: name, section, page, path}]`); keys must be unique across
+files. One file per source
 (its dbt source, raw tables and source-specific column concepts) plus shared files for
 cross-source concepts keeps every definition in exactly one place.
 """
@@ -46,7 +47,8 @@ def load_definitions(directory: Path = DEFINITIONS_DIR) -> dict[str, dict[str, A
             entry["freshness"] = merged["freshness"][preset]
     for section in ("tables", "columns"):
         for key, entry in merged[section].items():
-            unknown_links = set(entry.get("links", [])) - set(merged["links"])
+            names = {link["link"] if isinstance(link, dict) else link for link in entry.get("links", [])}
+            unknown_links = names - set(merged["links"])
             if unknown_links:
                 raise KeyError(f"{section}.{key}: unknown links {sorted(unknown_links)}")
     return merged

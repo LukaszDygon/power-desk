@@ -47,7 +47,7 @@ tables:
     write_disposition: skip
     resource: _dlt_loads
     description: Created by DLT. Tracks completed loads
-  raw_fuelinst:
+  bmrs__fuelinst:
     columns:
       dataset:
         data_type: text
@@ -84,10 +84,10 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_fuelinst
+    resource: bmrs__fuelinst
     x-normalizer:
       seen-data: true
-  raw_indo:
+  bmrs__indo:
     columns:
       dataset:
         data_type: text
@@ -119,10 +119,10 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_indo
+    resource: bmrs__indo
     x-normalizer:
       seen-data: true
-  raw_itsdo:
+  bmrs__itsdo:
     columns:
       dataset:
         data_type: text
@@ -154,10 +154,10 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_itsdo
+    resource: bmrs__itsdo
     x-normalizer:
       seen-data: true
-  raw_demand_forecast:
+  bmrs__ndf:
     columns:
       dataset:
         data_type: text
@@ -193,10 +193,10 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_demand_forecast
+    resource: bmrs__ndf
     x-normalizer:
       seen-data: true
-  raw_windfor:
+  bmrs__windfor:
     columns:
       dataset:
         data_type: text
@@ -222,7 +222,7 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_windfor
+    resource: bmrs__windfor
     x-normalizer:
       seen-data: true
   _dlt_pipeline_state:
@@ -284,15 +284,15 @@ normalizers:
     config:
       propagation:
         tables:
-          raw_fuelinst:
+          bmrs__fuelinst:
             _dlt_id: _dlt_root_id
-          raw_indo:
+          bmrs__indo:
             _dlt_id: _dlt_root_id
-          raw_itsdo:
+          bmrs__itsdo:
             _dlt_id: _dlt_root_id
-          raw_demand_forecast:
+          bmrs__ndf:
             _dlt_id: _dlt_root_id
-          raw_windfor:
+          bmrs__windfor:
             _dlt_id: _dlt_root_id
 previous_hashes:
 - qyQ5HtHquKtzWvVf+9jR5OMGEaepkBkpwZ5CEKCvp1o=

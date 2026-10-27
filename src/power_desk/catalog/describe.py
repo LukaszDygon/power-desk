@@ -1,7 +1,7 @@
 """Describe the queryable relations from the dbt manifest.
 
     uv run python -m power_desk.catalog.describe                 # list relations by layer
-    uv run python -m power_desk.catalog.describe mart_generation_mix   # columns of one relation
+    uv run python -m power_desk.catalog.describe mart_gb_generation_mix   # columns of one relation
 
 Reads `transform/target/manifest.json` (refresh with `dbt parse` or `dbt build`).
 """
@@ -12,7 +12,8 @@ import argparse
 import json
 import sys
 
-from power_desk.db import manifest_path, plain_summary
+from power_desk.catalog.text import plain_summary
+from power_desk.settings import dbt_manifest_path
 
 LAYERS = ("marts", "ods", "staging", "raw")
 
@@ -25,13 +26,15 @@ def relations(manifest: dict) -> dict[str, dict]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("relation", nargs="?", help="relation name, e.g. mart_generation_mix")
+    parser.add_argument("relation", nargs="?", help="relation name, e.g. mart_gb_generation_mix")
     args = parser.parse_args()
 
-    path = manifest_path()
+    path = dbt_manifest_path()
     if not path.exists():
-        print(f"no dbt manifest at {path}; run `uv run dbt parse --project-dir transform --profiles-dir transform`",
-              file=sys.stderr)
+        print(
+            f"no dbt manifest at {path}; run `uv run dbt parse --project-dir transform --profiles-dir transform`",
+            file=sys.stderr,
+        )
         return 1
     rels = relations(json.loads(path.read_text(encoding="utf-8")))
 

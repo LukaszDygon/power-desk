@@ -1,0 +1,43 @@
+EicCode;EicDisplayName;EicLongName;EicParent;EicResponsibleParty;EicStatus;MarketParticipantPostalCode;MarketParticipantIsoCountryCode;MarketParticipantVatCode;EicTypeFunctionList;type
+10X1001A1001A248;ENERGINET-DK;Energinet;;;Active;7000;;DK28980671;System Operator;X
+10X1001A1001A515;NGESO;National Grid ESO;;;Active;WC2N 5EH;GB;GB547863011;System Operator;X
+10XFR-RTE------Q;RTE;Réseau de Transport d'Electricité (RTE);;;Active;92919;FR;FR19444619258;System Operator;X
+10Y1001A1001A016;GB-NI;Northern Ireland;;;Active;BT6 9RT;GB;;Control Area,LFC Area,LFC Block,Scheduling Area;Y
+10Y1001A1001A59C;SEM;Ireland and Northern Ireland;;;Active;;;;Bidding Zone,Scheduling Area,Synchronous Area;Y
+10Y1001A1001A82H;DE_LU;Germany_Luxemburg;;;Active;;;;Bidding Zone,LFC Area,Scheduling Area;Y
+10Y1001A1001A92E;UK;United Kingdom;;10X1001A1001A515;Active;;;;Member State;Y
+10Y1001C--000190;BE-GB-AREA;Border Area Belgium-Great Britain;;;Active;;;;Border Area;Y
+10Y1001C--00093P;FR-GB-IFA2-AREA;Border Area for IFA2;;10XFR-RTE------Q;Active;;;;Border Area;Y
+10Y1001C--00097H;FR-GB-EL1-AREA;Border Area for ElecLink;;48X000000000101E;Active;;;;Border Area;Y
+10Y1001C--001065;FR-GB-IFA-AREA;Border Area for IFA;;10XFR-RTE------Q;Active;;;;Border Area;Y
+10Y1001C--001405;GB-NO-AREA;Border Area UK-Norway;;;Active;;;;Border Area;Y
+10Y1001C--001502;IE-GB-GIL-AREA;Border area between IE and GB;;;Active;;;;Border Area;Y
+10YBE----------2;BE;Belgium;;;Active;;;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
+10YDE-VE-------2;DE-50HERTZ;Germany 50Hertz;;;Active;;DE;;Control Area,LFC Area,Scheduling Area,Market Balance Area;Y
+10YDK-1--------W;DK1;Denmark DK1;;10X1001A1001A248;Active;;;;Bidding Zone,LFC Area,Scheduling Area;Y
+10YDOM-1001A0028;GB-NL_MARKET;Market domain Great Britain – the Netherlands;;;Active;;;;Border Area;Y
+10YDOM-1010A024Y;NI-GB-AREA;Border area between Northern Ireland (NI) and Great Britain (GB);;;Active;;;;Border Area;Y
+10YDOM-1010A025W;IE-GB-EWIC-AREA;Border area between Republic of Ireland (IE) and Great Britain (GB);;;Active;;;;Border Area;Y
+10YFR-RTE------C;FR;France;;;Active;;;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area,Control Block;Y
+10YGB----------A;GB;Great Britain;;;Active;;GB;;Bidding Zone,Control Area,LFC Area,LFC Block,Scheduling Area,Synchronous Area;Y
+10YIE-1001A00010;IE;Ireland;;;Active;;IE;;Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
+10YLU-CEGEDEL-NQ;LU;Luxembourg;;;Active;;;;Control Area,LFC Area,Member State,Scheduling Area,Market Balance Area;Y
+10YNL----------L;NL;Netherlands;;;Active;;;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
+10YNO-2--------T;NO2;Norwegian Area Elspot Area 2;;;Active;;;;Bidding Zone,Scheduling Area;Y
+17W000000460346Y;FR_LA-MAREGES-G2;GROUPE 02 DE LA CENTRALE HYDRAULIQUE DE MAREGES;17W100P100P0328B;17X100A100P0001V;Active;;;;Generation Unit;W
+17W000000460367Q;FR_LA-MAREGES-G3;GROUPE 03 DE LA CENTRALE HYDRAULIQUE DE MAREGES;17W100P100P0328B;17X100A100P0001V;Active;;;;Generation Unit;W
+17W000000460368O;FR_LA-MAREGES-G4;GROUPE 04 DE LA CENTRALE HYDRAULIQUE DE MAREGES;17W100P100P0328B;17X100A100P0001V;Active;;;;Generation Unit;W
+17W000000918390N;FR_GA-MORANT1-G;BAYET MORANDES (LES);17W100P100P0318E;17X100A100R0172T;Active;;;;Generation Unit;W
+17W000000918406Y;FR_GA-TOULMETZ-G;CROIX DE METZ;17W100P100P0340L;17X100A100R0172T;Active;;;;Generation Unit;W
+17W000001023704Q;FR_LANDIVISIAUPU;COMPAGNIE ELECTRIQUE DE BRETAGNE;;17X100A100R0172T;Active;;;;Production Unit;W
+17W000001023725I;FR_LANDIVISIAUGU;COMPAGNIE ELECTRIQUE DE BRETAGNE;17W000001023704Q;17X100A100R0172T;Active;;;;Generation Unit;W
+17W100P100P0318E;FR_GA-MORAN-P;BAYET MORANDES (LES);;17X100A100R0172T;Active;;;;Production Unit;W
+17W100P100P0328B;FR_LA-MAREGES-P;MAREGES;;17X100A100P0001V;Active;;;;Production Unit;W
+17W100P100P0340L;FR_GA-TOULMETZ-P;CROIX DE METZ;;17X100A100R0172T;Active;;;;Production Unit;W
+17X100A100P0001V;FR_SHEM;SHEM;;;Active;;;FR04552139388;Production Responsible Party;X
+17X100A100R0172T;FR_TOTAL_DE;Total Direct Energie SA;;;Active;;;FR55442395448;Balance Responsible Party,Trade Responsible Party;X
+45Y000000000009X;BORDER_DK1-GB;Border Area DK1 - GB;;;Active;;;;Border Area;Y
+48X000000000101E;ELECLINK_IC;ElecLink Ltd;;;Active;;;GB131358045;Balance Responsible Party,Grid Operator,Interconnection Trade Responsible,Party Connected To Grid;X
+10Y1001A1001A83F;DE;Germany;;;Active;;;;Member State;Y
+10YES-REE------0;ES;Spain;;10XES-REE------E;Active;;;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
+10YPL-AREA-----S;PL;Poland;;;Active;05-520;PL;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y

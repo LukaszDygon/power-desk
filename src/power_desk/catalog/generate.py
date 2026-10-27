@@ -9,10 +9,12 @@ Inputs:
 
 Outputs:
 - `transform/models/docs/definitions.md`: one `{% docs %}` block per definition,
-  `dataset_<name>` for tables and `col_<key>` for columns
+  `dataset_<table>` for tables and `col_<key>` for columns; the definition text only
+  (the local description, else the publisher's wording)
 - `transform/models/sources/<pipeline>.yml`: one dbt source per dlt schema, plus `dlt.yml`
-  for the dlt metadata tables. Descriptions are `{{ doc() }}` references; tables also carry
-  `meta.dlt`, `meta.dagster.asset_key`, freshness and key-scoped duplication guards.
+  for the dlt metadata tables. Descriptions are `{{ doc() }}` references; where each definition
+  comes from is `meta.references` (title, url, and id, retrieved, section, page or path where known).
+  Tables also carry `meta.dlt`, `meta.dagster.asset_key`, freshness and key-scoped duplication guards.
 
 Generation fails on a raw table or column without a definition, on unknown references and on
 raw table names shared by two sources. `--check` exits non-zero if any output is stale.
@@ -28,15 +30,14 @@ from typing import Any
 import yaml
 
 from power_desk.catalog.definitions_loader import load_definitions, load_snapshots, load_yaml
-from power_desk.catalog.providers import PROVIDERS, parse_ref
-from power_desk.ingest.pipelines import DATASET_NAME, SCHEMAS_DIR
+from power_desk.catalog.render import Catalogue
+from power_desk.ingest.pipeline import DATASET_NAME, SCHEMAS_DIR
+from power_desk.settings import DBT_PROJECT_DIR
 
-TRANSFORM_DIR = Path(__file__).resolve().parents[3] / "transform"
-SOURCES_DIR = TRANSFORM_DIR / "models" / "sources"
-DOCS_FILE = TRANSFORM_DIR / "models" / "docs" / "definitions.md"
+SOURCES_DIR = DBT_PROJECT_DIR / "models" / "sources"
+DOCS_FILE = DBT_PROJECT_DIR / "models" / "docs" / "definitions.md"
 LOADED_AT_FIELD = "to_timestamp(cast(_dlt_load_id as double))"
 DLT_META_TABLES = ("_dlt_loads", "_dlt_pipeline_state")
-# dlt data types -> DuckDB column types (as created by the dlt duckdb destination)
 DUCKDB_TYPES = {
     "text": "VARCHAR",
     "bigint": "BIGINT",
@@ -65,147 +66,90 @@ def doc_ref(name: str) -> str:
     return "{{ doc('" + name + "') }}"
 
 
-def quote(text: str) -> str:
-    return "\n".join("> " + line if line else ">" for line in text.splitlines())
+def columns_with(table: dict[str, Any], hint: str) -> list[str]:
+    return [name for name, column in table["columns"].items() if column.get(hint)]
 
 
-class Catalogue:
-    """Resolves definition keys and provider references into markdown doc blocks."""
-
-    def __init__(self, definitions: dict[str, Any], snapshots: dict[str, Any]) -> None:
-        self.definitions = definitions
-        self.snapshots = snapshots
-        self.tables: dict[str, Any] = definitions["tables"]
-        self.columns: dict[str, Any] = definitions["columns"]
-
-    def column_key(self, table: str, column: str) -> str:
-        key = self.tables.get(table, {}).get("columns", {}).get(column, column)
-        if key not in self.columns:
-            raise KeyError(f"{table}.{column}: no definition `{key}` in catalog/definitions (columns:)")
-        return key
-
-    def dataset_doc(self, table: str) -> str:
-        return f"dataset_{self.tables[table]['name']}"
-
-    def resolve(self, ref: str) -> tuple[str, dict[str, Any], str]:
-        provider, kind, ident = parse_ref(ref)
-        snapshot = self.snapshots.get(provider, {})
-        try:
-            entry = snapshot["entries"][f"{kind}/{ident}"]
-        except KeyError:
-            raise KeyError(f"{ref} missing from snapshots/{provider}.yml; "
-                           "run `python -m power_desk.catalog.refresh`") from None
-        return PROVIDERS[provider].LABELS.get(kind, f"{provider} {kind}"), entry, snapshot["retrieved"]
-
-    def ref_md(self, ref: str) -> str:
-        label, entry, retrieved = self.resolve(ref)
-        title = f"[{entry['title']}]({entry['url']})"
-        if entry.get("acronym") and entry["acronym"] not in entry["title"]:
-            title += f" ({entry['acronym']})"
-        parts = [f"**{label}: {title}**", entry.get("summary", "")]
-        if entry.get("definition"):
-            parts.append(f"*Definition:* {entry['definition']}")
-        if entry.get("reference"):
-            parts.append("*Reference:* " + " · ".join(entry["reference"].splitlines()))
-        parts.append(f"*Retrieved {retrieved}.*")
-        return quote("\n\n".join(p for p in parts if p))
-
-    def links_md(self, entry: dict[str, Any]) -> str:
-        links = [self.definitions["links"][name] for name in entry.get("links", [])]
-        return "Official documentation: " + " · ".join(f"[{l['title']}]({l['url']})" for l in links) if links else ""
-
-    def dataset_md(self, table: str) -> str:
-        entry = self.tables[table]
-        # Without a local title the first reference's title heads the block.
-        parts = [f"**{entry['title']}**" if entry.get("title") else "", entry.get("description", "")]
-        parts += [self.ref_md(ref) for ref in entry.get("refs", [])]
-        if entry.get("url"):
-            parts.append(f"Source: <{entry['url']}>")
-        parts.append(self.links_md(entry))
-        return "\n\n".join(p for p in parts if p)
-
-    def column_md(self, key: str) -> str:
-        entry = self.columns[key]
-        parts = [entry["description"].strip(), *(self.ref_md(ref) for ref in entry.get("refs", [])), self.links_md(entry)]
-        return "\n\n".join(p for p in parts if p)
-
-    def docs_file(self) -> str:
-        out = [
-            "{# GENERATED by `python -m power_desk.catalog.generate` from catalog/definitions and "
-            "catalog/snapshots - do not edit. #}",
-        ]
-        for table in self.tables:
-            out.append(f"{{% docs {self.dataset_doc(table)} %}}\n{self.dataset_md(table)}\n{{% enddocs %}}")
-        for key in self.columns:
-            out.append(f"{{% docs col_{key} %}}\n{self.column_md(key)}\n{{% enddocs %}}")
-        return "\n\n".join(out) + "\n"
-
-
-def _columns(catalogue: Catalogue, table_name: str, table: dict[str, Any]) -> list[dict[str, Any]]:
+def source_columns(catalogue: Catalogue, table_name: str, table: dict[str, Any]) -> list[dict[str, Any]]:
+    """Columns with their doc block, references and dlt type (dbt reads the actual type from the warehouse)."""
     columns = []
-    for name, col in table["columns"].items():
-        if col.get("variant"):
+    for name, column in table["columns"].items():
+        if column.get("variant"):
             continue
-        # dbt reads column types from the warehouse; the dlt type is recorded as metadata
-        entry: dict[str, Any] = {
-            "name": name,
-            "description": doc_ref(f"col_{catalogue.column_key(table_name, name)}"),
-            "config": {"meta": {"dlt_data_type": duckdb_type(col)}},
-        }
-        if col.get("nullable") is False and name != "_dlt_id":
-            entry["data_tests"] = ["not_null"]
-        columns.append(entry)
+        key = catalogue.column_key(table_name, name)
+        references = catalogue.references(catalogue.columns[key])
+        columns.append(
+            {
+                "name": name,
+                "description": doc_ref(f"col_{key}"),
+                "config": {
+                    "meta": {"dlt_data_type": duckdb_type(column), **({"references": references} if references else {})}
+                },
+                **({"data_tests": ["not_null"]} if column.get("nullable") is False and name != "_dlt_id" else {}),
+            }
+        )
     return columns
 
 
-def source_for_schema(schema: dict[str, Any], catalogue: Catalogue) -> dict[str, Any]:
-    tables = []
-    for name, table in schema["tables"].items():
-        if name.startswith("_dlt") or table.get("parent"):
-            continue
-        if name not in catalogue.tables:
-            raise KeyError(f"raw table {name}: no entry in catalog/definitions (tables:)")
-        overlay = catalogue.tables[name]
-        primary_key = [c for c, col in table["columns"].items() if col.get("primary_key")]
-        cursor = next((c for c, col in table["columns"].items() if col.get("incremental")), None)
-        config: dict[str, Any] = {
+def duplication_guards(name: str, table: dict[str, Any]) -> list[dict[str, Any]]:
+    """Key-scoped uniqueness on the natural key and on the row version, with readable failure table names.
+
+    Snapshot (scd2) rows are versions: `_dlt_id` is a content hash, so a version is (`_dlt_id`, valid-from).
+    """
+    primary_key, valid_from = columns_with(table, "primary_key"), columns_with(table, "x-valid-from")
+    guards = (
+        [{"dlt_unique": {"name": f"{name}_unique_natural_key", "arguments": {"columns": primary_key}}}]
+        if primary_key
+        else []
+    )
+    row_version = (
+        {"name": f"{name}_unique_row_version", "arguments": {"columns": ["_dlt_id", *valid_from]}}
+        if valid_from
+        else {"name": f"{name}_unique_dlt_id", "arguments": {"columns": ["_dlt_id"]}}
+    )
+    return [*guards, {"dlt_unique": row_version}]
+
+
+def source_table(schema_name: str, name: str, table: dict[str, Any], catalogue: Catalogue) -> dict[str, Any]:
+    if name not in catalogue.tables:
+        raise KeyError(f"raw table {name}: no entry in catalog/definitions (tables:)")
+    definition = catalogue.tables[name]
+    dlt_meta = {
+        "pipeline": schema_name,
+        "resource": table.get("resource", name),
+        "write_disposition": table.get("write_disposition"),
+        **({"merge_strategy": table["x-merge-strategy"]} if table.get("x-merge-strategy") else {}),
+        "primary_key": columns_with(table, "primary_key"),
+        "cursor_column": next(iter(columns_with(table, "incremental")), None),
+    }
+    return {
+        "name": name,
+        "description": doc_ref(catalogue.dataset_doc(name)),
+        "config": {
             "meta": {
                 "dagster": {"asset_key": [DATASET_NAME, name]},
-                "dlt": {
-                    "pipeline": schema["name"],
-                    "resource": table.get("resource", name),
-                    "write_disposition": table.get("write_disposition"),
-                    **({"merge_strategy": table["x-merge-strategy"]} if table.get("x-merge-strategy") else {}),
-                    "primary_key": primary_key,
-                    "cursor_column": cursor,
-                },
+                "dlt": dlt_meta,
                 "dlt_recent_column": "_dlt_load_id",
+                "references": catalogue.references(definition),
             },
             "loaded_at_field": LOADED_AT_FIELD,
-        }
-        if overlay.get("freshness"):
-            config["freshness"] = overlay["freshness"]
-        # scd2 snapshots (reference data) keep every version; `_dlt_id` is a content hash
-        # there, so a version is identified by (row hash, valid-from).
-        valid_from = next((c for c, col in table["columns"].items() if col.get("x-valid-from")), None)
-        row_key = ["_dlt_id", valid_from] if valid_from else ["_dlt_id"]
-        # Explicit names keep store_failures tables readable (dbt hashes long generated names).
-        tests: list[Any] = [{"dlt_unique": {"name": f"{name}_unique_row_version" if valid_from else f"{name}_unique_dlt_id",
-                                            "arguments": {"columns": row_key}}}]
-        if primary_key:
-            tests.insert(0, {"dlt_unique": {"name": f"{name}_unique_natural_key", "arguments": {"columns": primary_key}}})
-        tables.append({
-            "name": name,
-            "description": doc_ref(catalogue.dataset_doc(name)),
-            "config": config,
-            "data_tests": tests,
-            "columns": _columns(catalogue, name, table),
-        })
+            **({"freshness": definition["freshness"]} if definition.get("freshness") else {}),
+        },
+        "data_tests": duplication_guards(name, table),
+        "columns": source_columns(catalogue, name, table),
+    }
+
+
+def source_for_schema(schema: dict[str, Any], catalogue: Catalogue) -> dict[str, Any]:
     return {
         "name": schema["name"],
         "description": catalogue.definitions.get("sources", {}).get(schema["name"], {}).get("description", ""),
         "schema": DATASET_NAME,
-        "tables": tables,
+        "tables": [
+            source_table(schema["name"], name, table, catalogue)
+            for name, table in schema["tables"].items()
+            if not name.startswith("_dlt") and not table.get("parent")
+        ],
     }
 
 
@@ -232,7 +176,7 @@ def dlt_meta_source(schema: dict[str, Any], catalogue: Catalogue) -> dict[str, A
     }
 
 
-def render(doc: dict[str, Any], src: str) -> str:
+def as_yaml(doc: dict[str, Any], src: str) -> str:
     return HEADER.format(src=src) + yaml.dump(doc, Dumper=_NoAliasDumper, sort_keys=False, width=120)
 
 
@@ -247,9 +191,11 @@ def generate() -> dict[Path, str]:
                 raise KeyError(f"raw table {table} is produced by both {owners[table]} and {schema['name']}")
     for path, schema in schemas:
         doc = {"sources": [source_for_schema(schema, catalogue)]}
-        outputs[SOURCES_DIR / f"{schema['name']}.yml"] = render(doc, f"ingest/schemas/{path.name}")
+        outputs[SOURCES_DIR / f"{schema['name']}.yml"] = as_yaml(doc, f"ingest/schemas/{path.name}")
     if schemas:
-        outputs[SOURCES_DIR / "dlt.yml"] = render({"sources": [dlt_meta_source(schemas[0][1], catalogue)]}, "dlt engine tables")
+        outputs[SOURCES_DIR / "dlt.yml"] = as_yaml(
+            {"sources": [dlt_meta_source(schemas[0][1], catalogue)]}, "dlt engine tables"
+        )
     return outputs
 
 

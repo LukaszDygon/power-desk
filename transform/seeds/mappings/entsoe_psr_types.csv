@@ -1,0 +1,22 @@
+psr_type,production_type,definition
+B01,Biomass,A resource using biomass for energy.
+B02,Fossil Brown coal/Lignite,A resource using Fossil Brown coal/Lignite for energy.
+B03,Fossil Coal-derived gas,A resource using Fossil Coal-derived gas for energy.
+B04,Fossil Gas,A resource using Fossil Gas for energy.
+B05,Fossil Hard coal,A resource using Fossil Hard coal for energy.
+B06,Fossil Oil,A resource using Fossil Oil for energy.
+B07,Fossil Oil shale,A resource using Fossil Oil shale for energy.
+B08,Fossil Peat,A resource using Fossil Peat for energy.
+B09,Geothermal,A resource using Geothermal for energy.
+B10,Hydro Pumped Storage,Unit in which moving water energy is converted to electricity using flowing water to generate electricity with a large dam and reservoirs. Pure pumped storage plants store water in an upper reservoir with no natural inflows.
+B11,Hydro Run-of-river and pondage,Unit in which moving water energy is converted to electricity using flowing water to generate electricity in the absence of a large dam and reservoirs.
+B12,Hydro Water Reservoir,Unit in which moving water energy is converted to electricity using flowing water to generate electricity with a large dam and reservoirs.
+B13,Marine,Unit in which marine energy is converted to electricity with equipment/devices not specified.
+B14,Nuclear,A unit in which the heat source is a nuclear reactor of type that is not specified in other nuclear types.
+B15,Other renewable,A resource using Other renewable for energy.
+B16,Solar,Unit in which solar energy is converted to electricity with equipment/devices not specified.
+B17,Waste,A resource using Waste for energy.
+B18,Wind Offshore,"Unit in which wind energy is converted to electricity using wind farms constructed in bodies of water, usually in the ocean."
+B19,Wind Onshore,Unit in which wind energy is converted to electricity using wind farms constructed on land.
+B20,Other,Other unspecified technology.
+B25,Energy storage,"A resource that stores energy. It could be gas, electricity, etc."

@@ -3,8 +3,7 @@ sources:
   pvlive:
     description: Sheffield Solar PVLive national solar outturn, loaded by the `pvlive` dlt pipeline.
 tables:
-  raw_pvlive_solar:
-    name: pvlive
+  pvlive__solar:
     title: GB national solar generation outturn (PVLive)
     description: Sheffield Solar PVLive estimate of GB solar PV generation, national total (PES region
       0), one row per half hour keyed on the half-hour *ending* time. Not an Elexon dataset; FUELINST

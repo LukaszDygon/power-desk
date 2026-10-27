@@ -1,0 +1,183 @@
+# Per-data-item guards and completeness for the entsoe source. Where an area changes its market time
+# unit, the overlap is published at both resolutions; staging keeps the finest (keep_finest_resolution).
+# File partitions: incremental tables, each pending load replacing the rows of its files.
+# Completeness is checked per day across all areas: an area's coverage is the publisher's (new areas,
+# gaps), a missing day is a loading gap.
+models:
+  - name: stg_entsoe__actual_total_load
+    description: |
+      Actual total load typed, one row per area per market time unit.
+
+      {{ doc('dataset_entsoe__actual_total_load') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__actual_total_load_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__actual_total_load_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests: [not_null]
+      - name: area_type_code
+        description: "{{ doc('col_area_type_code') }}"
+      - name: area_map_code
+        description: "{{ doc('col_area_map_code') }}"
+      - name: demand_mw
+        description: "{{ doc('col_entsoe_actual_total_load_mw') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _source_file
+        description: "{{ doc('col__source_file') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe__day_ahead_total_load_forecast
+    description: |
+      Day-ahead total load forecast typed (latest update), one row per area per market time unit.
+
+      {{ doc('dataset_entsoe__day_ahead_total_load_forecast') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__day_ahead_total_load_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__day_ahead_total_load_forecast_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests: [not_null]
+      - name: area_type_code
+        description: "{{ doc('col_area_type_code') }}"
+      - name: area_map_code
+        description: "{{ doc('col_area_map_code') }}"
+      - name: demand_mw
+        description: "{{ doc('col_entsoe_day_ahead_total_load_mw') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _source_file
+        description: "{{ doc('col__source_file') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe__generation_per_type
+    description: |
+      Aggregated generation per type typed, one row per area per production type per market time
+      unit, with the production type's PsrType code.
+
+      {{ doc('dataset_entsoe__generation_per_type') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__generation_per_type_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, production_type]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__generation_per_type_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests: [not_null]
+      - name: area_type_code
+        description: "{{ doc('col_area_type_code') }}"
+      - name: area_map_code
+        description: "{{ doc('col_area_map_code') }}"
+      - name: production_type
+        description: "{{ doc('col_production_type') }}"
+        data_tests: [not_null]
+      - name: psr_type
+        description: "{{ doc('col_psr_type') }}"
+        data_tests:
+          - not_null:
+              name: stg_entsoe__generation_per_type_production_type_known
+              config: {severity: warn}
+      - name: generation_mw
+        description: "{{ doc('col_actual_generation_output_mw') }}"
+      - name: consumption_mw
+        description: "{{ doc('col_actual_consumption_mw') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _source_file
+        description: "{{ doc('col__source_file') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe__wind_solar_forecast
+    description: |
+      Wind and solar generation forecasts typed, one row per area per production type per market
+      time unit, with the three published forecasts side by side.
+
+      {{ doc('dataset_entsoe__wind_solar_forecast') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__wind_solar_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, production_type]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__wind_solar_forecast_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests: [not_null]
+      - name: area_type_code
+        description: "{{ doc('col_area_type_code') }}"
+      - name: area_map_code
+        description: "{{ doc('col_area_map_code') }}"
+      - name: production_type
+        description: "{{ doc('col_production_type') }}"
+        data_tests: [not_null]
+      - name: psr_type
+        description: "{{ doc('col_psr_type') }}"
+        data_tests:
+          - not_null:
+              name: stg_entsoe__wind_solar_forecast_production_type_known
+              config: {severity: warn}
+      - name: day_ahead_forecast_mw
+        description: "{{ doc('col_entsoe_day_ahead_forecast_mw') }}"
+      - name: intraday_forecast_mw
+        description: "{{ doc('col_entsoe_intraday_forecast_mw') }}"
+      - name: current_forecast_mw
+        description: "{{ doc('col_entsoe_current_forecast_mw') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _source_file
+        description: "{{ doc('col__source_file') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

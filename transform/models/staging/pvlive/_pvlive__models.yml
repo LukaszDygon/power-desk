@@ -4,7 +4,7 @@ models:
       PVLive national solar generation per half hour, keyed on the half-hour start and
       mapped onto UK settlement periods.
 
-      {{ doc('dataset_pvlive') }}
+      {{ doc('dataset_pvlive__solar') }}
     data_tests:
       - dlt_unique:
           name: stg_pvlive__solar_unique_key

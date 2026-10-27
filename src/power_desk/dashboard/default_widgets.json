@@ -1,0 +1,238 @@
+[
+  {
+    "id": "kpi_grid_overview",
+    "title": "Grid Operational Overview",
+    "type": "kpi_cards",
+    "description": "High-level real-time and aggregate power KPIs",
+    "grid": {
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 2,
+      "minW": 6,
+      "minH": 2
+    },
+    "sql": "SELECT\nROUND(AVG(avg_clean_share_pct), 1) as avg_clean_share,\nROUND(MAX(peak_demand_mw)) as max_peak_demand,\nROUND(AVG(avg_wind_mw)) as avg_wind_mw,\nROUND(AVG(avg_solar_mw)) as avg_solar_mw,\nROUND(AVG(avg_demand_mw)) as avg_demand_mw\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'",
+    "config": {
+      "metrics": [
+        {
+          "key": "avg_clean_share",
+          "label": "Zero-Carbon Share",
+          "unit": "%",
+          "trend": "positive",
+          "badge": "ESG"
+        },
+        {
+          "key": "max_peak_demand",
+          "label": "Peak Demand",
+          "unit": "MW",
+          "trend": "neutral",
+          "badge": "LOAD"
+        },
+        {
+          "key": "avg_wind_mw",
+          "label": "Avg Wind Output",
+          "unit": "MW",
+          "trend": "positive",
+          "badge": "RENEWABLE"
+        },
+        {
+          "key": "avg_solar_mw",
+          "label": "Avg Solar Output",
+          "unit": "MW",
+          "trend": "neutral",
+          "badge": "SOLAR"
+        },
+        {
+          "key": "avg_demand_mw",
+          "label": "System Baseload",
+          "unit": "MW",
+          "trend": "neutral",
+          "badge": "INDO"
+        }
+      ]
+    }
+  },
+  {
+    "id": "generation_mix_timeseries",
+    "title": "Power Generation Mix by Fuel (MW)",
+    "type": "stacked_area",
+    "description": "Half-hourly generation stacked by primary fuel sources",
+    "grid": {
+      "x": 0,
+      "y": 2,
+      "w": 8,
+      "h": 5,
+      "minW": 4,
+      "minH": 3
+    },
+    "sql": "SELECT\ntimestamp_utc,\nwind_mw,\nsolar_mw,\nnuclear_mw,\nccgt_gas_mw,\nbiomass_mw,\nhydro_mw,\nimports_mw\nFROM mart_gb_generation_mix\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
+    "config": {
+      "time_column": "timestamp_utc",
+      "series": [
+        {
+          "column": "wind_mw",
+          "label": "Wind",
+          "color": "#00e5a3"
+        },
+        {
+          "column": "solar_mw",
+          "label": "Solar",
+          "color": "#f59e0b"
+        },
+        {
+          "column": "nuclear_mw",
+          "label": "Nuclear",
+          "color": "#818cf8"
+        },
+        {
+          "column": "biomass_mw",
+          "label": "Biomass",
+          "color": "#84cc16"
+        },
+        {
+          "column": "hydro_mw",
+          "label": "Hydro / PS",
+          "color": "#0ea5e9"
+        },
+        {
+          "column": "ccgt_gas_mw",
+          "label": "CCGT Gas",
+          "color": "#f97316"
+        },
+        {
+          "column": "imports_mw",
+          "label": "Interconnectors",
+          "color": "#94a3b8"
+        }
+      ]
+    }
+  },
+  {
+    "id": "fuel_share_donut",
+    "title": "Total Generation Share",
+    "type": "donut",
+    "description": "Total energy contribution by fuel type for the selected window",
+    "grid": {
+      "x": 8,
+      "y": 2,
+      "w": 4,
+      "h": 5,
+      "minW": 3,
+      "minH": 3
+    },
+    "sql": "SELECT\nsource_code AS fuel_type,\nROUND(SUM(generation_mw), 1) as total_mwh\nFROM ods_generation_actual\nWHERE source_dataset IN ('FUELINST', 'PVLIVE')\nAND settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nGROUP BY source_code\nORDER BY total_mwh DESC",
+    "config": {
+      "label_column": "fuel_type",
+      "value_column": "total_mwh"
+    }
+  },
+  {
+    "id": "demand_vs_forecast_line",
+    "title": "National Demand: Outturn vs Day-Ahead Forecast",
+    "type": "line",
+    "description": "Actual transmission system demand (INDO) compared against forecast",
+    "grid": {
+      "x": 0,
+      "y": 7,
+      "w": 8,
+      "h": 5,
+      "minW": 4,
+      "minH": 3
+    },
+    "sql": "SELECT\ntimestamp_utc,\nactual_demand_mw,\nforecast_demand_mw,\ndelta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nORDER BY timestamp_utc ASC",
+    "config": {
+      "time_column": "timestamp_utc",
+      "series": [
+        {
+          "column": "actual_demand_mw",
+          "label": "Actual Demand (MW)",
+          "color": "#f8fafc",
+          "borderWidth": 2
+        },
+        {
+          "column": "forecast_demand_mw",
+          "label": "Day-Ahead Forecast (MW)",
+          "color": "#c084fc",
+          "borderWidth": 2,
+          "borderDash": [
+            4,
+            4
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "forecast_variance_bar",
+    "title": "Forecast Imbalance Variance (Delta MW)",
+    "type": "bar",
+    "description": "Over/under forecasting delta across settlement periods",
+    "grid": {
+      "x": 8,
+      "y": 7,
+      "w": 4,
+      "h": 5,
+      "minW": 3,
+      "minH": 3
+    },
+    "sql": "SELECT\nsettlement_period,\nROUND(AVG(delta_mw), 1) as avg_delta_mw\nFROM mart_gb_demand_vs_forecast\nWHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\nGROUP BY settlement_period\nORDER BY settlement_period ASC",
+    "config": {
+      "x_column": "settlement_period",
+      "y_column": "avg_delta_mw",
+      "color_positive": "#34d399",
+      "color_negative": "#f43f5e"
+    }
+  },
+  {
+    "id": "hourly_analyst_table",
+    "title": "Hourly Power Desk Settlement Rollup",
+    "type": "table",
+    "description": "High-density tabular ledger of hourly system dispatch and clean shares",
+    "grid": {
+      "x": 0,
+      "y": 12,
+      "w": 12,
+      "h": 4,
+      "minW": 6,
+      "minH": 3
+    },
+    "sql": "SELECT\nhour_utc,\navg_demand_mw,\navg_forecast_demand_mw,\navg_generation_mw,\navg_wind_mw,\navg_solar_mw,\navg_gas_mw,\navg_clean_share_pct\nFROM mart_gb_hourly_summary\nWHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\nORDER BY hour_utc DESC\nLIMIT 48",
+    "config": {
+      "columns": [
+        {
+          "key": "hour_utc",
+          "label": "Hour (UTC)"
+        },
+        {
+          "key": "avg_demand_mw",
+          "label": "Demand (MW)"
+        },
+        {
+          "key": "avg_forecast_demand_mw",
+          "label": "Forecast (MW)"
+        },
+        {
+          "key": "avg_generation_mw",
+          "label": "Gen Total (MW)"
+        },
+        {
+          "key": "avg_wind_mw",
+          "label": "Wind (MW)"
+        },
+        {
+          "key": "avg_solar_mw",
+          "label": "Solar (MW)"
+        },
+        {
+          "key": "avg_gas_mw",
+          "label": "CCGT (MW)"
+        },
+        {
+          "key": "avg_clean_share_pct",
+          "label": "Clean %"
+        }
+      ]
+    }
+  }
+]

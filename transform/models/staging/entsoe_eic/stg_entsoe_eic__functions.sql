@@ -5,4 +5,4 @@ select
     trim(valid_in_market) as market,
     {{ scd2_validity() }},
     _dlt_load_id
-from {{ source('entsoe_eic', 'raw_eic_functions') }}
+from {{ dlt_source('entsoe_eic', 'entsoe_eic__functions') }}

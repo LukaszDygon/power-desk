@@ -10,7 +10,7 @@ with ranked as (
             partition by settlement_date, settlement_period
             order by publish_time desc
         ) as revision_rank
-    from {{ source('bmrs', 'raw_demand_forecast') }}
+    from {{ dlt_source('bmrs', 'bmrs__ndf') }}
     where settlement_date is not null
       and (boundary = 'N' or boundary is null)
 )

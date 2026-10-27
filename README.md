@@ -9,20 +9,25 @@ orchestrated by Dagster.
 ## Layout
 
 ```
-src/power_desk/ingest/          dlt sources and their registry (pipelines.py); exported dlt schemas
-src/power_desk/orchestration/   Dagster assets; ingest jobs and schedules (jobs.py)
-src/power_desk/catalog/         definitions, provider snapshots, dbt sources/docs generator
+src/power_desk/settings.py      environment and file locations
+src/power_desk/ingest/          dlt sources (sources/), their registry and pipelines; seed replay (seed/)
+src/power_desk/transform/       dbt invocations and pending dlt loads
+src/power_desk/orchestration/   Dagster assets, ingest jobs (jobs.py), schedules, sensors, checks
+src/power_desk/catalog/         definitions, provider snapshots, dbt sources and docs generator
+src/power_desk/dashboard/       read-only dashboard and widget registry
+src/power_desk/cli/             command-line entry points
 transform/                      dbt project: staging, ods, dims, marts, dlt_meta; seeds (dims, mappings)
-src/power_desk/app.py           read-only dashboard
+data/seed/                      recorded publisher payloads for the seed week
+tests/unit, tests/integration   logic in isolation; pipelines, dbt, jobs and API on the seed
 ```
 
 ## Commands
 
 ```bash
-uv run python scripts/dagster.py                 # orchestrator, http://localhost:3000
-uv run uvicorn power_desk.app:app --port 8888    # dashboard
-uv run python scripts/load_seed.py               # sample data -> dlt -> dbt (dev only)
-uv run python scripts/backfill.py [--pipelines <source>] [--start-date <d> --end-date <d> --chunk-days 31]
+uv run power-desk-dagster                        # orchestrator, http://localhost:3000
+uv run power-desk                                # dashboard, http://localhost:8888
+uv run power-desk-load-seed                      # seed week -> every pipeline -> dbt (dev only)
+uv run power-desk-backfill [--sources <source>] [--start-date <d> --end-date <d> --chunk-days 31]
 
 uv run dbt build --project-dir transform --profiles-dir transform
 uv run python -m power_desk.catalog.refresh      # refresh official definitions (network)
@@ -36,10 +41,6 @@ uv run pytest
 
 ## Settings
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `POWER_DESK_ENV` | `dev` | `dev` or `prod`: warehouse `data/warehouse_<env>.duckdb`, dbt target, dlt state, Dagster instance `.dagster/<env>` |
-| `POWER_DESK_DUCKDB_PATH` | | explicit warehouse file |
-| `POWER_DESK_START_DATE` | `2024-01-01` | first date the warehouse must cover (completeness) |
+Environment variables are listed in `src/power_desk/settings.py`; source credentials go in `.env`
+(see `.env.example`).
 
-One-off data migrations live in `scripts/migrations/`.

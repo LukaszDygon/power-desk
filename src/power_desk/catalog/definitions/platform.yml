@@ -15,6 +15,13 @@ freshness:
     error_after:
       count: 24
       period: hour
+  daily_exports:
+    warn_after:
+      count: 30
+      period: hour
+    error_after:
+      count: 54
+      period: hour
 dlt_tables:
   _dlt_loads: One row per dlt load package; `status = 0` marks a completed load.
   _dlt_pipeline_state: Versioned dlt pipeline state, including incremental cursors; dlt restores it from
@@ -70,8 +77,13 @@ columns:
   _dbt_updated_at:
     description: Time this row was last (re)built.
   timestamp_utc:
-    description: Start of the row's interval as a UTC timestamp; the interval length is the model's grain
-      (see the model description).
+    description: Start of the row's interval as a UTC timestamp; the interval length is `interval_minutes`
+      where the model has it, else the model's grain (see the model description).
+  interval_minutes:
+    description: Length of the row's interval in minutes (the publisher's resolution, e.g. the market time
+      unit). Several resolutions coexist across areas and over time.
+  _source_file:
+    description: Published file the row was loaded from; a re-published file replaces all its rows.
   publish_time_utc:
     description: Publication time of the value (UTC); for sources without one, the end of the interval.
   source_dataset:

@@ -5,7 +5,7 @@ with ranked as (
         cast(publish_time at time zone 'UTC' as timestamp) as publish_time_utc,
         _dlt_load_id,
         row_number() over (partition by start_time order by publish_time desc) as revision_rank
-    from {{ source('bmrs', 'raw_windfor') }}
+    from {{ dlt_source('bmrs', 'bmrs__windfor') }}
     where start_time is not null
 )
 

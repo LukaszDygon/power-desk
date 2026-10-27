@@ -1,41 +1,39 @@
+# Entities: every source providing the entity at its published interval. Columns: keys (time,
+# interval, area, technology, horizon), measures, provenance; GB settlement columns are null elsewhere.
 models:
   - name: ods_generation_actual
     description: |
-      Actual generation by fuel type at 5-minute grain, across sources.
+      Actual generation per area, technology and interval, across sources: GB at 5-minute grain
+      (FUELINST fuel types plus PVLive solar), ENTSO-E areas per market time unit and production type.
+      ENTSO-E publishes the same generation at several area levels.
 
-      {{ doc('dataset_fuelinst') }}
+      {{ doc('dataset_bmrs__fuelinst') }}
 
-      {{ doc('dataset_pvlive') }}
+      {{ doc('dataset_pvlive__solar') }}
+
+      {{ doc('dataset_entsoe__generation_per_type') }}
     data_tests:
       - dlt_unique:
           name: ods_generation_actual_unique_key
           arguments:
-            columns: [timestamp_utc, fuel_type]
+            columns: [timestamp_utc, area_eic_code, source_dataset, source_code]
       - expression_is_true:
           name: ods_generation_actual_interconnector_has_border
-          config: {severity: warn}
+          config:
+            severity: warn
           arguments:
-            expression: "technology_code <> 'interconnector' or border_area_eic_code is not null"
+            expression: technology_code <> 'interconnector' or border_area_eic_code is not null
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-        data_tests: [not_null]
-      - name: settlement_date
-        description: "{{ doc('col_settlement_date') }}"
-      - name: settlement_period
-        description: "{{ doc('col_settlement_period') }}"
-      - name: fuel_type
-        description: "{{ doc('col_fuel_type') }}"
-        data_tests: [not_null]
-      - name: generation_mw
-        description: "{{ doc('col_generation_mw') }}"
-        data_tests: [not_null]
-      - name: publish_time_utc
-        description: "{{ doc('col_publish_time_utc') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
       - name: area_eic_code
-        description: "{ doc('col_area_eic_code') }"
+        description: "{{ doc('col_area_eic_code') }}"
         data_tests:
           - not_null
           - relationships:
@@ -44,158 +42,72 @@ models:
                 to: ref('dim_area')
                 field: area_eic_code
       - name: technology_code
-        description: "{ doc('col_technology_code') }"
+        description: "{{ doc('col_technology_code') }}"
         data_tests:
           - not_null:
               name: ods_generation_actual_technology_mapped
-              config: {severity: warn}
+              config:
+                severity: warn
           - relationships:
               name: ods_generation_actual_known_technology
               arguments:
                 to: ref('dim_technology')
                 field: technology_code
       - name: border_area_eic_code
-        description: "{ doc('col_border_area_eic_code') }"
+        description: "{{ doc('col_border_area_eic_code') }}"
         data_tests:
           - relationships:
-              name: ods_generation_actual_known_border
+              name: ods_generation_actual_known_border_area
               arguments:
                 to: ref('dim_border')
                 field: border_area_eic_code
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
-
-  - name: ods_demand_actual
-    description: |
-      Actual national demand per settlement period.
-
-      {{ doc('dataset_indo') }}
-    data_tests:
-      - dlt_unique:
-          name: ods_demand_actual_unique_key
-          arguments:
-            columns: [settlement_date, settlement_period]
-    columns:
-      - name: timestamp_utc
-        description: "{{ doc('col_timestamp_utc') }}"
-        data_tests: [not_null]
+      - name: generation_mw
+        description: "{{ doc('col_generation_mw') }}"
+      - name: consumption_mw
+        description: "{{ doc('col_consumption_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+        data_tests:
+          - not_null:
+              name: ods_generation_actual_source_code_known
+              config:
+                severity: warn
       - name: settlement_date
         description: "{{ doc('col_settlement_date') }}"
       - name: settlement_period
         description: "{{ doc('col_settlement_period') }}"
-      - name: national_demand_mw
-        description: "{{ doc('col_national_demand_mw') }}"
-        data_tests: [not_null]
       - name: publish_time_utc
         description: "{{ doc('col_publish_time_utc') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
-      - name: area_eic_code
-        description: "{ doc('col_area_eic_code') }"
-        data_tests:
-          - not_null
-          - relationships:
-              name: ods_demand_actual_known_area
-              arguments:
-                to: ref('dim_area')
-                field: area_eic_code
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
-
-  - name: ods_demand_ts_actual
-    description: |
-      Actual transmission system demand per settlement period.
-
-      {{ doc('dataset_itsdo') }}
-    data_tests:
-      - dlt_unique:
-          name: ods_demand_ts_actual_unique_key
-          arguments:
-            columns: [settlement_date, settlement_period]
-    columns:
-      - name: timestamp_utc
-        description: "{{ doc('col_timestamp_utc') }}"
-      - name: settlement_date
-        description: "{{ doc('col_settlement_date') }}"
-      - name: settlement_period
-        description: "{{ doc('col_settlement_period') }}"
-      - name: transmission_demand_mw
-        description: "{{ doc('col_transmission_demand_mw') }}"
-        data_tests: [not_null]
-      - name: publish_time_utc
-        description: "{{ doc('col_publish_time_utc') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
-      - name: area_eic_code
-        description: "{ doc('col_area_eic_code') }"
-        data_tests:
-          - not_null
-          - relationships:
-              name: ods_demand_ts_actual_known_area
-              arguments:
-                to: ref('dim_area')
-                field: area_eic_code
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
-
-  - name: ods_demand_forecast
-    description: |
-      Latest national demand forecast per settlement period.
-
-      {{ doc('dataset_ndf') }}
-    data_tests:
-      - dlt_unique:
-          name: ods_demand_forecast_unique_key
-          arguments:
-            columns: [settlement_date, settlement_period]
-    columns:
-      - name: timestamp_utc
-        description: "{{ doc('col_timestamp_utc') }}"
-      - name: settlement_date
-        description: "{{ doc('col_settlement_date') }}"
-      - name: settlement_period
-        description: "{{ doc('col_settlement_period') }}"
-      - name: forecast_demand_mw
-        description: "{{ doc('col_forecast_demand_mw') }}"
-        data_tests: [not_null]
-      - name: publish_time_utc
-        description: "{{ doc('col_publish_time_utc') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
-      - name: area_eic_code
-        description: "{ doc('col_area_eic_code') }"
-        data_tests:
-          - not_null
-          - relationships:
-              name: ods_demand_forecast_known_area
-              arguments:
-                to: ref('dim_area')
-                field: area_eic_code
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
 
   - name: ods_generation_forecast
     description: |
-      Latest wind generation forecast per hour.
+      Generation forecasts per area, technology, horizon and interval, across sources: GB wind
+      (WINDFOR, latest revision per hour), ENTSO-E wind and solar per market time unit, one row per
+      published horizon.
 
-      {{ doc('dataset_windfor') }}
+      {{ doc('dataset_bmrs__windfor') }}
+
+      {{ doc('dataset_entsoe__wind_solar_forecast') }}
     data_tests:
       - dlt_unique:
           name: ods_generation_forecast_unique_key
           arguments:
-            columns: [timestamp_utc]
+            columns: [timestamp_utc, area_eic_code, source_dataset, source_code, forecast_horizon]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-        data_tests: [not_null]
-      - name: forecast_wind_mw
-        description: "{{ doc('col_forecast_wind_mw') }}"
-      - name: publish_time_utc
-        description: "{{ doc('col_publish_time_utc') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
       - name: area_eic_code
-        description: "{ doc('col_area_eic_code') }"
+        description: "{{ doc('col_area_eic_code') }}"
         data_tests:
           - not_null
           - relationships:
@@ -204,15 +116,171 @@ models:
                 to: ref('dim_area')
                 field: area_eic_code
       - name: technology_code
-        description: "{ doc('col_technology_code') }"
+        description: "{{ doc('col_technology_code') }}"
         data_tests:
           - not_null:
               name: ods_generation_forecast_technology_mapped
-              config: {severity: warn}
+              config:
+                severity: warn
           - relationships:
               name: ods_generation_forecast_known_technology
               arguments:
                 to: ref('dim_technology')
                 field: technology_code
+      - name: forecast_horizon
+        description: "{{ doc('col_forecast_horizon') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: ods_generation_forecast_known_horizon
+              arguments:
+                values: [day_ahead, intraday, current]
+      - name: generation_mw
+        description: "{{ doc('col_generation_forecast_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_demand_actual
+    description: |
+      Actual demand per area and interval, across sources: GB national demand per settlement period,
+      ENTSO-E actual total load per market time unit.
+
+      {{ doc('dataset_bmrs__indo') }}
+
+      {{ doc('dataset_entsoe__actual_total_load') }}
+    data_tests:
+      - dlt_unique:
+          name: ods_demand_actual_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, source_dataset]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_demand_actual_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: demand_mw
+        description: "{{ doc('col_demand_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_demand_forecast
+    description: |
+      Day-ahead demand forecast per area and interval, across sources: GB national demand forecast per
+      settlement period, ENTSO-E day-ahead total load forecast per market time unit.
+
+      {{ doc('dataset_bmrs__ndf') }}
+
+      {{ doc('dataset_entsoe__day_ahead_total_load_forecast') }}
+    data_tests:
+      - dlt_unique:
+          name: ods_demand_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, source_dataset, forecast_horizon]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_demand_forecast_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: forecast_horizon
+        description: "{{ doc('col_forecast_horizon') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: ods_demand_forecast_known_horizon
+              arguments:
+                values: [day_ahead, intraday, current]
+      - name: demand_mw
+        description: "{{ doc('col_forecast_demand_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_transmission_demand_actual
+    description: |
+      Actual transmission system demand per settlement period (GB).
+
+      {{ doc('dataset_bmrs__itsdo') }}
+    data_tests:
+      - dlt_unique:
+          name: ods_transmission_demand_actual_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, source_dataset]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_transmission_demand_actual_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: demand_mw
+        description: "{{ doc('col_transmission_demand_mw') }}"
+        data_tests:
+          - not_null
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"

@@ -5,7 +5,7 @@ models:
     description: |
       FUELINST typed, one row per fuel type per 5-minute interval.
 
-      {{ doc('dataset_fuelinst') }}
+      {{ doc('dataset_bmrs__fuelinst') }}
     data_tests:
       - dlt_unique:
           name: stg_bmrs__fuelinst_unique_key
@@ -45,7 +45,7 @@ models:
     description: |
       INDO typed, one row per settlement period.
 
-      {{ doc('dataset_indo') }}
+      {{ doc('dataset_bmrs__indo') }}
     data_tests:
       - dlt_unique:
           name: stg_bmrs__indo_unique_key
@@ -77,7 +77,7 @@ models:
     description: |
       ITSDO typed, one row per settlement period.
 
-      {{ doc('dataset_itsdo') }}
+      {{ doc('dataset_bmrs__itsdo') }}
     data_tests:
       - dlt_unique:
           name: stg_bmrs__itsdo_unique_key
@@ -108,7 +108,7 @@ models:
     description: |
       NDF reduced to the latest published revision per settlement period (national boundary).
 
-      {{ doc('dataset_ndf') }}
+      {{ doc('dataset_bmrs__ndf') }}
     data_tests:
       - dlt_unique:
           name: stg_bmrs__ndf_unique_key
@@ -139,7 +139,7 @@ models:
     description: |
       WINDFOR reduced to the latest published revision per forecast hour.
 
-      {{ doc('dataset_windfor') }}
+      {{ doc('dataset_bmrs__windfor') }}
     data_tests:
       - dlt_unique:
           name: stg_bmrs__windfor_unique_key

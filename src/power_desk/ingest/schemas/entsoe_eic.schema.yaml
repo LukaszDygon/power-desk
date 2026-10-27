@@ -47,7 +47,7 @@ tables:
     write_disposition: skip
     resource: _dlt_loads
     description: Created by DLT. Tracks completed loads
-  raw_eic_codes:
+  entsoe_eic__codes:
     columns:
       _dlt_valid_from:
         data_type: timestamp
@@ -102,10 +102,10 @@ tables:
         data_type: text
     x-merge-strategy: scd2
     write_disposition: merge
-    resource: raw_eic_codes
+    resource: entsoe_eic__codes
     x-normalizer:
       seen-data: true
-  raw_eic_functions:
+  entsoe_eic__functions:
     columns:
       _dlt_valid_from:
         data_type: timestamp
@@ -139,10 +139,10 @@ tables:
         data_type: text
     x-merge-strategy: scd2
     write_disposition: merge
-    resource: raw_eic_functions
+    resource: entsoe_eic__functions
     x-normalizer:
       seen-data: true
-  raw_eic_issuing_offices:
+  entsoe_eic__issuing_offices:
     columns:
       _dlt_valid_from:
         data_type: timestamp
@@ -188,7 +188,7 @@ tables:
         data_type: text
     x-merge-strategy: scd2
     write_disposition: merge
-    resource: raw_eic_issuing_offices
+    resource: entsoe_eic__issuing_offices
     x-normalizer:
       seen-data: true
   _dlt_pipeline_state:

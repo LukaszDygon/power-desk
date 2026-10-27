@@ -16,4 +16,4 @@ select
     {{ eic_check_character('eic_code') }} = substr(eic_code, 16, 1) as has_valid_check_character,
     {{ scd2_validity() }},
     _dlt_load_id
-from {{ source('entsoe_eic', 'raw_eic_codes') }}
+from {{ dlt_source('entsoe_eic', 'entsoe_eic__codes') }}

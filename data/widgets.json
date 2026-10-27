@@ -12,7 +12,7 @@
       "minW": 6,
       "minH": 2
     },
-    "sql": "\n            SELECT \n                ROUND(AVG(avg_clean_share_pct), 1) as avg_clean_share,\n                ROUND(MAX(peak_demand_mw)) as max_peak_demand,\n                ROUND(AVG(avg_wind_mw)) as avg_wind_mw,\n                ROUND(AVG(avg_solar_mw)) as avg_solar_mw,\n                ROUND(AVG(avg_demand_mw)) as avg_demand_mw\n            FROM mart_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n        ",
+    "sql": "\n            SELECT \n                ROUND(AVG(avg_clean_share_pct), 1) as avg_clean_share,\n                ROUND(MAX(peak_demand_mw)) as max_peak_demand,\n                ROUND(AVG(avg_wind_mw)) as avg_wind_mw,\n                ROUND(AVG(avg_solar_mw)) as avg_solar_mw,\n                ROUND(AVG(avg_demand_mw)) as avg_demand_mw\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n        ",
     "config": {
       "metrics": [
         {
@@ -66,7 +66,7 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                timestamp_utc,\n                wind_mw,\n                solar_mw,\n                nuclear_mw,\n                ccgt_gas_mw,\n                biomass_mw,\n                hydro_mw,\n                imports_mw\n            FROM mart_generation_mix\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
+    "sql": "\n            SELECT \n                timestamp_utc,\n                wind_mw,\n                solar_mw,\n                nuclear_mw,\n                ccgt_gas_mw,\n                biomass_mw,\n                hydro_mw,\n                imports_mw\n            FROM mart_gb_generation_mix\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
@@ -121,7 +121,7 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                fuel_type,\n                ROUND(SUM(generation_mw), 1) as total_mwh\n            FROM ods_generation_actual\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY fuel_type\n            ORDER BY total_mwh DESC\n        ",
+    "sql": "\n            SELECT \n                source_code AS fuel_type,\n                ROUND(SUM(generation_mw), 1) as total_mwh\n            FROM ods_generation_actual\n            WHERE source_dataset IN ('FUELINST', 'PVLIVE')\n              AND settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY source_code\n            ORDER BY total_mwh DESC\n        ",
     "config": {
       "label_column": "fuel_type",
       "value_column": "total_mwh"
@@ -140,7 +140,7 @@
       "minW": 4,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                timestamp_utc,\n                actual_demand_mw,\n                forecast_demand_mw,\n                delta_mw\n            FROM mart_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
+    "sql": "\n            SELECT \n                timestamp_utc,\n                actual_demand_mw,\n                forecast_demand_mw,\n                delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            ORDER BY timestamp_utc ASC\n        ",
     "config": {
       "time_column": "timestamp_utc",
       "series": [
@@ -176,7 +176,7 @@
       "minW": 3,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                settlement_period,\n                ROUND(AVG(delta_mw), 1) as avg_delta_mw\n            FROM mart_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY settlement_period\n            ORDER BY settlement_period ASC\n        ",
+    "sql": "\n            SELECT \n                settlement_period,\n                ROUND(AVG(delta_mw), 1) as avg_delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}'\n            GROUP BY settlement_period\n            ORDER BY settlement_period ASC\n        ",
     "config": {
       "x_column": "settlement_period",
       "y_column": "avg_delta_mw",
@@ -197,7 +197,7 @@
       "minW": 6,
       "minH": 3
     },
-    "sql": "\n            SELECT \n                hour_utc,\n                avg_demand_mw,\n                avg_forecast_demand_mw,\n                avg_generation_mw,\n                avg_wind_mw,\n                avg_solar_mw,\n                avg_gas_mw,\n                avg_clean_share_pct\n            FROM mart_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n            ORDER BY hour_utc DESC\n            LIMIT 48\n        ",
+    "sql": "\n            SELECT \n                hour_utc,\n                avg_demand_mw,\n                avg_forecast_demand_mw,\n                avg_generation_mw,\n                avg_wind_mw,\n                avg_solar_mw,\n                avg_gas_mw,\n                avg_clean_share_pct\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= '{start_date}' AND date_utc <= '{end_date}'\n            ORDER BY hour_utc DESC\n            LIMIT 48\n        ",
     "config": {
       "columns": [
         {
@@ -239,7 +239,7 @@
     "id": "baseload_thermal",
     "title": "Nuclear & Biomass Baseload (MW)",
     "type": "line",
-    "sql": "SELECT timestamp_utc, nuclear_mw, biomass_mw FROM mart_generation_mix WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' ORDER BY timestamp_utc",
+    "sql": "SELECT timestamp_utc, nuclear_mw, biomass_mw FROM mart_gb_generation_mix WHERE settlement_date >= '{start_date}' AND settlement_date <= '{end_date}' ORDER BY timestamp_utc",
     "grid": {
       "x": 0,
       "y": 0,

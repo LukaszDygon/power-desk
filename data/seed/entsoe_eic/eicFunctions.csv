@@ -1,0 +1,171 @@
+EIC Function,EIC Type,Definition,Valid in Market
+Busbar,A,A busbar is a system of electrical conductors in a generating or receiving substation on which power is concentrated for distribution.,Electricity
+Dynamic reactive power device,A,"A dynamic reactive power device is an equipment capable of measuring the reactive power consumed in the phase in which it is installed and providing the reactive power required in a gradual way, from zero to maximum capacitive and/or from zero to the maximum inductive.",Electricity
+Harmonic Filter,A,A harmonic filter reduces the harmonic currents flowing in the power system from the source and thereby reduce the harmonic voltage distortion in the system.,Electricity
+Substation,A,"Facility equipment that steps up or steps down the voltage in utility power lines. Voltage is stepped up where power is sent through long distance transmission lines, and stepped down where the power is to enter local distribution lines. They can be classified as normal outside substation, armoured substation and underground substation.",Electricity
+AC/DC Convertor,T,AC/DC converters are electrical circuits that transform alternating current (AC) into direct current (DC) and vice versa.,Electricity
+Busbar Coupler,T,Bus coupler is a device which is used to couple one bus to the other without any interruption in power supply and without creating hazardous arcs. Bus coupler is a breaker used to couple two busbars in order to perform maintenance on other circuit breakers associated with that busbar.,Electricity
+Compressor Station,T,Facility in the gas transmission system that allows the control of the gas flow and to increase the pressure in the high pressure pipe lines.,Gas
+Corridor,T,"Set of two or more tielines, describing a multi-circuit connection.",Electricity
+Flow Control Station,T,Facility in the gas transmission system that allows the regulation of pressure and the gas flow in the high pressure pipe lines.,Gas
+Gas Treatment Facility,T,Facility in the gas transmission system that allows processing of the gas in order to meet the required physical and chemical specifications.,Gas
+Internal Line,T,A transmission line that does not cross different areas.,Electricity
+Internal Tie-Line,T,Line is a line between two scheduling areas within the same bidding zone.,Electricity
+Odorization Facility,T,Facility in the gas transmission system that allows the addition of odorant to natural gas for leak detection awareness.,Gas
+Tieline,T,A transmission line that connects different areas excluding HVDC interconnectors.,Electricity
+Transformer,T,"A Static piece of apparatus with two or more windings which, by electromagnetic induction, transforms a system of alternating voltage and current into another system of voltage and current usually of different values and at the same frequency for the purpose of transmitting electrical power.",Electricity
+Endpoint,V,Unique identification of Endpoint within single ECP network.,Electricity
+IT-system,V,Common IT system for market parties.,Electricity
+IT-topic,V,"An IT-topic is a functional address, which allows a sender to address multiple recipients at the same time.",Electricity
+Location,V,"An endpoint, or IT-system.",Electricity
+BESS,W,"BESS is a Battery Energy Storage System with inverters, battery, output transformer, safety features and controls which is an integrated system that uses batteries to store electrical energy for later use.",Electricity
+Gas Storage Facility,W,See Storage Plant.,Gas
+Generation,W,The production of electricity.,Electricity
+Generation Unit,W,A single electricity generator belonging to a production unit.,Electricity
+LNG Plant,W,Facility that transforms natural gas into LNG and/or is used to load an LNG tanker.,Gas
+LNG terminal,W,"A facility for the liquefaction of natural gas, or the (off) loading, and re-gasification of LNG.",Gas
+Load,W,"The consumption corresponding to the short-term average active power absorbed by all installations connected to the transmission grid or to the distribution grid, excluding the consumption for pumping of the pumped-storage stations, excluding the consumption of power plants auxiliaries, including network losses.",Electricity
+Production Plant,W,"For electricity, production plant covers production facilities where different multiple technologies are used. Generally, production plant is parent code for Production Unit, Storage plant, Bank Unit on a same location.",Electricity
+Production Unit,W,A facility for generation of electricity made up of a single generation unit or of an aggregation of generation units.,Electricity
+Reactance Bank,W,A reactance bank is a system consisting of several connected capacitors and/or inductors to form an energy storage system. This system helps in correcting the power factor and phase shift in an AC power supply.,Electricity
+Resource Capacity Market Unit,W,Resource Capacity Market Unit (RCMU) is the single unit or group of aggregated units used by the resource provider to fulfil its capacity commitment and upon which availability is checked.,Electricity
+Resource Object,W,A resource that can either produce or consume energy and that is reported in a schedule.,Electricity
+Rotating phase shifter,W,A rotating phase shifter fulfills the function of providing infinitely variable inductive or capacitive reactive power in the power network.,Electricity
+Shunt Reactor,W,A shunt reactor is used to absorb & compensate the reactive power in transmission systems.,Electricity
+Storage Plant,W,A facility for the temporary storage of natural gas to cover peak demands in winter periods or periods of shortage in the normal gas supply chain. For electricity storage plant covers hydraulic pumps in hydraulic facilities.,Electricity and Gas
+Alignment Agent,X,"A party responsible for aligning the forecasts and/or the
+verification of the Bidding Zones net positions.",Electricity
+Balance Responsible Party,X,A party financially accountable for its imbalances.,Electricity
+Balancing Service Provider,X,A party with reserve-providing units or reserve-providing groups able to provide balancing services to one or more LFC Operators. A party providing energy balancing services to the energy market.,Electricity
+Billing Agent,X,The party responsible for invoicing a concerned party.,Electricity
+Capacity Trader,X,"A party that has a contract to participate in the Capacity
+Market to acquire capacity through a Transmission
+Capacity Allocator.",Electricity
+Consent Administrator,X,"A party responsible for administrating a register of
+consents for a domain. The Consent Administrator makes
+this information available on request for entitled parties
+in the sector.",Electricity
+Consumer,X,A party that consumes energy.,Electricity
+Consumption Responsible Party,X,"A Consumption Responsible Party is responsible for its
+imbalances, meaning the difference between the energy
+volume physically withdrawn from the system and the
+final nominated energy volume, including any imbalance
+adjustment within a given imbalance settlement period.",Electricity
+Coordinated Capacity Calculator,X,"Coordinated Capacity Calculator is the entity or entities
+with the task of calculating transmission capacity, at
+regional level or above.",Electricity
+Coordination Centre Operator,X,"A party responsible for the coordination of its
+Coordination Centre Zone in respect of scheduling, load
+frequency control, time deviation and compensation of
+unintentional deviation.",Electricity
+Data Access Provider,X,A party responsible for facilitating access to data.,Electricity
+Data Provider,X,"A party that has a mandate to provide information to
+other parties in the energy market. Additional information: For example, due to Consolidated text: Commission
+Regulation (EU) No 543/2013, a data provider may be a
+Transmission System Operator or a third party agreed by
+a TSO.",Electricity
+Distribution System Operator,X,"A natural or legal person responsible for operating, ensuring the maintenance of and, if necessary, developing the distribution Network in a given area and, where applicable, its interconnections with other Networks and for ensuring the long term ability of the Network to meet reasonable demands for the distribution of electricity.",Electricity
+Energy Service Company,X,"A party offering energy-related services to the Party
+Connected to Grid, but not directly active in the energy
+value chain or the physical infrastructure itself. The
+Energy Service Company (ESCO) may provide insight
+services as well as energy management services.",Electricity
+Energy Supplier,X,An Energy Supplier supplies electricity to or takes electricity from a Party Connected to the Grid at an Accounting Point.,Electricity
+Energy Trader,X,A party that is selling or buying energy.,Electricity
+Flexibility Service Provider,X,A party that offers flexibility services based on acquired (aggregated) resources.,Electricity
+Grid Access Provider,X,A party responsible for providing access to the grid through an Accounting Point and its use for energy consumption or production to the Party Connected to the Grid.,Electricity
+Grid Operator,X,A party that operates one or more grids.,Electricity
+Imbalance Settlement Responsible,X,A party that is responsible for settlement of the difference between the contracted quantities and the realized quantities of energy products for the Balance Responsible Parties in a Market Balance Area.,Electricity
+Information Provider,X,An entity providing information either of own origin or on behalf of one or more parties.,Electricity
+Interconnection Trade Responsible,X,Is a Balance Responsible Party or depends on one. He is recognized by the Nomination Validator for the nomination of already allocated capacity.,Electricity
+LFC Operator,X,Responsible for the load frequency control for its LFC Area or LFC Block.,Electricity
+LNG System Operator,X,"A natural or legal person who carries out the function of liquefaction of natural gas, or the importation, offloading, and re-gasification of LNG and is responsible for operating a LNG facility.",Gas
+Market Area Operator,X,Missing definition.,Electricity
+Market Information Aggregator,X,"A party that provides market related information that has
+been compiled from the figures supplied by different
+actors in the market. This information may also be
+published or distributed for general use.",Electricity
+Market Operator,X,The unique power exchange of trades for the actual delivery of energy that receives the bids from the Balance Responsible Parties that have a contract to bid. The Market Operator determines the market energy price for the Market Balance Area after applying technical constraints from the System Operator. It may also establish the price for the reconciliation within a Metering Grid Area.,Electricity
+Measurement Service Provider,X,Missing definition.,Electricity
+Merit Order List Responsible,X,"Responsible for the management of the available tenders
+for all Acquiring LFC Operators to establish the order of
+the reserve capacity that can be activated.",Electricity
+Meter Administrator,X,A party responsible for keeping a database of meters.,Electricity
+Meter Operator,X,"A party responsible for installing, maintaining, testing, certifying and decommissioning physical meters.",Electricity
+Metered Data Administrator,X,A party responsible for storing and distributing validated measured data.,Electricity
+Metered Data Aggregator,X,A party responsible for the establishment and qualification of metered data from the Metered Data Responsible. This data is aggregated according to a defined set of market rules.,Electricity
+Metered Data Collector,X,A party responsible for meter reading and quality control of the reading.,Electricity
+Metered Data Responsible,X,A party responsible for the establishment and validation of metered data based on the collected data received from the Metered Data Collector. The party is responsible for the history of metered data for a Metering Point.,Electricity
+Metering Point Administrator,X,A party responsible for registering the parties linked to the metering points in a Metering Grid Area. He is also responsible for maintaining the Metering Point technical specifications. He is responsible for creating and terminating metering points.,Electricity
+Metering Point Operator,X,"The metering point operator shall be responsible for the installation, operation and maintenance of devices for market partners.",Electricity
+Model Merging Agent,X,"A party responsible for establishing a merged grid model
+and ensuring its completeness, consistency and quality.",Electricity
+Modelling Authority,X,"A party accountable for the sourcing, consistency and
+quality of one or more model datasets.",Electricity
+Network User,X,"A customer or a potential customer of a transmission system operator, and transmission system operators themselves in so far as it is necessary for them to carry out their functions in relation to transmission.",Electricity
+Nominated Electricity Market Operator,X,"An entity designated by the competent authority to
+perform tasks related to single day-ahead or single
+intraday coupling. ",Electricity
+Nomination Validator,X,Has the responsibility of ensuring that all capacity nominated is within the allowed limits and confirming all valid nominations to all involved parties. He informs the Interconnection Trade Responsible of the maximum nominated capacity allowed. Depending on market rules for a given interconnection the corresponding System Operators may appoint one Nomination Validator.,Electricity
+Party Administrator,X,"A party responsible for maintaining party characteristics
+for the energy sector.",Electricity
+Party Connected To Grid,X,A party that contracts for the right to consume or produce electricity at an Accounting Point.,Electricity
+Permission Administrator,X,"A party responsible for administrating a register of data access permissions for a set of metering points, making this information available to final customers and eligible parties in the sector, on request.",Electricity
+Platform Operator,X,A party providing and operating a platform that implements the rules and processes for e.g. offering and allocation of all capacity products and/or may permit Capacity Responsible Parties to offer and obtain secondary capacity products or for offering commodity trading.,Electricity
+Producer,X,A natural or legal person generating electricity.,Electricity
+Production Responsible Party,X,"A Production Responsible Party is responsible for its
+imbalances, meaning the difference between the energy
+volume physically injected to the system and the final
+nominated energy volume, including any imbalance
+adjustment within a given imbalance settlement period.
+Additional information:
+This is a type of Balance Responsible Party.",Electricity
+Reconciliation Accountable,X,"A party that is financially accountable for the reconciled
+volume of energy products for a profiled Accounting
+Point.",Electricity
+Reconciliation Responsible,X,"A party that is responsible for reconciling, within a
+Metering Grid Area, the volumes used in the imbalance
+settlement process for profiled Accounting Points and the
+actual measured quantities.",Electricity
+Reserve Allocator,X,"Informs the market of reserve requirements, receives
+bids against the requirements and in compliance with the
+prequalification criteria, determines which bids meet
+requirements and assigns bids.",Electricity
+Resource Aggregator,X,A party that aggregates resources for usage by a service provider for energy market services.,Electricity
+Resource Capacity Mechanism Operator,X,Resource capacity mechanism operator is the party responsible to operate the resource capacity mechanism in a member state. It can either be the TSO or an independent party.,Electricity
+Resource Provider,X,"A role that manages a resource and provides the schedules for it, if required.",Electricity
+Scheduling Agent,X,"The entity or entities with the task of providing schedules.
+Source: Consolidated text: Commission Regulation (EU) 2017/1485.",Electricity
+Scheduling Area Responsible,X,"A party responsible for the coordination of nominated volumes within a scheduling area. Additional information:
+This role is typically performed by a TSO.",Electricity
+Storage System Operator,X,A natural or legal person who carries out the function of storage and is responsible for operating a storage facility.,Gas
+System Operator,X,"A party that is responsible for a stable power system operation (including the organisation of physical balance) through a transmission grid in a geographical area. The System Operator will also determine and be responsible for cross border capacity and exchanges. If necessary he may reduce allocated capacity to ensure operational stability. Transmission as mentioned above means? the transport of electricity on the extra high or high voltage network with a view to its delivery to final customers or to distributors. Operation of transmission includes as well the tasks of system operation concerning its management of energy flows, reliability of the system and availability of all necessary system services (definition taken from the ENTSO-E RGCE Operation handbook Glossary).",Electricity
+Trade Responsible Party,X,"A party who can be brought to rights, legally and financially, for any imbalance between energy nominated and consumed for all associated Accounting Points.",Electricity
+Transmission Capacity Allocator,X,"The Transmission Capacity Allocator manages, on behalf of the System Operators, the allocation of available transmission capacity for a Bidding Zone Border. He offers the available transmission capacity to the market, allocates the available transmission capacity to individual Capacity Traders and calculates the billing amount of already allocated capacities to the Capacity Traders.",Electricity
+Balance Group,Y,An energy account under responsibility of a Balance Responsible Party used to determine balance considering predefined inputs and outputs within a specific Market Balance Area.,Electricity
+Bidding Zone,Y,The largest geographical area within which Market Participants are able to exchange energy without Capacity Allocation.,Electricity
+Bidding Zone Border,Y,"Defines the aggregated connection capacity between two Bidding Zones.
+A market area (Which defines the aggregated connection capacity between two Bidding Zones) where the transmission capacity between the Bidding Zones is given to the Balance Responsible Parties according to rules carried out by a Transmission Capacity Allocator. Trade between Bidding Zones is carried out on a bilateral or unilateral basis.",Electricity
+Border Area,Y,Missing definition.,Electricity
+Capacity Calculation Region,Y,Geographic areas in which a coordinated capacity calculation is applied. CCR defines the set of bidding zone borders among which the tasks of capacity calculation are coordinated by the TSOs.,Electricity
+Control Area,Y,"A coherent part of the interconnected system, operated by a single system operator and shall include connected physical loads and/or generation units if any.",Electricity
+Coordination Centre Zone,Y,The composition of a number of LFC Blocks under the responsibility of the same Coordination Centre Operator.,Electricity
+Distribution Network Area,Y,Missing definition.,Electricity
+FRR Sharing Region,Y,"A set of LFC areas of the same synchronous area, but not necessarily the same bidding zone. All LFC Areas of a sharing region share a certain amount of FRR with each other.",Electricity
+ITC,Y,A cross border tariff market is composed of a group of System Operators that accept a common set of rules for the invoicing of energy flows over the border.,Gas
+LFC Area,Y,Low Frequency Control Area.,Electricity
+LFC Block,Y,"Part of a synchronous area or an entire synchronous area, physically demarcated by points of measurement at interconnectors to other LFC Blocks, consisting of one or more LFC Areas, operated by one or more TSOs fulfilling the obligations of load-frequency control.",Electricity
+Local Market Area,Y,A Market Area where there is no transmission capacity restrictions between the Market Balance Areas.,Electricity
+Market Area,Y,An area made up of several Market Balance Areas interconnected through AC or DC links. Trade is allowed between different Market Balance Areas with common market rules for trading across the interconnection.,Electricity
+Member State,Y,Missing definition.,Electricity
+Metering Grid Area,Y,"A Metering Grid Area is a physical area where consumption, production and exchange can be metered. It is delimited by the placement of meters for period measurement for input to, and withdrawal from the area. It can be used to establish the sum of consumption and production with no period measurement and network losses.",Electricity
+Outage Coordination Region,Y,"A combination of Control Areas for which all the System Operators directly involved define procedures to monitor and where necessary, coordinate the availability status of relevant assets in all timeframes.",Electricity
+Regional Outage Area,Y,A combination of control areas for which TSOs implement outage coordination procedure.,Electricity
+Scheduling Area,Y,An area within which the TSOs' obligations regarding scheduling apply due to operational or organizational needs.,Electricity
+Synchronous Area,Y,An area covered by synchronously interconnected LFC blocks.,Electricity
+Accounting Point,Z,An entity under balance responsibility where balance supplier change can take place and for which commercial business processes are defined.,Electricity
+Connection Point,Z,"The interface at which the power generating module, demand facility, distribution system or HVDC system is connected to a transmission system, offshore network, distribution system, including closed distribution systems, or HVDC system, as identified in the connection agreement.",Electricity
+Exchange Point,Z,A domain for establishing energy exchange between two Metering Grid Areas.,Electricity
+Metering Point,Z,An entity where energy products are measured or computed.,Electricity
+Virtual Interconnection Points,Z,"Two or more interconnection points which connect the same two adjacent entry-exit systems, integrated together for the purposes of providing a single capacity service.",Electricity
+Virtual Trading Points,Z,Virtual Trading Point: Trading location where (gas) energy can be traded between network users (Shippers) themselves and/or with traders.,Electricity

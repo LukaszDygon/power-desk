@@ -32,7 +32,6 @@ ENV/
 *.wal
 *.duckdb.tmp
 *.parquet
-!data/seed/*.parquet
 .dlt/
 
 # Testing & Linting
@@ -55,5 +54,4 @@ transform/dbt_packages/
 .dagster/*/*
 !.dagster/*/dagster.yaml
 
-# Local secrets (dlt reads source__* credentials from the environment); see .env.example
 .env

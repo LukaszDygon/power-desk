@@ -19,7 +19,8 @@ uv run python -m power_desk.catalog.describe                # relations by layer
 uv run python -m power_desk.catalog.describe <relation>     # columns, units and definitions
 ```
 
-- Prefer `marts` (business grain, incremental, tested), then `ods` entities.
+- Prefer `marts`: business marts (incremental, tested), or the `marts/combined` views for any area
+  and source (one area level at a time); then `ods` entities.
 - Avoid `staging` and `raw`: they are source-specific and may change.
 - Join `dims` tables for labels and roll-ups (e.g. `bridge_*_hierarchy` to aggregate to a broader level).
 - Columns starting with `_` are lineage metadata. Don't chart them.
@@ -60,7 +61,7 @@ Spec shape:
 ## 4. Register and validate
 
 ```bash
-uv run python scripts/register_widget.py --json-file <spec.json>
+uv run power-desk-register-widget --json-file <spec.json>
 # or: --id ... --title ... --type ... --sql ... --config '<json>' [--w 6 --h 4]
 ```
 

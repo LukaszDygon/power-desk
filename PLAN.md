@@ -52,7 +52,7 @@ Built with DuckDB, `dlt` (data load tool), dbt v2 (Raw $\to$ ODS $\to$ Marts), D
 - [x] **Milestone 6: Agent Skill (`create-widget`)**
   - [x] Create `.agents/skills/create-widget/SKILL.md`
   - [x] Document schema, widget types (line, stacked area, bar, kpi, table), and registration workflow
-  - [x] Include verification script / CLI helper (`scripts/register_widget.py`) to test newly created widgets
+  - [x] Include verification script / CLI helper (`power-desk-register-widget`) to test newly created widgets
 
 - [x] **Milestone 7: Verification & Test Suite**
   - [x] Comprehensive `pytest` test suite (14 passing tests):
@@ -62,7 +62,7 @@ Built with DuckDB, `dlt` (data load tool), dbt v2 (Raw $\to$ ODS $\to$ Marts), D
   - [x] Verified dev server boot, static assets, and widget lifecycle
 
 - [x] **Milestone 8: Incremental Backfill CLI & Full Refresh**
-  - [x] Implement `scripts/backfill.py` CLI supporting `--start-date`, `--end-date`, `--resources`, and `--full-refresh`
+  - [x] Implement the `power-desk-backfill` CLI supporting `--start-date`, `--end-date`, `--resources`, and `--refresh`
   - [x] Support bounded backfill mode and open-ended streaming with `dlt.sources.incremental(lag=0)`
   - [x] Full refresh mechanism: resets local pipeline state via `pipeline.drop()`, cleans up DuckDB staging/raw schemas, and recreates tables natively via `dlt` to avoid DuckDB's `ALTER TABLE ADD COLUMN` constraint limitations
   - [x] Automatically refreshes downstream ODS and Marts views upon pipeline completion
@@ -75,3 +75,13 @@ Built with DuckDB, `dlt` (data load tool), dbt v2 (Raw $\to$ ODS $\to$ Marts), D
 - [x] **Milestone 10: Catalogue from official definitions**
   - [x] Per-source definition files, provider snapshots, one generated dbt doc block per definition
   - [x] Generation and tests fail on undocumented tables or columns
+
+- [x] **Milestone 11: ENTSO-E Transparency Platform + combined marts**
+  - [x] File Library source (monthly zip exports, per-file change detection and partition replacement), scheduled every 6 h
+  - [x] Actual total load, day-ahead load forecast, generation per type, wind and solar forecasts, documented from the DDD and code lists
+  - [x] Entities union Elexon and ENTSO-E; `marts/combined` views per entity across sources and areas
+
+- [x] **Milestone 12: Naming, catalogue metadata and code structure**
+  - [x] Raw tables `<source>__<dataset>`; entities and combined marts share names; GB marts `mart_gb_*`; one measure name across actual and forecast
+  - [x] Doc blocks hold definitions only; citations in `meta.references`
+  - [x] One module per concern (settings, warehouse, ingest/sources, seed replay, transform, orchestration, dashboard, cli); unit and integration tests on the replayed seed

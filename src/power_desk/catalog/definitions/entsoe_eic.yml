@@ -24,8 +24,7 @@ sources:
       ENTSO-E Energy Identification Codes published by the Central Issuing Office, loaded by the
       `entsoe_eic` dlt pipeline as scd2 snapshots (every published version kept).
 tables:
-  raw_eic_codes:
-    name: eic_codes
+  entsoe_eic__codes:
     title: EIC approved codes (central registry)
     description: >-
       The active codes of the central EIC registry, including codes issued by Local Issuing Offices.
@@ -38,8 +37,7 @@ tables:
               market_participant_iso_country_code: country_code, market_participant_postal_code: postal_code,
               market_participant_vat_code: vat_code, eic_type_function_list: roles, eic_display_name: display_name,
               eic_long_name: long_name}
-  raw_eic_functions:
-    name: eic_functions
+  entsoe_eic__functions:
     title: EIC functions and definitions
     description: >-
       The permitted functions (roles) of EIC codes. Only a restricted list of functions can be
@@ -47,8 +45,7 @@ tables:
     url: https://www.entsoe.eu/data/eic-functions/
     links: [eic_functions, eic_manual]
     columns: {eic_function: role, definition: role_definition, valid_in_market: market}
-  raw_eic_issuing_offices:
-    name: eic_issuing_offices
+  entsoe_eic__issuing_offices:
     title: EIC Local Issuing Offices
     description: >-
       Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique

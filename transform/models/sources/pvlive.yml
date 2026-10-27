@@ -4,23 +4,26 @@ sources:
   description: Sheffield Solar PVLive national solar outturn, loaded by the `pvlive` dlt pipeline.
   schema: raw
   tables:
-  - name: raw_pvlive_solar
-    description: '{{ doc(''dataset_pvlive'') }}'
+  - name: pvlive__solar
+    description: '{{ doc(''dataset_pvlive__solar'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_pvlive_solar
+          - pvlive__solar
         dlt:
           pipeline: pvlive
-          resource: raw_pvlive_solar
+          resource: pvlive__solar
           write_disposition: merge
           primary_key:
           - pes_id
           - datetime_gmt
           cursor_column: datetime_gmt
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: GB national solar generation outturn (PVLive)
+          url: https://www.solar.sheffield.ac.uk/pvlive/
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -31,13 +34,13 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_pvlive_solar_unique_natural_key
+        name: pvlive__solar_unique_natural_key
         arguments:
           columns:
           - pes_id
           - datetime_gmt
     - dlt_unique:
-        name: raw_pvlive_solar_unique_dlt_id
+        name: pvlive__solar_unique_dlt_id
         arguments:
           columns:
           - _dlt_id

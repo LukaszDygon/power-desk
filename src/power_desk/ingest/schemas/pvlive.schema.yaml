@@ -47,7 +47,7 @@ tables:
     write_disposition: skip
     resource: _dlt_loads
     description: Created by DLT. Tracks completed loads
-  raw_pvlive_solar:
+  pvlive__solar:
     columns:
       pes_id:
         nullable: false
@@ -70,7 +70,7 @@ tables:
         unique: true
         row_key: true
     write_disposition: merge
-    resource: raw_pvlive_solar
+    resource: pvlive__solar
     x-normalizer:
       seen-data: true
   _dlt_pipeline_state:
@@ -132,7 +132,7 @@ normalizers:
     config:
       propagation:
         tables:
-          raw_pvlive_solar:
+          pvlive__solar:
             _dlt_id: _dlt_root_id
 previous_hashes:
 - IByIOdXlQs0Hp/CFYY7HSsYYrYupAbakJjh7566mDlc=

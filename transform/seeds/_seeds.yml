@@ -196,3 +196,31 @@ seeds:
                 field: area_eic_code
       - name: notes
         description: "{{ doc('col_notes') }}"
+
+  - name: entsoe_psr_types
+    description: |
+      ENTSO-E PsrType code list (production types): the name the Transparency Platform displays and
+      the code list definition. Translates published production type names into the codes that
+      `map_technology` maps (`source_dataset = 'ENTSOE_PSR'`).
+    data_tests:
+      - dlt_unique:
+          name: entsoe_psr_types_unique_code
+          arguments:
+            columns: [psr_type]
+      - dlt_unique:
+          name: entsoe_psr_types_unique_name
+          arguments:
+            columns: [production_type]
+    columns:
+      - name: psr_type
+        description: "{{ doc('col_psr_type') }}"
+        data_tests:
+          - relationships:
+              name: entsoe_psr_types_mapped
+              arguments:
+                to: ref('map_technology')
+                field: source_code
+      - name: production_type
+        description: "{{ doc('col_production_type') }}"
+      - name: definition
+        description: "{{ doc('col_psr_definition') }}"

@@ -11,8 +11,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from power_desk.ingest.common import fetch_if_changed
-from power_desk.ingest.entsoe_eic import FUNCTIONS_URL, parse_csv
+from power_desk.ingest.http import fetch_if_changed
+from power_desk.ingest.sources.entsoe_eic import FUNCTIONS_URL, parse_csv
 
 NAME = "entsoe"
 LABELS = {"eic-functions": "ENTSO-E EIC function"}
@@ -33,7 +33,9 @@ def eic_functions(ids: list[str]) -> dict[str, dict[str, Any]]:
         rows = grouped.get(ident)
         if not rows:
             raise KeyError(f"{NAME}: no EIC function with slug {ident!r}")
-        definitions = sorted({r["Definition"].strip() for r in rows if r["Definition"].strip() not in ("", "Missing definition.")})
+        definitions = sorted(
+            {r["Definition"].strip() for r in rows if r["Definition"].strip() not in ("", "Missing definition.")}
+        )
         markets = sorted({r["Valid in Market"] for r in rows})
         types = sorted({r["EIC Type"] for r in rows})
         out[ident] = {

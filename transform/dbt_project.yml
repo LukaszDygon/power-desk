@@ -41,14 +41,20 @@ models:
     dims:
       +schema: dims
       +materialized: table
-    # marts/: incremental business tables built on ods entities
     marts:
       +schema: marts
-      +materialized: incremental
-      +incremental_strategy: delete+insert
-      +meta:
-        dlt_tracked: true
-        dlt_recent_column: _last_dlt_load_id
+      # marts/combined/: one view per entity across sources and areas (values, dimension keys, provenance)
+      combined:
+        +materialized: view
+        +meta:
+          dlt_recent_column: _dlt_load_id
+      # marts/<scope>/: incremental business tables, rebuilt for the grains pending loads touch
+      gb:
+        +materialized: incremental
+        +incremental_strategy: delete+insert
+        +meta:
+          dlt_tracked: true
+          dlt_recent_column: _last_dlt_load_id
 
 # Curated dimensions (seeds/dims) and publisher-code mappings (seeds/mappings) live in the
 # same schema as the published dimensions they extend.

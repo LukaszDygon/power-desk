@@ -4,7 +4,7 @@ with periods as (
         datetime_gmt,
         generation_mw,
         _dlt_load_id
-    from {{ source('pvlive', 'raw_pvlive_solar') }}
+    from {{ dlt_source('pvlive', 'pvlive__solar') }}
     where pes_id = 0
 )
 

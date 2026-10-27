@@ -5,5 +5,5 @@ select
     cast(demand as double) as demand_mw,
     cast(publish_time at time zone 'UTC' as timestamp) as publish_time_utc,
     _dlt_load_id
-from {{ source('bmrs', 'raw_indo') }}
+from {{ dlt_source('bmrs', 'bmrs__indo') }}
 where settlement_date is not null

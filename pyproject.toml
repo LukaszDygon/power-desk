@@ -1,7 +1,7 @@
 [project]
 name = "power-desk"
 version = "0.1.0"
-description = "Minimalist analyst dashboard for UK Power & Energy Data using DuckDB, dlt, and DBT models"
+description = "Analyst dashboard for power and energy data on a dlt -> DuckDB -> dbt warehouse orchestrated by Dagster"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -15,13 +15,19 @@ dependencies = [
     "duckdb>=1.1.0",
     "fastapi>=0.115.0",
     "jinja2>=3.1.0",
+    "pyarrow>=18",
     "pydantic>=2.0.0",
+    "python-dotenv>=1.2.3",
     "requests>=2.31.0",
     "uvicorn[standard]>=0.30.0",
 ]
 
 [project.scripts]
-power-desk = "power_desk.app:main"
+power-desk = "power_desk.dashboard.app:main"
+power-desk-dagster = "power_desk.cli.dagster:main"
+power-desk-backfill = "power_desk.cli.backfill:main"
+power-desk-load-seed = "power_desk.cli.load_seed:main"
+power-desk-register-widget = "power_desk.cli.register_widget:main"
 
 [dependency-groups]
 dev = [
@@ -40,3 +46,17 @@ directory_type = "project"
 root_module = "power_desk"
 defs_module = "power_desk.orchestration"
 code_location_target_module = "power_desk.orchestration.definitions"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["power_desk", "tests"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["dlt.sources.incremental"]

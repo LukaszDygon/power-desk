@@ -4,17 +4,17 @@ sources:
   description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
   schema: raw
   tables:
-  - name: raw_fuelinst
-    description: '{{ doc(''dataset_fuelinst'') }}'
+  - name: bmrs__fuelinst
+    description: '{{ doc(''dataset_bmrs__fuelinst'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_fuelinst
+          - bmrs__fuelinst
         dlt:
           pipeline: bmrs
-          resource: raw_fuelinst
+          resource: bmrs__fuelinst
           write_disposition: merge
           primary_key:
           - start_time
@@ -23,6 +23,15 @@ sources:
           - fuel_type
           cursor_column: publish_time
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: Instantaneous generation outturn by fuel type (FUELINST)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELINST
+          id: elexon:datasets/FUELINST
+          retrieved: '2026-10-26'
+        - title: 'Elexon BSC Glossary: Instantaneous Generation by Fuel Type'
+          url: https://www.elexon.co.uk/bsc/glossary/instantaneous-generation-by-fuel-type/
+          id: elexon:glossary/instantaneous-generation-by-fuel-type
+          retrieved: '2026-10-26'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -33,7 +42,7 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_fuelinst_unique_natural_key
+        name: bmrs__fuelinst_unique_natural_key
         arguments:
           columns:
           - start_time
@@ -41,7 +50,7 @@ sources:
           - settlement_period
           - fuel_type
     - dlt_unique:
-        name: raw_fuelinst_unique_dlt_id
+        name: bmrs__fuelinst_unique_dlt_id
         arguments:
           columns:
           - _dlt_id
@@ -61,6 +70,11 @@ sources:
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: 'Elexon BSC Glossary: Spot Time'
+            url: https://www.elexon.co.uk/bsc/glossary/spot-time/
+            id: elexon:glossary/spot-time
+            retrieved: '2026-10-26'
       data_tests:
       - not_null
     - name: settlement_date
@@ -68,6 +82,12 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Day'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
+            id: elexon:glossary/settlement-day
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
     - name: settlement_period
@@ -75,6 +95,12 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Period'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
+            id: elexon:glossary/settlement-period
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
     - name: fuel_type
@@ -82,6 +108,11 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Fuel Type'
+            url: https://www.elexon.co.uk/bsc/glossary/fuel-type/
+            id: elexon:glossary/fuel-type
+            retrieved: '2026-10-26'
       data_tests:
       - not_null
     - name: generation
@@ -89,6 +120,11 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Instantaneous Generation by Fuel Type'
+            url: https://www.elexon.co.uk/bsc/glossary/instantaneous-generation-by-fuel-type/
+            id: elexon:glossary/instantaneous-generation-by-fuel-type
+            retrieved: '2026-10-26'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -101,23 +137,36 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_indo
-    description: '{{ doc(''dataset_indo'') }}'
+  - name: bmrs__indo
+    description: '{{ doc(''dataset_bmrs__indo'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_indo
+          - bmrs__indo
         dlt:
           pipeline: bmrs
-          resource: raw_indo
+          resource: bmrs__indo
           write_disposition: merge
           primary_key:
           - settlement_date
           - settlement_period
           cursor_column: publish_time
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: Initial National Demand outturn (INDO)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/INDO
+          id: elexon:datasets/INDO
+          retrieved: '2026-10-26'
+        - title: 'Elexon BSC Glossary: Initial National Demand Out-Turn'
+          url: https://www.elexon.co.uk/bsc/glossary/initial-national-demand-out-turn/
+          id: elexon:glossary/initial-national-demand-out-turn
+          retrieved: '2026-10-26'
+          detail: "[BSC Section Q \u2013 Balancing Services Activities](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-q-balancing-services-activities/)\n\
+            [BSC Section V \u2013 Reporting](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-v-reporting/)\n[BSC Section\
+            \ G \u2013 Contingencies](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-g-contingencies/)\n[BSC Section X,\
+            \ Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)"
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -128,13 +177,13 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_indo_unique_natural_key
+        name: bmrs__indo_unique_natural_key
         arguments:
           columns:
           - settlement_date
           - settlement_period
     - dlt_unique:
-        name: raw_indo_unique_dlt_id
+        name: bmrs__indo_unique_dlt_id
         arguments:
           columns:
           - _dlt_id
@@ -154,11 +203,22 @@ sources:
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: 'Elexon BSC Glossary: Spot Time'
+            url: https://www.elexon.co.uk/bsc/glossary/spot-time/
+            id: elexon:glossary/spot-time
+            retrieved: '2026-10-26'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Day'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
+            id: elexon:glossary/settlement-day
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
     - name: settlement_period
@@ -166,6 +226,12 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Period'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
+            id: elexon:glossary/settlement-period
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
     - name: demand
@@ -173,6 +239,15 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Initial National Demand Out-Turn'
+            url: https://www.elexon.co.uk/bsc/glossary/initial-national-demand-out-turn/
+            id: elexon:glossary/initial-national-demand-out-turn
+            retrieved: '2026-10-26'
+            detail: "[BSC Section Q \u2013 Balancing Services Activities](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-q-balancing-services-activities/)\n\
+              [BSC Section V \u2013 Reporting](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-v-reporting/)\n[BSC Section\
+              \ G \u2013 Contingencies](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-g-contingencies/)\n[BSC Section X,\
+              \ Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)"
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -185,23 +260,32 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_itsdo
-    description: '{{ doc(''dataset_itsdo'') }}'
+  - name: bmrs__itsdo
+    description: '{{ doc(''dataset_bmrs__itsdo'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_itsdo
+          - bmrs__itsdo
         dlt:
           pipeline: bmrs
-          resource: raw_itsdo
+          resource: bmrs__itsdo
           write_disposition: merge
           primary_key:
           - settlement_date
           - settlement_period
           cursor_column: publish_time
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: Initial Transmission System Demand outturn (ITSDO)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/ITSDO
+          id: elexon:datasets/ITSDO
+          retrieved: '2026-10-26'
+        - title: 'Elexon BSC Glossary: Initial Transmission System Demand Out-Turn'
+          url: https://www.elexon.co.uk/bsc/glossary/initial-transmission-system-demand-out-turn/
+          id: elexon:glossary/initial-transmission-system-demand-out-turn
+          retrieved: '2026-10-26'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -212,13 +296,13 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_itsdo_unique_natural_key
+        name: bmrs__itsdo_unique_natural_key
         arguments:
           columns:
           - settlement_date
           - settlement_period
     - dlt_unique:
-        name: raw_itsdo_unique_dlt_id
+        name: bmrs__itsdo_unique_dlt_id
         arguments:
           columns:
           - _dlt_id
@@ -238,11 +322,22 @@ sources:
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: 'Elexon BSC Glossary: Spot Time'
+            url: https://www.elexon.co.uk/bsc/glossary/spot-time/
+            id: elexon:glossary/spot-time
+            retrieved: '2026-10-26'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Day'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
+            id: elexon:glossary/settlement-day
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
     - name: settlement_period
@@ -250,6 +345,12 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Period'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
+            id: elexon:glossary/settlement-period
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
     - name: demand
@@ -257,6 +358,11 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Initial Transmission System Demand Out-Turn'
+            url: https://www.elexon.co.uk/bsc/glossary/initial-transmission-system-demand-out-turn/
+            id: elexon:glossary/initial-transmission-system-demand-out-turn
+            retrieved: '2026-10-26'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -269,17 +375,17 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_demand_forecast
-    description: '{{ doc(''dataset_ndf'') }}'
+  - name: bmrs__ndf
+    description: '{{ doc(''dataset_bmrs__ndf'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_demand_forecast
+          - bmrs__ndf
         dlt:
           pipeline: bmrs
-          resource: raw_demand_forecast
+          resource: bmrs__ndf
           write_disposition: merge
           primary_key:
           - publish_time
@@ -287,6 +393,15 @@ sources:
           - settlement_period
           cursor_column: publish_time
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: Day and day-ahead National Demand forecast (NDF)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/NDF
+          id: elexon:datasets/NDF
+          retrieved: '2026-10-26'
+        - title: 'Elexon BSC Glossary: National Demand Forecast'
+          url: https://www.elexon.co.uk/bsc/glossary/national-demand-forecast/
+          id: elexon:glossary/national-demand-forecast
+          retrieved: '2026-10-26'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -297,14 +412,14 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_demand_forecast_unique_natural_key
+        name: bmrs__ndf_unique_natural_key
         arguments:
           columns:
           - publish_time
           - settlement_date
           - settlement_period
     - dlt_unique:
-        name: raw_demand_forecast_unique_dlt_id
+        name: bmrs__ndf_unique_dlt_id
         arguments:
           columns:
           - _dlt_id
@@ -319,6 +434,11 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: National Demand Forecast'
+            url: https://www.elexon.co.uk/bsc/glossary/national-demand-forecast/
+            id: elexon:glossary/national-demand-forecast
+            retrieved: '2026-10-26'
     - name: publish_time
       description: '{{ doc(''col_publish_time'') }}'
       config:
@@ -331,11 +451,22 @@ sources:
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: 'Elexon BSC Glossary: Spot Time'
+            url: https://www.elexon.co.uk/bsc/glossary/spot-time/
+            id: elexon:glossary/spot-time
+            retrieved: '2026-10-26'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Day'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
+            id: elexon:glossary/settlement-day
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
     - name: settlement_period
@@ -343,6 +474,12 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Settlement Period'
+            url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
+            id: elexon:glossary/settlement-period
+            retrieved: '2026-10-26'
+            detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
     - name: boundary
@@ -362,23 +499,32 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_windfor
-    description: '{{ doc(''dataset_windfor'') }}'
+  - name: bmrs__windfor
+    description: '{{ doc(''dataset_bmrs__windfor'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_windfor
+          - bmrs__windfor
         dlt:
           pipeline: bmrs
-          resource: raw_windfor
+          resource: bmrs__windfor
           write_disposition: merge
           primary_key:
           - publish_time
           - start_time
           cursor_column: publish_time
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: Wind generation forecast (WINDFOR)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR
+          id: elexon:datasets/WINDFOR
+          retrieved: '2026-10-26'
+        - title: 'Elexon BSC Glossary: Wind Generation Forecast'
+          url: https://www.elexon.co.uk/bsc/glossary/wind-generation-forecast/
+          id: elexon:glossary/wind-generation-forecast
+          retrieved: '2026-10-26'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -389,13 +535,13 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: raw_windfor_unique_natural_key
+        name: bmrs__windfor_unique_natural_key
         arguments:
           columns:
           - publish_time
           - start_time
     - dlt_unique:
-        name: raw_windfor_unique_dlt_id
+        name: bmrs__windfor_unique_dlt_id
         arguments:
           columns:
           - _dlt_id
@@ -424,6 +570,11 @@ sources:
       config:
         meta:
           dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon BSC Glossary: Wind Generation Forecast'
+            url: https://www.elexon.co.uk/bsc/glossary/wind-generation-forecast/
+            id: elexon:glossary/wind-generation-forecast
+            retrieved: '2026-10-26'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:

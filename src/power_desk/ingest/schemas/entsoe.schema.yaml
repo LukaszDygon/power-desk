@@ -1,0 +1,314 @@
+version: 2
+version_hash: dKt+aBf+gNMSJhLf2x2JRcTshkncqkexy91WrogoZ+A=
+engine_version: 11
+name: entsoe
+tables:
+  _dlt_version:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_name:
+        data_type: text
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: false
+      schema:
+        data_type: text
+        nullable: false
+    write_disposition: skip
+    resource: _dlt_version
+    description: Created by DLT. Tracks schema updates
+  _dlt_loads:
+    columns:
+      load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      schema_name:
+        data_type: text
+        nullable: true
+      status:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_version_hash:
+        data_type: text
+        nullable: true
+    write_disposition: skip
+    resource: _dlt_loads
+    description: Created by DLT. Tracks completed loads
+  entsoe__actual_total_load:
+    columns:
+      date_time_utc:
+        nullable: true
+        data_type: timestamp
+      resolution_code:
+        nullable: true
+        data_type: text
+      area_code:
+        nullable: true
+        data_type: text
+      area_display_name:
+        nullable: true
+        data_type: text
+      area_type_code:
+        nullable: true
+        data_type: text
+      area_map_code:
+        nullable: true
+        data_type: text
+      total_load_mw:
+        nullable: true
+        data_type: double
+      update_time_utc:
+        nullable: true
+        data_type: timestamp
+      _source_file:
+        nullable: false
+        data_type: text
+        merge_key: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+        precision: 64
+    x-merge-strategy: delete-insert
+    write_disposition: merge
+    resource: entsoe__actual_total_load
+    x-normalizer:
+      seen-data: true
+  entsoe__day_ahead_total_load_forecast:
+    columns:
+      date_time_utc:
+        nullable: true
+        data_type: timestamp
+      resolution_code:
+        nullable: true
+        data_type: text
+      area_code:
+        nullable: true
+        data_type: text
+      area_display_name:
+        nullable: true
+        data_type: text
+      area_type_code:
+        nullable: true
+        data_type: text
+      area_map_code:
+        nullable: true
+        data_type: text
+      total_load_mw:
+        nullable: true
+        data_type: double
+      update_time_utc:
+        nullable: true
+        data_type: timestamp
+      _source_file:
+        nullable: false
+        data_type: text
+        merge_key: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+        precision: 64
+    x-merge-strategy: delete-insert
+    write_disposition: merge
+    resource: entsoe__day_ahead_total_load_forecast
+    x-normalizer:
+      seen-data: true
+  entsoe__generation_per_type:
+    columns:
+      date_time_utc:
+        nullable: true
+        data_type: timestamp
+      resolution_code:
+        nullable: true
+        data_type: text
+      area_code:
+        nullable: true
+        data_type: text
+      area_display_name:
+        nullable: true
+        data_type: text
+      area_type_code:
+        nullable: true
+        data_type: text
+      area_map_code:
+        nullable: true
+        data_type: text
+      production_type:
+        nullable: true
+        data_type: text
+      actual_generation_output_mw:
+        nullable: true
+        data_type: double
+      actual_consumption_mw:
+        nullable: true
+        data_type: double
+      update_time_utc:
+        nullable: true
+        data_type: timestamp
+      _source_file:
+        nullable: false
+        data_type: text
+        merge_key: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+        precision: 64
+    x-merge-strategy: delete-insert
+    write_disposition: merge
+    resource: entsoe__generation_per_type
+    x-normalizer:
+      seen-data: true
+  entsoe__wind_solar_forecast:
+    columns:
+      date_time_utc:
+        nullable: true
+        data_type: timestamp
+      resolution_code:
+        nullable: true
+        data_type: text
+      area_code:
+        nullable: true
+        data_type: text
+      area_display_name:
+        nullable: true
+        data_type: text
+      area_type_code:
+        nullable: true
+        data_type: text
+      area_map_code:
+        nullable: true
+        data_type: text
+      production_type:
+        nullable: true
+        data_type: text
+      day_ahead_generation_forecast_mw:
+        nullable: true
+        data_type: double
+      intraday_generation_forecast_mw:
+        nullable: true
+        data_type: double
+      current_generation_forecast_mw:
+        nullable: true
+        data_type: double
+      update_time_utc:
+        nullable: true
+        data_type: timestamp
+      _source_file:
+        nullable: false
+        data_type: text
+        merge_key: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+        precision: 64
+    x-merge-strategy: delete-insert
+    write_disposition: merge
+    resource: entsoe__wind_solar_forecast
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+settings:
+  detections:
+  - iso_timestamp
+  default_hints:
+    not_null:
+    - _dlt_id
+    - _dlt_root_id
+    - _dlt_parent_id
+    - _dlt_list_idx
+    - _dlt_load_id
+    parent_key:
+    - _dlt_parent_id
+    root_key:
+    - _dlt_root_id
+    unique:
+    - _dlt_id
+    row_key:
+    - _dlt_id
+normalizers:
+  names: snake_case
+  json:
+    module: dlt.common.normalizers.json.relational
+    config:
+      propagation:
+        tables:
+          entsoe__actual_total_load:
+            _dlt_id: _dlt_root_id
+          entsoe__day_ahead_total_load_forecast:
+            _dlt_id: _dlt_root_id
+          entsoe__generation_per_type:
+            _dlt_id: _dlt_root_id
+          entsoe__wind_solar_forecast:
+            _dlt_id: _dlt_root_id
+previous_hashes:
+- 17SamARbO2Hfw2Rg2xmnB58R6mTfDCGB8vGPCFf5joA=
+- so5HAuyb7ikAlIJEEUwQYQafb0/WONA0dAa8f6owXKo=

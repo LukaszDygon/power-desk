@@ -2,26 +2,43 @@
 # keeps one meaning whichever source feeds it.
 columns:
   generation_mw:
-    description: Generation for the fuel type in MW, averaged over the 5-minute interval (PVLive half
-      hours spread over their six intervals).
-    refs:
-    - elexon:glossary/instantaneous-generation-by-fuel-type
-  national_demand_mw:
-    description: Initial National Demand Outturn for the settlement period, in MW.
+    description: Net generation for the technology over the interval, in MW (mean of the interval).
+      FUELINST 5-minute averages; PVLive half hours spread over their six 5-minute intervals; ENTSO-E
+      aggregated net generation output per market time unit.
+  consumption_mw:
+    description: Power absorbed over the interval, in MW, where published separately (ENTSO-E pumped
+      storage and energy storage); null otherwise. Total load already deducts it.
+    links: [entsoe_ddd]
+  demand_mw:
+    description: Actual demand over the interval, in MW. GB, Initial National Demand Outturn (excludes
+      station load, pumping and exports); ENTSO-E areas, actual total load (net generation + imports -
+      exports - absorbed energy, including losses). The definitions differ; compare within one source.
     refs:
     - elexon:glossary/initial-national-demand-out-turn
+    links: [entsoe_ddd]
   transmission_demand_mw:
-    description: Initial Transmission System Demand Outturn for the settlement period, in MW.
+    description: Initial Transmission System Demand Outturn for the settlement period, in MW (national
+      demand plus station load, pumping and exports).
     refs:
     - elexon:glossary/initial-transmission-system-demand-out-turn
   forecast_demand_mw:
-    description: Latest published National Demand Forecast for the settlement period, in MW.
+    description: Latest day-ahead demand forecast for the interval, in MW. GB, National Demand Forecast
+      (same scope as Initial National Demand Outturn); ENTSO-E areas, day-ahead total load forecast
+      (updated on changes of at least 10%).
     refs:
     - elexon:glossary/national-demand-forecast
-  forecast_wind_mw:
-    description: Latest published wind generation forecast for the hour, in MW.
+    links: [entsoe_ddd]
+  forecast_horizon:
+    description: "Which forecast the value is: `day_ahead` (made the day before delivery: ENTSO-E
+      fixed at 18:00 Brussels time for wind and solar, latest day-ahead update for load; Elexon NDF),
+      `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision:
+      ENTSO-E current forecast, Elexon WINDFOR)."
+    links: [entsoe_ddd]
+  generation_forecast_mw:
+    description: Forecast generation for the technology over the interval, in MW.
     refs:
     - elexon:glossary/wind-generation-forecast
+    links: [entsoe_ddd]
   wind_mw:
     description: Generation from fuel type WIND, in MW.
   solar_mw:

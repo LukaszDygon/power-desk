@@ -5,26 +5,35 @@ sources:
     pipeline as scd2 snapshots (every published version kept).
   schema: raw
   tables:
-  - name: raw_eic_codes
-    description: '{{ doc(''dataset_eic_codes'') }}'
+  - name: entsoe_eic__codes
+    description: '{{ doc(''dataset_entsoe_eic__codes'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_eic_codes
+          - entsoe_eic__codes
         dlt:
           pipeline: entsoe_eic
-          resource: raw_eic_codes
+          resource: entsoe_eic__codes
           write_disposition: merge
           merge_strategy: scd2
           primary_key: []
           cursor_column: null
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: EIC approved codes (central registry)
+          url: https://www.entsoe.eu/data/energy-identification-codes-eic/eic-approved-codes/
+        - title: EIC Reference Manual 5.5
+          url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+        - title: EIC data exchange implementation guide 1.2
+          url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
+        - title: Mandatory attributes of the EIC codes
+          url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
     - dlt_unique:
-        name: raw_eic_codes_unique_row_version
+        name: entsoe_eic__codes_unique_row_version
         arguments:
           columns:
           - _dlt_id
@@ -45,56 +54,97 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
     - name: eic_display_name
       description: '{{ doc(''col_display_name'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
     - name: eic_long_name
       description: '{{ doc(''col_long_name'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
     - name: eic_parent
       description: '{{ doc(''col_parent_eic_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
     - name: eic_responsible_party
       description: '{{ doc(''col_responsible_party_eic_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
     - name: eic_status
       description: '{{ doc(''col_eic_status'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: Mandatory attributes of the EIC codes
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
     - name: market_participant_postal_code
       description: '{{ doc(''col_postal_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: Mandatory attributes of the EIC codes
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
     - name: market_participant_iso_country_code
       description: '{{ doc(''col_country_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: Mandatory attributes of the EIC codes
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
     - name: market_participant_vat_code
       description: '{{ doc(''col_vat_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
+          - title: Mandatory attributes of the EIC codes
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
     - name: eic_type_function_list
       description: '{{ doc(''col_roles'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC functions and definitions
+            url: https://www.entsoe.eu/data/eic-functions/
+          - title: EIC data exchange implementation guide 1.2
+            url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
     - name: type
       description: '{{ doc(''col_eic_type'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -107,26 +157,33 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_eic_functions
-    description: '{{ doc(''dataset_eic_functions'') }}'
+  - name: entsoe_eic__functions
+    description: '{{ doc(''dataset_entsoe_eic__functions'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_eic_functions
+          - entsoe_eic__functions
         dlt:
           pipeline: entsoe_eic
-          resource: raw_eic_functions
+          resource: entsoe_eic__functions
           write_disposition: merge
           merge_strategy: scd2
           primary_key: []
           cursor_column: null
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: EIC functions and definitions
+          url: https://www.entsoe.eu/data/eic-functions/
+        - title: EIC functions and definitions
+          url: https://www.entsoe.eu/data/eic-functions/
+        - title: EIC Reference Manual 5.5
+          url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
     - dlt_unique:
-        name: raw_eic_functions_unique_row_version
+        name: entsoe_eic__functions_unique_row_version
         arguments:
           columns:
           - _dlt_id
@@ -147,21 +204,33 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC functions and definitions
+            url: https://www.entsoe.eu/data/eic-functions/
     - name: eic_type
       description: '{{ doc(''col_eic_type'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
     - name: definition
       description: '{{ doc(''col_role_definition'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC functions and definitions
+            url: https://www.entsoe.eu/data/eic-functions/
     - name: valid_in_market
       description: '{{ doc(''col_market'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC functions and definitions
+            url: https://www.entsoe.eu/data/eic-functions/
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -174,26 +243,33 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-  - name: raw_eic_issuing_offices
-    description: '{{ doc(''dataset_eic_issuing_offices'') }}'
+  - name: entsoe_eic__issuing_offices
+    description: '{{ doc(''dataset_entsoe_eic__issuing_offices'') }}'
     config:
       meta:
         dagster:
           asset_key:
           - raw
-          - raw_eic_issuing_offices
+          - entsoe_eic__issuing_offices
         dlt:
           pipeline: entsoe_eic
-          resource: raw_eic_issuing_offices
+          resource: entsoe_eic__issuing_offices
           write_disposition: merge
           merge_strategy: scd2
           primary_key: []
           cursor_column: null
         dlt_recent_column: _dlt_load_id
+        references:
+        - title: EIC Local Issuing Offices
+          url: https://www.entsoe.eu/data/energy-identification-codes-eic/
+        - title: EIC Local Issuing Offices
+          url: https://www.entsoe.eu/data/energy-identification-codes-eic/
+        - title: EIC Reference Manual 5.5
+          url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
     - dlt_unique:
-        name: raw_eic_issuing_offices_unique_row_version
+        name: entsoe_eic__issuing_offices_unique_row_version
         arguments:
           columns:
           - _dlt_id
@@ -214,16 +290,27 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Reference Manual 5.5
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+          - title: EIC Local Issuing Offices
+            url: https://www.entsoe.eu/data/energy-identification-codes-eic/
     - name: name
       description: '{{ doc(''col_issuing_office_name'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: EIC Local Issuing Offices
+            url: https://www.entsoe.eu/data/energy-identification-codes-eic/
     - name: country
       description: '{{ doc(''col_country_code'') }}'
       config:
         meta:
           dlt_data_type: VARCHAR
+          references:
+          - title: Mandatory attributes of the EIC codes
+            url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
     - name: website
       description: '{{ doc(''col_website_url'') }}'
       config:

@@ -1,0 +1,97 @@
+# One view per entity, named as the entity, over every source and area. Grain and dimension keys
+# are tested on the ODS entity each view selects from.
+models:
+  - name: mart_generation_actual
+    description: |
+      Actual generation for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
+      `source_dataset`, `source_code`.
+
+      Roll areas and technologies up through the dimensions (`bridge_area_hierarchy`,
+      `bridge_technology_hierarchy`). Areas are published at several levels (bidding zone, country,
+      control area), so aggregate over one level. Rows keep their native interval; energy is
+      `generation_mw * interval_minutes / 60` (MWh).
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+      - name: generation_mw
+        description: "{{ doc('col_generation_mw') }}"
+      - name: consumption_mw
+        description: "{{ doc('col_consumption_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: mart_generation_forecast
+    description: |
+      Generation forecasts for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
+      `source_dataset`, `source_code`, `forecast_horizon`; filter on one horizon. Dimensions as
+      `mart_generation_actual`.
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+      - name: forecast_horizon
+        description: "{{ doc('col_forecast_horizon') }}"
+      - name: generation_mw
+        description: "{{ doc('col_generation_forecast_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: mart_demand_actual
+    description: |
+      Actual demand for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
+      `source_dataset`. Joins to `mart_demand_forecast` on the same keys. Source definitions differ
+      (see `demand_mw`).
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: demand_mw
+        description: "{{ doc('col_demand_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: mart_demand_forecast
+    description: |
+      Day-ahead demand forecast for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
+      `source_dataset`, `forecast_horizon`.
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: forecast_horizon
+        description: "{{ doc('col_forecast_horizon') }}"
+      - name: demand_mw
+        description: "{{ doc('col_forecast_demand_mw') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

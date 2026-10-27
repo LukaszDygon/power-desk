@@ -3,7 +3,7 @@ models:
     description: |
       EIC codes, one row per published version.
 
-      {{ doc('dataset_eic_codes') }}
+      {{ doc('dataset_entsoe_eic__codes') }}
     data_tests:
       - dlt_unique:
           name: stg_entsoe_eic__codes_unique_version
@@ -78,7 +78,7 @@ models:
     description: |
       EIC functions, one row per published version.
 
-      {{ doc('dataset_eic_functions') }}
+      {{ doc('dataset_entsoe_eic__functions') }}
     data_tests:
       - dlt_unique:
           name: stg_entsoe_eic__functions_unique_version
@@ -106,7 +106,7 @@ models:
     description: |
       EIC Local Issuing Offices, one row per published version.
 
-      {{ doc('dataset_eic_issuing_offices') }}
+      {{ doc('dataset_entsoe_eic__issuing_offices') }}
     data_tests:
       - dlt_unique:
           name: stg_entsoe_eic__issuing_offices_unique_version
