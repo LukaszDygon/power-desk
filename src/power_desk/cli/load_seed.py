@@ -9,8 +9,7 @@ import sys
 from power_desk.ingest.seed.load import load_seed
 from power_desk.ingest.seed.replay import SEED_START
 from power_desk.settings import environment, warehouse_path
-from power_desk.transform.dbt import dbt_args, run_dbt
-from power_desk.transform.loads import pending_load_ids
+from power_desk.transform.dbt import DbtRun
 
 
 def main() -> int:
@@ -26,7 +25,7 @@ def main() -> int:
     os.environ.setdefault("POWER_DESK_START_DATE", SEED_START)
     for info in load_seed(db_path):
         print(info)
-    return 0 if args.skip_dbt else run_dbt(dbt_args(pending_load_ids(db_path)), db_path)
+    return 0 if args.skip_dbt else DbtRun().run_pending(db_path)
 
 
 if __name__ == "__main__":

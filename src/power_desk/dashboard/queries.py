@@ -7,12 +7,21 @@ from pathlib import Path
 import time
 from typing import Any
 
+import duckdb
+
 from power_desk import warehouse
 from power_desk.settings import warehouse_path
 
 SEARCH_PATH = "marts,ods,dims,raw,main"
 GB_DATASETS = ("FUELINST", "PVLIVE")
 DATE_PLACEHOLDERS = ("start_date", "end_date")
+MAX_SETTLEMENT_PERIODS = 50  # the autumn clock-change day
+COUNTED_TABLES = (
+    ("raw", "bmrs__fuelinst"),
+    ("raw", "bmrs__indo"),
+    ("ods", "ods_generation_actual"),
+    ("marts", "mart_gb_generation_mix"),
+)
 
 
 def bind_dates(sql: str, **dates: str | None) -> str:
@@ -42,13 +51,13 @@ def run_query(sql: str, params: list[Any] | None = None, db_path: Path | None = 
 
 
 def filter_options(db_path: Path | None = None) -> dict[str, Any]:
-    """Date range, fuel types and settlement periods of the GB marts."""
+    """Date range, fuel types and settlement periods of the GB marts, plus row counts of key tables."""
     options: dict[str, Any] = {
         "min_date": None,
         "max_date": None,
         "day_count": 0,
         "fuel_types": [],
-        "settlement_periods": list(range(1, 51)),
+        "settlement_periods": list(range(1, MAX_SETTLEMENT_PERIODS + 1)),
         "table_counts": {},
     }
     if not Path(db_path or warehouse_path()).exists():
@@ -56,24 +65,35 @@ def filter_options(db_path: Path | None = None) -> dict[str, Any]:
     with warehouse.connect(db_path) as con:
         if "mart_gb_generation_mix" not in warehouse.table_names(con, "marts"):
             return options
-        options["min_date"], options["max_date"], options["day_count"] = con.execute(
-            "select min(settlement_date)::text, max(settlement_date)::text, count(distinct settlement_date) "
-            "from marts.mart_gb_generation_mix"
-        ).fetchone()
-        options["fuel_types"] = [
-            code
-            for (code,) in con.execute(
-                "select distinct source_code from ods.ods_generation_actual where source_dataset in (?, ?) order by 1",
-                list(GB_DATASETS),
-            ).fetchall()
-        ]
-        options["table_counts"] = {
-            table: con.execute(f"select count(*) from {schema}.{table}").fetchone()[0]
-            for schema, table in [
-                ("raw", "bmrs__fuelinst"),
-                ("raw", "bmrs__indo"),
-                ("ods", "ods_generation_actual"),
-                ("marts", "mart_gb_generation_mix"),
-            ]
-        }
-    return options
+        return {**options, **_date_range(con), "fuel_types": _fuel_types(con), "table_counts": _table_counts(con)}
+
+
+def _date_range(con: duckdb.DuckDBPyConnection) -> dict[str, Any]:
+    min_date, max_date, day_count = _single_row(
+        con,
+        "select min(settlement_date)::text, max(settlement_date)::text, count(distinct settlement_date) "
+        "from marts.mart_gb_generation_mix",
+    )
+    return {"min_date": min_date, "max_date": max_date, "day_count": day_count}
+
+
+def _fuel_types(con: duckdb.DuckDBPyConnection) -> list[str]:
+    placeholders = ", ".join("?" for _ in GB_DATASETS)
+    rows = con.execute(
+        f"select distinct source_code from ods.ods_generation_actual where source_dataset in ({placeholders}) "
+        "order by 1",
+        list(GB_DATASETS),
+    ).fetchall()
+    return [code for (code,) in rows]
+
+
+def _table_counts(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    return {table: _single_row(con, f"select count(*) from {schema}.{table}")[0] for schema, table in COUNTED_TABLES}
+
+
+def _single_row(con: duckdb.DuckDBPyConnection, sql: str) -> tuple[Any, ...]:
+    """The one row of an aggregate query."""
+    row = con.execute(sql).fetchone()
+    if row is None:
+        raise LookupError(f"no row from: {sql}")
+    return row

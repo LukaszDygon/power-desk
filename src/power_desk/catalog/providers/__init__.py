@@ -10,6 +10,7 @@ Register new providers (e.g. for another data publisher's code lists) in `PROVID
 
 from types import ModuleType
 
+from power_desk.catalog import CatalogError
 from power_desk.catalog.providers import elexon, entsoe
 
 PROVIDERS: dict[str, ModuleType] = {p.NAME: p for p in (elexon, entsoe)}
@@ -21,7 +22,7 @@ def parse_ref(ref: str) -> tuple[str, str, str]:
         provider, path = ref.split(":", 1)
         kind, ident = path.split("/", 1)
     except ValueError:
-        raise ValueError(f"bad reference {ref!r}; expected <provider>:<kind>/<id>") from None
+        raise CatalogError(f"bad reference {ref!r}; expected <provider>:<kind>/<id>") from None
     if provider not in PROVIDERS:
-        raise KeyError(f"unknown definitions provider {provider!r} in {ref!r}; known: {sorted(PROVIDERS)}")
+        raise CatalogError(f"unknown definitions provider {provider!r} in {ref!r}; known: {sorted(PROVIDERS)}")
     return provider, kind, ident

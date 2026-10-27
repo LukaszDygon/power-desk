@@ -9,11 +9,9 @@ Arrow tables (bulk file sources) get the same lineage columns (`_dlt_load_id`, `
 
 from __future__ import annotations
 
-from datetime import date, timedelta
 import logging
 import os
 from pathlib import Path
-import time
 from typing import Any
 
 import dlt
@@ -21,61 +19,48 @@ from dlt.common.pipeline import LoadInfo
 from dlt.sources import DltSource
 
 from power_desk.ingest.registry import SOURCES
-from power_desk.settings import backfill_start_date, pipelines_dir, warehouse_path
-from power_desk.warehouse import is_lock_error
+from power_desk.ingest.spec import RunWindow
+from power_desk.settings import pipelines_dir, warehouse_path
+from power_desk.warehouse import LockRetry, retry_while_locked
 
 logger = logging.getLogger(__name__)
 
 DATASET_NAME = "raw"
 SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
-
-dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True
-dlt.config["normalize.parquet_normalizer.add_dlt_id"] = True
+LOAD_RETRY = LockRetry(timeout_seconds=7.5, interval_seconds=1.5)
 
 
-def make_pipeline(name: str, db_path: Path | str | None = None, export_schema: bool = True) -> dlt.Pipeline:
-    export = export_schema and os.environ.get("POWER_DESK_EXPORT_SCHEMAS", "1") != "0"
+def make_pipeline(name: str, db_path: Path | str | None = None, schemas_dir: Path | None = SCHEMAS_DIR) -> dlt.Pipeline:
+    """Pipeline `name` into the warehouse; it exports its schema to `schemas_dir` unless that is None."""
+    dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True
+    dlt.config["normalize.parquet_normalizer.add_dlt_id"] = True
+    if os.environ.get("POWER_DESK_EXPORT_SCHEMAS", "1") == "0":
+        schemas_dir = None
     return dlt.pipeline(
         pipeline_name=name,
         destination=dlt.destinations.duckdb(str(db_path or warehouse_path())),
         dataset_name=DATASET_NAME,
         pipelines_dir=str(pipelines_dir()),
-        export_schema_path=str(SCHEMAS_DIR) if export else None,
+        # dlt annotates this optional parameter as `str`
+        export_schema_path=str(schemas_dir) if schemas_dir else None,  # pyright: ignore[reportArgumentType]
     )
 
 
-def make_source(
-    name: str,
-    start_date: str | None = None,
-    end_date: str | None = None,
-    max_days_per_run: int | None = None,
-    resources: list[str] | None = None,
-) -> DltSource:
-    """Source `name` for `start_date`..`end_date` (inclusive; open-ended without `end_date`)."""
+def make_source(name: str, window: RunWindow | None = None, resources: list[str] | None = None) -> DltSource:
+    """Source `name` for `window` (default: open-ended from `POWER_DESK_START_DATE`), padded as the source needs."""
     spec = SOURCES[name]
-    padding = timedelta(days=spec.window_padding_days)
-    start = date.fromisoformat((start_date or backfill_start_date())[:10]) - padding
-    end = date.fromisoformat(end_date[:10]) + padding if end_date else None
-    source = spec.build(
-        initial_date=start.isoformat(),
-        end_date=end.isoformat() if end else None,
-        max_days_per_run=spec.max_days_per_run if max_days_per_run is None else max_days_per_run,
-    )
+    source = spec.build((window or spec.window()).padded(spec.window_padding_days))
     return source.with_resources(*resources) if resources else source
 
 
-def run(pipeline: dlt.Pipeline, source: DltSource, retries: int = 6, **kwargs: Any) -> LoadInfo:
+def run(pipeline: dlt.Pipeline, source: DltSource, **kwargs: Any) -> LoadInfo:
     """`pipeline.run`, retried while a reader holds the warehouse lock."""
-    for attempt in range(1, retries + 1):
-        try:
-            return pipeline.run(source, **kwargs)
-        except Exception as exc:
-            if not is_lock_error(exc) or attempt == retries:
-                raise
-            logger.warning("warehouse locked (attempt %s/%s), retrying", attempt, retries)
-            pipeline.drop_pending_packages()
-            time.sleep(1.5)
-    raise AssertionError("unreachable")
+
+    def drop_partial_load() -> None:
+        logger.warning("warehouse locked, retrying in %ss", LOAD_RETRY.interval_seconds)
+        pipeline.drop_pending_packages()
+
+    return retry_while_locked(lambda: pipeline.run(source, **kwargs), LOAD_RETRY, before_retry=drop_partial_load)
 
 
 def resource_progress(pipeline: dlt.Pipeline, source_name: str) -> dict[str, dict[str, Any]]:

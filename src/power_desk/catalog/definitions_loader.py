@@ -15,6 +15,8 @@ from typing import Any
 
 import yaml
 
+from power_desk.catalog import CatalogError
+
 CATALOG_DIR = Path(__file__).resolve().parent
 DEFINITIONS_DIR = CATALOG_DIR / "definitions"
 SNAPSHOTS_DIR = CATALOG_DIR / "snapshots"
@@ -32,25 +34,25 @@ def load_definitions(directory: Path = DEFINITIONS_DIR) -> dict[str, dict[str, A
         doc = load_yaml(path)
         unknown = set(doc) - set(SECTIONS)
         if unknown:
-            raise KeyError(f"{path.name}: unknown sections {sorted(unknown)}; allowed {SECTIONS}")
+            raise CatalogError(f"{path.name}: unknown sections {sorted(unknown)}; allowed {SECTIONS}")
         for section, entries in doc.items():
             for key, value in (entries or {}).items():
                 if (section, key) in origin:
-                    raise KeyError(f"{section}.{key} defined in both {origin[section, key]} and {path.name}")
+                    raise CatalogError(f"{section}.{key} defined in both {origin[section, key]} and {path.name}")
                 origin[section, key] = path.name
                 merged[section][key] = value
     for table, entry in merged["tables"].items():
         preset = entry.get("freshness")
         if isinstance(preset, str):
             if preset not in merged["freshness"]:
-                raise KeyError(f"tables.{table}: unknown freshness preset {preset!r}")
+                raise CatalogError(f"tables.{table}: unknown freshness preset {preset!r}")
             entry["freshness"] = merged["freshness"][preset]
     for section in ("tables", "columns"):
         for key, entry in merged[section].items():
             names = {link["link"] if isinstance(link, dict) else link for link in entry.get("links", [])}
             unknown_links = names - set(merged["links"])
             if unknown_links:
-                raise KeyError(f"{section}.{key}: unknown links {sorted(unknown_links)}")
+                raise CatalogError(f"{section}.{key}: unknown links {sorted(unknown_links)}")
     return merged
 
 

@@ -8,6 +8,7 @@ from dagster import AssetKey, DagsterInstance, build_sensor_context
 import pytest
 
 from power_desk.ingest.seed.replay import SeedPublishers, replay
+from power_desk.orchestration.runs import latest_metadata
 from power_desk.transform.dbt import run_dbt
 from power_desk.transform.loads import tracked_models
 from tests.support import query
@@ -35,11 +36,11 @@ def test_ingest_jobs_load_then_transform_and_audit_every_load(defs, live):
     instance = DagsterInstance.ephemeral()
     actuals = defs.resolve_job_def("ingest_actuals").execute_in_process(instance=instance)
     assert actuals.success
-    metadata = instance.get_latest_materialization_event(AssetKey(["raw", "bmrs__indo"])).asset_materialization.metadata
-    assert metadata["dlt_load_ids"].value and metadata["window_capped"].value is False
+    metadata = latest_metadata(instance, AssetKey(["raw", "bmrs__indo"]))
+    assert metadata["dlt_load_ids"] and metadata["window_capped"] is False
     audit = query(live, "select load_id, model_name, orchestrator_run_id from dlt_meta.dlt_load_audit")
     assert {r[1] for r in audit} == set(tracked_models())
-    assert {r[0] for r in audit} >= set(metadata["dlt_load_ids"].value) and {r[2] for r in audit} == {actuals.run_id}
+    assert {r[0] for r in audit} >= set(metadata["dlt_load_ids"]) and {r[2] for r in audit} == {actuals.run_id}
 
     assert defs.resolve_job_def("ingest_forecasts").execute_in_process(instance=instance).success
     assert defs.resolve_job_def("ingest_actuals").execute_in_process(instance=instance).success

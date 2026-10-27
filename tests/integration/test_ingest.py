@@ -29,11 +29,17 @@ def published_rows(publishers: SeedPublishers) -> dict[str, int]:
 
 
 def load(
-    source: str, db: Path, publishers: SeedPublishers, start: str = SEED_START, end: str | None = None, **kwargs
+    source: str,
+    db: Path,
+    publishers: SeedPublishers,
+    start: str = SEED_START,
+    end: str | None = None,
+    max_days: int | None = None,
+    resources: list[str] | None = None,
 ) -> dict:
     pipeline = make_pipeline(source, db)
     with replay(publishers):
-        run(pipeline, make_source(source, start, end, **kwargs))
+        run(pipeline, make_source(source, SOURCES[source].window(start, end, max_days), resources))
     return resource_progress(pipeline, source)
 
 
@@ -48,9 +54,9 @@ def test_seed_week_loads_every_published_row(source, tmp_path):
 
 def test_stream_resumes_from_its_cursor_and_records_its_window(tmp_path):
     publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
-    first = load("bmrs", db, publishers, max_days_per_run=1, resources=["bmrs__indo"])["bmrs__indo"]
+    first = load("bmrs", db, publishers, max_days=1, resources=["bmrs__indo"])["bmrs__indo"]
     assert (first["first_day"], first["last_day"], first["capped"]) == ("2024-02-29", "2024-03-01", True)
-    second = load("bmrs", db, publishers, max_days_per_run=1, resources=["bmrs__indo"])["bmrs__indo"]
+    second = load("bmrs", db, publishers, max_days=1, resources=["bmrs__indo"])["bmrs__indo"]
     assert (second["first_day"], second["last_day"]) == ("2024-03-01", "2024-03-02")
     assert second["cursor_last_value"] > first["cursor_last_value"]
     assert query(db, "select count(*) = count(distinct (settlement_date, settlement_period)) from raw.bmrs__indo") == [
@@ -60,7 +66,7 @@ def test_stream_resumes_from_its_cursor_and_records_its_window(tmp_path):
 
 def test_bounded_backfill_leaves_the_cursor_untouched(tmp_path):
     publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
-    cursor = load("bmrs", db, publishers, "2024-03-02", max_days_per_run=1, resources=["bmrs__indo"])["bmrs__indo"][
+    cursor = load("bmrs", db, publishers, "2024-03-02", max_days=1, resources=["bmrs__indo"])["bmrs__indo"][
         "cursor_last_value"
     ]
     after = load("bmrs", db, publishers, "2024-03-01", "2024-03-01", resources=["bmrs__indo"])["bmrs__indo"]
@@ -74,7 +80,7 @@ def test_a_failed_request_fails_the_run_and_keeps_the_state(tmp_path, monkeypatc
     pipeline = make_pipeline("bmrs", tmp_path / "w.duckdb")
     monkeypatch.setattr(http, "fetch_json", unavailable)
     with pytest.raises(Exception, match="API down"):
-        run(pipeline, make_source("bmrs", "2024-03-01", "2024-03-02", resources=["bmrs__indo"]))
+        run(pipeline, make_source("bmrs", SOURCES["bmrs"].window("2024-03-01", "2024-03-02"), ["bmrs__indo"]))
     assert resource_progress(pipeline, "bmrs") == {}
 
 

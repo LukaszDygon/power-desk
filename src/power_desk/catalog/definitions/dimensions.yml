@@ -100,18 +100,12 @@ columns:
     description: A technology group containing `technology_code` (itself at depth 0).
   parent_technology_code:
     description: Next broader technology in the tree; null for top-level groups.
-  fuel_family:
-    description: Primary energy carrier family (e.g. gaseous_fossil, solid_fossil, wind, water, biomass).
-  is_fossil:
-    description: Fossil-fuelled technology.
-  is_renewable:
-    description: Renewable technology.
-  is_low_carbon:
-    description: Counted as low-carbon (renewables and nuclear).
-  is_storage:
-    description: Storage technology (net generation can be negative).
-  is_interconnector:
-    description: Cross-border flow rather than domestic generation.
+  is_zero_carbon:
+    description: 'NESO, Historic GB Generation Mix, ZERO_CARBON: "Zero carbon generation e.g. wind, solar,
+      hydro, nuclear". True for those technologies and their sub-types; false for the generation NESO reports
+      under other fields (fossil, biomass, storage, imports, other); empty where NESO does not classify the
+      technology.'
+    links: [neso_historic_generation_mix]
   # --- source datasets and mappings ---------------------------------------------------------
   source:
     description: dlt source (pipeline) that loads the dataset.

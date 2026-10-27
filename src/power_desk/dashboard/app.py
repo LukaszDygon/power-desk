@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import duckdb
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 import uvicorn
 
+from power_desk import warehouse
 from power_desk.dashboard import queries
 from power_desk.dashboard.lineage import lineage
 from power_desk.dashboard.widgets import Widget, load_widgets, remove_widget, upsert_widget
@@ -48,7 +50,7 @@ def lineage_graph() -> dict[str, Any]:
 
 
 @app.get("/api/widgets")
-def widgets() -> list[dict[str, Any]]:
+def widgets() -> list[Widget]:
     return load_widgets()
 
 
@@ -64,10 +66,14 @@ def delete_widget(widget_id: str) -> dict[str, Any]:
 
 @app.post("/api/query")
 def query(payload: Query) -> dict[str, Any]:
+    """400 for a query the warehouse rejects, 503 while the warehouse stays locked by a load."""
     try:
         sql = queries.bind_dates(payload.sql, start_date=payload.start_date, end_date=payload.end_date)
         return queries.run_query(sql, payload.params)
-    except Exception as exc:
+    except duckdb.Error as exc:
+        status = 503 if warehouse.is_lock_error(exc) else 400
+        raise HTTPException(status_code=status, detail=str(exc)) from exc
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 

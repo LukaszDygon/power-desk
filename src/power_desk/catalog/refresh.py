@@ -19,7 +19,7 @@ from power_desk.catalog.providers import PROVIDERS, parse_ref
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").partition("\n")[0])
     parser.add_argument("--provider", choices=sorted(PROVIDERS), help="only refresh this provider")
     args = parser.parse_args()
 

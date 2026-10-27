@@ -1,4 +1,8 @@
 # GB power-market concepts shared by sources keyed on UK settlement periods.
+links:
+  neso_historic_generation_mix:
+    title: NESO Data Portal, Historic GB Generation Mix (data dictionary)
+    url: https://www.neso.energy/data-portal/historic-generation-mix/historic_gb_generation_mix
 columns:
   settlement_date:
     description: Settlement day the value belongs to. Settlement days run midnight to midnight UK local

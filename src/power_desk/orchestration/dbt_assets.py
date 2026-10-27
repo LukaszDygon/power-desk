@@ -3,28 +3,22 @@
 The invocation processes the pending dlt loads. Models read never-loaded raw tables as empty
 (`dlt_source`); tests downstream of them are skipped until their first load. dbt reads the
 warehouse location from the environment (`transform/profiles.yml`) and dagster-dbt finds `dbt` on
-PATH, so both are set on import.
+PATH; `power-desk-dagster` sets both for the whole Dagster process.
 """
 
 from collections.abc import Iterator, Mapping
 import json
-import os
-from typing import Any
+from typing import Any, Literal
 
-from dagster import AssetExecutionContext, AssetKey, Config, RetryRequested
+from dagster import AssetExecutionContext, AssetKey, Config
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, DbtProject, dbt_assets
 
 from power_desk import warehouse
 from power_desk.ingest.pipeline import DATASET_NAME
-from power_desk.orchestration.dlt_assets import WAREHOUSE_POOL
+from power_desk.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_run_if_locked
 from power_desk.settings import DBT_PROJECT_DIR, warehouse_path
-from power_desk.transform.dbt import DBT_EXECUTABLE, dbt_args, run_dbt
+from power_desk.transform.dbt import DbtRun, run_dbt
 from power_desk.transform.loads import pending_load_ids
-
-os.environ.setdefault("POWER_DESK_DUCKDB_PATH", str(warehouse_path()))
-os.environ["PATH"] = os.pathsep.join(
-    dict.fromkeys([str(DBT_EXECUTABLE.parent), *os.environ.get("PATH", "").split(os.pathsep)])
-)
 
 dbt_project = DbtProject(project_dir=DBT_PROJECT_DIR, profiles_dir=DBT_PROJECT_DIR)
 dbt_project.prepare_if_dev()
@@ -43,10 +37,15 @@ class LayerTranslator(DagsterDbtTranslator):
 
 
 class TransformConfig(Config):
-    scope: str = "recent"  # recent: tests read rows of pending loads only; all: the whole warehouse
+    """A `DbtRun` (see there for `scope`, `full_refresh` and `command`), plus the docs catalogue."""
+
+    scope: Literal["recent", "all"] = "recent"
     full_refresh: bool = False
-    command: str = "build"  # build: models and tests; test: tests only
+    command: Literal["build", "test"] = "build"
     docs: bool = False  # regenerate the dbt docs catalogue afterwards
+
+    def dbt_run(self) -> DbtRun:
+        return DbtRun(command=self.command, scope=self.scope, full_refresh=self.full_refresh)
 
 
 def unloaded_raw_tables() -> list[tuple[str, str]]:
@@ -62,6 +61,11 @@ def unloaded_raw_tables() -> list[tuple[str, str]]:
     return sorted(ref for name, ref in declared.items() if name not in loaded)
 
 
+def tests_downstream_of(tables: list[tuple[str, str]]) -> str:
+    """dbt selector for the tests downstream of (dbt source, table) pairs."""
+    return " ".join(f"source:{source}.{table}+,resource_type:test" for source, table in tables)
+
+
 @dbt_assets(
     manifest=dbt_project.manifest_path,
     project=dbt_project,
@@ -73,17 +77,16 @@ def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource, config: Tran
     if ("dlt", "_dlt_loads") in unloaded:
         context.log.info("No dlt load has completed yet; nothing to transform.")
         return
-    args = dbt_args(pending_load_ids(), context.run.run_id, config.scope, config.full_refresh, config.command)
+    args = config.dbt_run().args(pending_load_ids(), context.run.run_id)
     if unloaded:
         context.log.warning(f"Skipping tests downstream of unloaded raw tables: {[table for _, table in unloaded]}")
-        args += ["--exclude", " ".join(f"source:{source}.{table}+,resource_type:test" for source, table in unloaded)]
+        args += ["--exclude", tests_downstream_of(unloaded)]
     invocation = dbt.cli(args, context=context, raise_on_error=False)
     yield from invocation.stream()
     if config.docs:
         run_dbt(["docs", "generate", "--quiet"])
     if not invocation.is_successful():
         error = invocation.get_error()
-        if warehouse.is_lock_error(error):
-            raise RetryRequested(max_retries=5, seconds_to_wait=10) from error
+        retry_run_if_locked(error)
         if error:
             raise error

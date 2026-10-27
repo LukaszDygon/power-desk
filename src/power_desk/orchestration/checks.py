@@ -11,11 +11,12 @@ def cursor_lag_check(key: AssetKey, threshold: int):
     def check(context: AssetCheckExecutionContext) -> AssetCheckResult:
         metadata = latest_metadata(context.instance, key)
         lag = metadata.get("cursor_lag_minutes")
+        lag_minutes = float(lag) if isinstance(lag, int | float) else None  # None: no cursor recorded yet
         return AssetCheckResult(
-            passed=lag is not None and float(lag) <= threshold,
+            passed=lag_minutes is not None and lag_minutes <= threshold,
             severity=AssetCheckSeverity.WARN,
             metadata={
-                "cursor_lag_minutes": float(lag) if lag is not None else -1.0,
+                "cursor_lag_minutes": lag_minutes,
                 "threshold_minutes": threshold,
                 "cursor_last_value": str(metadata.get("cursor_last_value", "")),
             },

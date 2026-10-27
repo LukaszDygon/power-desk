@@ -8,16 +8,15 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import Any
 
-from dagster import AssetExecutionContext, AssetKey, Config, MaterializeResult, RetryRequested
+from dagster import AssetExecutionContext, AssetKey, Config, MaterializeResult
 from dagster_dlt import DagsterDltResource, DagsterDltTranslator, dlt_assets
 from dagster_dlt.translator import DltResourceTranslatorData
 import dlt
 
 from power_desk.ingest.pipeline import DATASET_NAME, make_pipeline, make_source, resource_progress
 from power_desk.ingest.registry import SOURCES
-from power_desk.warehouse import is_lock_error
-
-WAREHOUSE_POOL = "duckdb_warehouse"
+from power_desk.ingest.spec import RunWindow, SourceSpec
+from power_desk.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_run_if_locked
 
 
 class RawTableTranslator(DagsterDltTranslator):
@@ -39,6 +38,9 @@ class IngestConfig(Config):
     max_days_per_run: int | None = None
     refresh: str | None = None  # dlt refresh mode: drop_sources | drop_resources | drop_data
 
+    def window(self, spec: SourceSpec) -> RunWindow:
+        return spec.window(self.start_date, self.end_date, self.max_days_per_run)
+
 
 def minutes_behind(cursor: Any, now: datetime | None = None) -> float | None:
     if not cursor:
@@ -48,19 +50,21 @@ def minutes_behind(cursor: Any, now: datetime | None = None) -> float | None:
     return round(((now or datetime.now(UTC)) - value).total_seconds() / 60, 1)
 
 
-def load_metadata(pipeline: dlt.Pipeline, source_name: str, resource: str, bounded: bool) -> dict[str, Any]:
+def load_metadata(pipeline: dlt.Pipeline, window: RunWindow) -> dict[str, Any]:
+    """The run's dlt loads."""
     load_info = pipeline.last_trace.last_load_info if pipeline.last_trace else None
-    metadata: dict[str, Any] = {
+    return {
         "dlt_load_ids": list(load_info.loads_ids) if load_info else [],
         "dlt_pipeline": pipeline.pipeline_name,
-        "bounded_backfill": bounded,
+        "bounded_backfill": window.bounded,
     }
-    if bounded:
-        return metadata
+
+
+def progress_metadata(pipeline: dlt.Pipeline, source_name: str, resource: str) -> dict[str, Any]:
+    """An open-ended run's progress: cursor, lag, window and whether it was capped."""
     progress = resource_progress(pipeline, source_name).get(resource, {})
     lag = minutes_behind(progress.get("cursor_last_value"))
     return {
-        **metadata,
         "cursor_last_value": str(progress.get("cursor_last_value") or ""),
         "window_capped": bool(progress.get("capped", False)),
         "window": f"{progress.get('first_day', '')}..{progress.get('last_day', '')}",
@@ -79,23 +83,19 @@ def source_assets(name: str):
     )
     def ingest(context: AssetExecutionContext, dlt: DagsterDltResource, config: IngestConfig) -> Iterator[Any]:
         pipeline = make_pipeline(name)
-        source = make_source(name, config.start_date, config.end_date, config.max_days_per_run)
+        window = config.window(SOURCES[name])
+        source = make_source(name, window)
         try:
-            results = list(
-                dlt.run(
-                    context=context,
-                    dlt_source=source,
-                    dlt_pipeline=pipeline,
-                    **({"refresh": config.refresh} if config.refresh else {}),
-                )
-            )
+            results = list(dlt.run(context=context, dlt_source=source, dlt_pipeline=pipeline, refresh=config.refresh))
         except Exception as exc:
-            if is_lock_error(exc):
-                raise RetryRequested(max_retries=5, seconds_to_wait=10) from exc
+            retry_run_if_locked(exc)
             raise
         for result in results:
-            metadata = load_metadata(pipeline, source.name, result.asset_key.path[-1], bounded=bool(config.end_date))
-            yield MaterializeResult(asset_key=result.asset_key, metadata={**(result.metadata or {}), **metadata})
+            assert result.asset_key is not None  # dagster-dlt materializes one asset per resource
+            metadata = {**(result.metadata or {}), **load_metadata(pipeline, window)}
+            if not window.bounded:
+                metadata |= progress_metadata(pipeline, source.name, result.asset_key.path[-1])
+            yield MaterializeResult(asset_key=result.asset_key, metadata=metadata)
 
     return ingest
 

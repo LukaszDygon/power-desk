@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from power_desk.catalog import CatalogError
 from power_desk.ingest.http import fetch_if_changed
 from power_desk.ingest.sources.entsoe_eic import FUNCTIONS_URL, parse_csv
 
@@ -32,7 +33,7 @@ def eic_functions(ids: list[str]) -> dict[str, dict[str, Any]]:
     for ident in ids:
         rows = grouped.get(ident)
         if not rows:
-            raise KeyError(f"{NAME}: no EIC function with slug {ident!r}")
+            raise CatalogError(f"{NAME}: no EIC function with slug {ident!r}")
         definitions = sorted(
             {r["Definition"].strip() for r in rows if r["Definition"].strip() not in ("", "Missing definition.")}
         )
@@ -50,4 +51,4 @@ def eic_functions(ids: list[str]) -> dict[str, dict[str, Any]]:
 def fetch(kind: str, ids: list[str]) -> dict[str, dict[str, Any]]:
     if kind == "eic-functions":
         return eic_functions(ids)
-    raise KeyError(f"{NAME}: unknown kind {kind!r} (expected one of {sorted(LABELS)})")
+    raise CatalogError(f"{NAME}: unknown kind {kind!r} (expected one of {sorted(LABELS)})")

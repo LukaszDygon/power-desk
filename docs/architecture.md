@@ -57,17 +57,18 @@ dimensions; the dimension tables explain what each key means and how keys relate
 
 ## Ingestion
 
-- **Contract:** each module in `ingest/sources/` exposes a `@dlt.source(initial_date, end_date,
-  max_days_per_run)` and a `SourceSpec`, registered in `ingest/registry.py`. Raw payloads are yielded
-  untouched.
+- **Contract:** each module in `ingest/sources/` exposes a `@dlt.source(window: RunWindow)` and a
+  `SourceSpec`, registered in `ingest/registry.py` (`ingest/spec.py`). The window carries the start,
+  the inclusive end of a bounded backfill and the per-run cap (`max_days`, default
+  `SourceSpec.max_days_per_run`). Raw payloads are yielded untouched.
 - **Seed:** recorded and synthetic payloads (`data/seed/`) replace the publishers (`ingest/seed/`),
   so the dev warehouse and the integration tests run the real pipelines.
-- **Streams** have one cursor per resource and fetch at most `max_days_per_run` new days from it.
+- **Streams** have one cursor per resource and fetch at most `max_days` new days from it.
   Bounded backfills leave the cursor untouched. Fetch errors fail the run, so no gap is skipped.
 - **Snapshots** (reference files) re-read the whole file, skip it while unchanged (ETag / hash), and
   load with scd2, so changes and withdrawals keep their history.
 - **File partitions** (periodic files the publisher re-exports when revised) load the files new or
-  changed since their last load, at most `max_days_per_run` of periods per run, and replace each
+  changed since their last load, at most `max_days` of periods per run, and replace each
   file's rows (`merge_key`), so revisions and withdrawals follow the publication.
 - **dlt schemas** are exported to `ingest/schemas/` and define the dbt sources.
 

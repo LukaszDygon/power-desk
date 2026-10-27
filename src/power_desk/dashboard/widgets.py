@@ -37,20 +37,22 @@ class Widget(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
-def load_widgets(path: Path = REGISTRY) -> list[dict[str, Any]]:
-    return json.loads((path if path.exists() else DEFAULTS).read_text(encoding="utf-8"))
+def load_widgets(path: Path = REGISTRY) -> list[Widget]:
+    """The registry's widgets; an entry that does not match `Widget` fails with the offending field."""
+    entries = json.loads((path if path.exists() else DEFAULTS).read_text(encoding="utf-8"))
+    return [Widget.model_validate(entry) for entry in entries]
 
 
-def save_widgets(widgets: list[dict[str, Any]], path: Path = REGISTRY) -> list[dict[str, Any]]:
+def save_widgets(widgets: list[Widget], path: Path = REGISTRY) -> list[Widget]:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(widgets, indent=2), encoding="utf-8")
+    path.write_text(json.dumps([w.model_dump() for w in widgets], indent=2), encoding="utf-8")
     return widgets
 
 
-def upsert_widget(widget: Widget, path: Path = REGISTRY) -> list[dict[str, Any]]:
-    others = [w for w in load_widgets(path) if w.get("id") != widget.id]
-    return save_widgets([*others, widget.model_dump()], path)
+def upsert_widget(widget: Widget, path: Path = REGISTRY) -> list[Widget]:
+    others = [w for w in load_widgets(path) if w.id != widget.id]
+    return save_widgets([*others, widget], path)
 
 
-def remove_widget(widget_id: str, path: Path = REGISTRY) -> list[dict[str, Any]]:
-    return save_widgets([w for w in load_widgets(path) if w.get("id") != widget_id], path)
+def remove_widget(widget_id: str, path: Path = REGISTRY) -> list[Widget]:
+    return save_widgets([w for w in load_widgets(path) if w.id != widget_id], path)

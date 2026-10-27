@@ -29,8 +29,9 @@ from typing import Any
 
 import yaml
 
+from power_desk.catalog import CatalogError
 from power_desk.catalog.definitions_loader import load_definitions, load_snapshots, load_yaml
-from power_desk.catalog.render import Catalogue
+from power_desk.catalog.render import Catalogue, dataset_doc
 from power_desk.ingest.pipeline import DATASET_NAME, SCHEMAS_DIR
 from power_desk.settings import DBT_PROJECT_DIR
 
@@ -112,7 +113,7 @@ def duplication_guards(name: str, table: dict[str, Any]) -> list[dict[str, Any]]
 
 def source_table(schema_name: str, name: str, table: dict[str, Any], catalogue: Catalogue) -> dict[str, Any]:
     if name not in catalogue.tables:
-        raise KeyError(f"raw table {name}: no entry in catalog/definitions (tables:)")
+        raise CatalogError(f"raw table {name}: no entry in catalog/definitions (tables:)")
     definition = catalogue.tables[name]
     dlt_meta = {
         "pipeline": schema_name,
@@ -124,7 +125,7 @@ def source_table(schema_name: str, name: str, table: dict[str, Any], catalogue: 
     }
     return {
         "name": name,
-        "description": doc_ref(catalogue.dataset_doc(name)),
+        "description": doc_ref(dataset_doc(name)),
         "config": {
             "meta": {
                 "dagster": {"asset_key": [DATASET_NAME, name]},
@@ -188,7 +189,7 @@ def generate() -> dict[Path, str]:
     for _, schema in schemas:
         for table in schema["tables"]:
             if not table.startswith("_dlt") and owners.setdefault(table, schema["name"]) != schema["name"]:
-                raise KeyError(f"raw table {table} is produced by both {owners[table]} and {schema['name']}")
+                raise CatalogError(f"raw table {table} is produced by both {owners[table]} and {schema['name']}")
     for path, schema in schemas:
         doc = {"sources": [source_for_schema(schema, catalogue)]}
         outputs[SOURCES_DIR / f"{schema['name']}.yml"] = as_yaml(doc, f"ingest/schemas/{path.name}")
@@ -200,7 +201,7 @@ def generate() -> dict[Path, str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").partition("\n")[0])
     parser.add_argument("--check", action="store_true", help="fail if generated files are out of date")
     args = parser.parse_args()
 

@@ -26,7 +26,7 @@ select
     {{ exact_avg('g.solar_mw') }} as avg_solar_mw,
     {{ exact_avg('g.nuclear_mw') }} as avg_nuclear_mw,
     {{ exact_avg('g.ccgt_gas_mw') }} as avg_gas_mw,
-    {{ exact_avg('g.clean_share_pct') }} as avg_clean_share_pct,
+    {{ exact_avg('g.zero_carbon_share_pct') }} as avg_zero_carbon_share_pct,
     round(max(d.actual_demand_mw), 1) as peak_demand_mw,
     round(min(d.actual_demand_mw), 1) as min_demand_mw,
     count(*) as _source_rows,

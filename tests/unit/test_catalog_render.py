@@ -1,5 +1,6 @@
 import pytest
 
+from power_desk.catalog import CatalogError
 from power_desk.catalog.definitions_loader import load_definitions
 from power_desk.catalog.providers.elexon import dataset_definitions, parse_glossary_page
 from power_desk.catalog.render import Catalogue
@@ -47,14 +48,14 @@ def test_column_text_keeps_citations_out_of_the_description():
 
 
 def test_undocumented_raw_column_is_an_error():
-    with pytest.raises(KeyError, match="bmrs__indo.brand_new_field"):
+    with pytest.raises(CatalogError, match="bmrs__indo.brand_new_field"):
         Catalogue(DEFINITIONS, SNAPSHOTS).column_key("bmrs__indo", "brand_new_field")
 
 
 def test_definition_keys_must_be_unique_across_files(tmp_path):
     (tmp_path / "a.yml").write_text("columns:\n  dup: {description: one}\n")
     (tmp_path / "b.yml").write_text("columns:\n  dup: {description: two}\n")
-    with pytest.raises(KeyError, match="columns.dup defined in both a.yml and b.yml"):
+    with pytest.raises(CatalogError, match="columns.dup defined in both a.yml and b.yml"):
         load_definitions(tmp_path)
 
 

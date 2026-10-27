@@ -1,7 +1,13 @@
+from pathlib import Path
+import re
+
 import pytest
 
 from power_desk.dashboard.lineage import lineage_from_manifest
 from power_desk.dashboard.queries import bind_dates, run_query
+from power_desk.dashboard.widgets import DEFAULTS, Widget, load_widgets
+
+STATIC = Path(__file__).parents[2] / "src" / "power_desk" / "dashboard" / "static"
 
 MANIFEST = {
     "sources": {
@@ -43,7 +49,7 @@ def test_run_query_rejects_statements_other_than_select():
 
 
 def test_lineage_links_publisher_raw_models_and_widgets():
-    widgets = [{"id": "w", "title": "W", "sql": "select * from marts.mart_demand_actual"}]
+    widgets = [Widget(id="w", title="W", sql="select * from marts.mart_demand_actual")]
     graph = lineage_from_manifest(MANIFEST, widgets)
     assert {(e["source"], e["target"]) for e in graph["edges"]} == {
         ("api_bmrs__indo", "bmrs__indo"),
@@ -51,3 +57,28 @@ def test_lineage_links_publisher_raw_models_and_widgets():
         ("stg_bmrs__indo", "mart_demand_actual"),
         ("mart_demand_actual", "widget_w"),
     }
+
+
+def palette() -> dict[str, str]:
+    """chart-theme.js palette keys -> the dashboard.css variables they read."""
+    theme = (STATIC / "js" / "chart-theme.js").read_text(encoding="utf-8")
+    return dict(re.findall(r'^\s+([A-Z_]+): cssVar\("(--[\w-]+)"\)', theme, re.MULTILINE))
+
+
+def test_palette_keys_read_css_variables_that_exist():
+    css = (STATIC / "css" / "dashboard.css").read_text(encoding="utf-8")
+    assert palette() and [var for var in palette().values() if f"{var}:" not in css] == []
+
+
+def test_default_widgets_are_valid_and_name_palette_colours():
+    colours = [
+        colour
+        for widget in load_widgets(DEFAULTS)
+        for colour in [
+            *(series.get("color") for series in widget.config.get("series", [])),
+            widget.config.get("color_positive"),
+            widget.config.get("color_negative"),
+        ]
+        if colour
+    ]
+    assert colours and [c for c in colours if c not in palette() and not c.startswith("#")] == []

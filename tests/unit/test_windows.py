@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from power_desk.ingest.windows import day_windows, plan_window
+from power_desk.ingest.windows import DateRange, WindowPlan, plan_window
 
 
 @pytest.mark.parametrize(
@@ -24,12 +24,21 @@ from power_desk.ingest.windows import day_windows, plan_window
     ],
 )
 def test_plan_window(start, end, max_days, fetched_until, expected):
-    assert plan_window(start, end, max_days, fetched_until=fetched_until, today=date(2024, 3, 10)) == expected
+    first, last, capped = expected
+    assert plan_window(start, end, max_days, fetched_until=fetched_until, today=date(2024, 3, 10)) == WindowPlan(
+        DateRange(first, last), capped
+    )
 
 
-def test_day_windows_cover_the_range_without_overlap():
-    assert list(day_windows(date(2024, 3, 1), date(2024, 3, 5), 2)) == [
-        (date(2024, 3, 1), date(2024, 3, 2)),
-        (date(2024, 3, 3), date(2024, 3, 4)),
-        (date(2024, 3, 5), date(2024, 3, 5)),
+def test_date_range_chunks_cover_the_range_without_overlap():
+    assert list(DateRange(date(2024, 3, 1), date(2024, 3, 5)).chunks(2)) == [
+        DateRange(date(2024, 3, 1), date(2024, 3, 2)),
+        DateRange(date(2024, 3, 3), date(2024, 3, 4)),
+        DateRange(date(2024, 3, 5), date(2024, 3, 5)),
     ]
+
+
+def test_date_ranges_overlap_when_they_share_a_day():
+    march = DateRange(date(2024, 3, 1), date(2024, 3, 31))
+    assert march.overlaps(DateRange(date(2024, 3, 31), date(2024, 4, 2)))
+    assert not march.overlaps(DateRange(date(2024, 4, 1), date(2024, 4, 2)))

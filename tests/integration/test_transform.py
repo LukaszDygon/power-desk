@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from power_desk import warehouse
 from power_desk.ingest.pipeline import make_pipeline, make_source, run
+from power_desk.ingest.registry import SOURCES
 from power_desk.ingest.seed.load import load_seed
 from power_desk.ingest.seed.replay import SeedPublishers, replay
 from power_desk.transform.dbt import run_dbt
@@ -62,7 +63,7 @@ def test_a_revised_load_rebuilds_only_the_grains_it_touches(warehouse_copy, tmp_
     with replay(publishers):
         info = run(
             make_pipeline("bmrs", warehouse_copy),
-            make_source("bmrs", "2024-03-08", "2024-03-08", resources=["bmrs__indo"]),
+            make_source("bmrs", SOURCES["bmrs"].window("2024-03-08", "2024-03-08"), ["bmrs__indo"]),
         )
     assert pending_load_ids(warehouse_copy) == list(info.loads_ids)
     assert build(warehouse_copy, tmp_path) == 0

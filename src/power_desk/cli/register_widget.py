@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 from typing import get_args
 
+import duckdb
 from pydantic import ValidationError
 
 from power_desk.dashboard import queries
@@ -47,7 +48,7 @@ def main() -> int:
         result = queries.run_query(
             queries.bind_dates(widget.sql, start_date=options["min_date"], end_date=options["max_date"])
         )
-    except Exception as exc:
+    except (ValueError, duckdb.Error) as exc:
         print(f"✗ {widget.id}: query failed: {exc}", file=sys.stderr)
         return 1
     print(f"✓ {widget.id}: {result['row_count']} rows, columns {result['columns']} ({result['duration_ms']} ms)")

@@ -7,7 +7,6 @@ Settlement dates downstream are UK-local, so requested date ranges are padded by
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import date, timedelta
 import logging
 from typing import Any
 
@@ -15,8 +14,8 @@ import dlt
 from dlt.sources import DltResource
 
 from power_desk.ingest import http
-from power_desk.ingest.spec import SourceSpec
-from power_desk.ingest.windows import day_after, day_windows, incremental_window
+from power_desk.ingest.spec import RunWindow, SourceSpec
+from power_desk.ingest.windows import DateRange, day_after, incremental_window
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +24,14 @@ MAX_DAYS_PER_RUN = 31
 DAYS_PER_REQUEST = 7
 
 
-def fetch_half_hours(first_day: date, last_day: date) -> list[dict[str, Any]]:
-    """Half hours ending from `first_day` 00:30 to `last_day + 1` 00:00 UTC."""
-    logger.info("pvlive__solar: %s..%s", first_day, last_day)
+def fetch_half_hours(days: DateRange) -> list[dict[str, Any]]:
+    """Half hours ending from `days.first` 00:30 to `days.last + 1` 00:00 UTC."""
+    logger.info("pvlive__solar: %s..%s", days.first, days.last)
     payload = http.fetch_json(
         API_URL,
         params={
-            "start": f"{first_day.isoformat()}T00:30:00Z",
-            "end": f"{(last_day + timedelta(days=1)).isoformat()}T00:00:00Z",
+            "start": f"{days.first.isoformat()}T00:30:00Z",
+            "end": f"{day_after(days.last)}T00:00:00Z",
         },
     )
     columns = payload.get("meta", ["pes_id", "datetime_gmt", "generation_mw"])
@@ -40,21 +39,21 @@ def fetch_half_hours(first_day: date, last_day: date) -> list[dict[str, Any]]:
 
 
 @dlt.source(name="pvlive")
-def pvlive_source(
-    initial_date: str, end_date: str | None = None, max_days_per_run: int = MAX_DAYS_PER_RUN
-) -> DltResource:
-    end_value = f"{day_after(end_date)}T00:30:00Z" if end_date else None  # half-hour ending: a day ends at D+1 00:00
+def pvlive_source(window: RunWindow) -> DltResource:
+    initial_value = window.start.isoformat()
+    # half-hour ending: a day ends at D+1 00:00
+    end_value = f"{day_after(window.end)}T00:30:00Z" if window.end else None
 
     @dlt.resource(name="pvlive__solar", write_disposition="merge", primary_key=["pes_id", "datetime_gmt"])
     def solar(
         cursor: dlt.sources.incremental[str] = dlt.sources.incremental(
             "datetime_gmt",
-            initial_value=initial_date,
+            initial_value=initial_value,
             end_value=end_value,
         ),
     ) -> Iterator[list[dict[str, Any]]]:
-        for first_day, last_day in day_windows(*incremental_window(cursor, max_days_per_run), DAYS_PER_REQUEST):
-            if half_hours := fetch_half_hours(first_day, last_day):
+        for days in incremental_window(cursor, window.max_days).chunks(DAYS_PER_REQUEST):
+            if half_hours := fetch_half_hours(days):
                 yield half_hours
 
     return solar
