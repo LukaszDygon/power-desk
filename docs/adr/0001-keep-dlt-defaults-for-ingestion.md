@@ -1,13 +1,13 @@
 # ADR 0001: Keep dlt's default row handling for ingestion
 
-- **Status:** accepted, 2026-10-28
+- **Status:** accepted, 2026-10-28; amended 2026-10-28 (streams: `upsert` -> `delete-insert`)
 - **Evidence:** [ingestion study](../ingestion-study.md); harness and raw results in `bench/ingestion/`
 
 ## Context
 
 Sources yield row dicts; dlt types, names and hashes them, then loads Parquet files into DuckDB.
 ENTSO-E monthly exports (about 100 MB, re-published when revised) load with `scd2` on the natural
-key, Elexon and PVLive with `upsert`, EIC snapshots with `scd2`
+key, Elexon and PVLive with `delete-insert` on the natural key, EIC snapshots with `scd2`
 ([write dispositions](../architecture.md#write-dispositions)).
 
 We measured the alternatives: 144 runs on one real ENTSO-E month (item forms, six destinations, five
@@ -32,7 +32,7 @@ resource code.
 
 | Risk | What happens | Mitigation without changing the design |
 |---|---|---|
-| Older data arrives after newer | `scd2` and `upsert` make the older version current | Unlikely today: the File Library only offers each file's latest export. Do not replay older copies; marts that pick the newest `UpdateTime` stay correct |
+| Older data arrives after newer | `scd2` and `delete-insert` make the older version current | Unlikely today: the File Library only offers each file's latest export. Do not replay older copies; marts that pick the newest `UpdateTime` stay correct |
 | Process killed mid-load | dlt records a job's outcome after the destination commits it, so a resumed load can repeat a file: duplicates, or keys with two open `scd2` versions | Add dbt tests (one open version per key; one row per key and version) and reload the affected month when they fail |
 | Destination dataset lost | dlt wipes its working folder, including the loaded files, and reloads only what the source offers now (ENTSO-E: latest exports, no history) | Back up the warehouse file; copy loaded files out of the pipeline folder before any rerun |
 | Warehouse locked during a load | `ingest/pipeline.py` retries with `drop_pending_packages()`, which since dlt 1.30 aborts the package and rewinds state; the next run re-extracts | Acceptable; retrying `pipeline.load()` instead would avoid the re-extract |
@@ -60,6 +60,12 @@ documents the key in the dlt schema.
    appending the same rows to object storage; dlt has no replay command.
 
 Settings that made no difference are listed in the study, so they need not be tried again.
+
+**Amendment (2026-10-28):** a full reload from 2024-01-01 found Elexon NDF records the API returns two
+or three times verbatim within a day (1,259 keys); `upsert` keeps every copy of a key within one load,
+failing the raw uniqueness test. Streams now use dlt's `delete-insert` on the same primary key, which
+keeps one row per key within a load and replaces it on republication. Still a dlt default strategy;
+`_dlt_id` is a row id rather than a hash of the primary key.
 
 ## Revisit when
 

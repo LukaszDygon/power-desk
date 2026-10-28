@@ -135,3 +135,43 @@ def test_file_partition_cursor_is_the_latest_update_not_the_latest_value_time(tm
         db, f"select max(update_time_utcx), max(date_time_utcx) from raw.{item.resource}"
     )
     assert datetime.fromisoformat(cursor) == latest_update and latest_update > latest_value
+
+
+def test_stream_without_publish_time_resumes_from_its_interval_start(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    cursor = load("bmrs", db, publishers, max_days=1, resources=["bmrs__mid"])["bmrs__mid"]["cursor_last_value"]
+    assert query(db, "select max(start_time) from raw.bmrs__mid")[0][0] == datetime.fromisoformat(cursor)
+
+
+def test_documents_sharing_a_natural_key_load_as_published_and_a_revision_closes_them_all(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    item = next(item for item in entsoe.DATA_ITEMS if item.document_key)
+    [(name, (_, content))] = publishers.exports[item.folder].items()
+    header, first_row, *_ = content.decode().splitlines()
+    columns = header.split("\t")
+    instance, update, price = (columns.index(c) for c in ("InstanceCode", "UpdateTime(UTC)", "Price[Currency/MWh]"))
+
+    def export(*rows: list[str]) -> bytes:
+        return "\r\n".join([header, *("\t".join(row) for row in rows), ""]).encode()
+
+    first = first_row.split("\t")
+    second = [*first]
+    second[instance], second[update] = "0" * 32, "2026-08-20 12:10:14"
+    publishers.exports[item.folder] = {name: ("two documents", export(first, second))}
+    load("entsoe", db, publishers, resources=[item.resource])
+    current = f"select count(*) filter (where _dlt_valid_to is null), count(*) from raw.{item.resource}"
+    assert query(db, current) == [(2, 2)]
+
+    revised = [*second]
+    revised[instance], revised[price] = "1" * 32, "1.5"
+    publishers.exports[item.folder] = {name: ("revised", export(revised))}
+    load("entsoe", db, publishers, resources=[item.resource])
+    assert query(db, current) == [(1, 3)]
+
+
+def test_a_record_the_publisher_repeats_within_a_load_is_stored_once(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    published = len(publishers.records["NDF"])
+    publishers.records["NDF"] += [dict(publishers.records["NDF"][0])] * 2
+    load("bmrs", db, publishers, end=seed_end_date(), resources=["bmrs__ndf"])
+    assert query(db, "select count(*) from raw.bmrs__ndf") == [(published,)]

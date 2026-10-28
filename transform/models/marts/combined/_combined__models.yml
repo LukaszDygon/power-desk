@@ -95,3 +95,32 @@ models:
         description: "{{ doc('col_source_dataset') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: mart_energy_price
+    description: |
+      Electricity prices for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
+      `time_horizon`, `classification_sequence`, `source_dataset`, `source_code`; filter on one source and
+      horizon. Prices are in `currency` per MWh; weight MID prices by `volume_mwh`.
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+      - name: classification_sequence
+        description: "{{ doc('col_classification_sequence') }}"
+      - name: price_per_mwh
+        description: "{{ doc('col_price_per_mwh') }}"
+      - name: currency
+        description: "{{ doc('col_currency') }}"
+      - name: volume_mwh
+        description: "{{ doc('col_volume_mwh') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

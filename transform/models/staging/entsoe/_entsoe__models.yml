@@ -173,3 +173,56 @@ models:
         description: "{{ doc('col_update_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe__energy_prices
+    description: |
+      Energy prices typed, one row per area, contract type, classification sequence and market time
+      unit; where several documents publish the same row, the most recently updated.
+
+      {{ doc('dataset_entsoe__energy_prices') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__energy_prices_unique_key
+          arguments:
+            columns: [timestamp_utc, interval_minutes, area_eic_code, area_type_code, contract_type, classification_sequence]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__energy_prices_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests: [not_null]
+      - name: area_type_code
+        description: "{{ doc('col_area_type_code') }}"
+      - name: area_map_code
+        description: "{{ doc('col_area_map_code') }}"
+      - name: contract_type
+        description: "{{ doc('col_contract_type') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: stg_entsoe__energy_prices_known_contract_type
+              arguments:
+                values: [Day-ahead, Intraday]
+      - name: classification_sequence
+        description: "{{ doc('col_sequence') }}"
+      - name: price_per_mwh
+        description: "{{ doc('col_entsoe_energy_price') }}"
+        data_tests: [not_null]
+      - name: currency
+        description: "{{ doc('col_currency') }}"
+        data_tests: [not_null]
+      - name: instance_code
+        description: "{{ doc('col_instance_code') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

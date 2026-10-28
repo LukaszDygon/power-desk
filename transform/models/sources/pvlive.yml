@@ -16,7 +16,7 @@ sources:
           pipeline: pvlive
           resource: pvlive__solar
           write_disposition: merge
-          merge_strategy: upsert
+          merge_strategy: delete-insert
           primary_key:
           - pes_id
           - datetime_gmt

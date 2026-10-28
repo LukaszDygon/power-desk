@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 API_URL = "https://api.pvlive.uk/pvlive/api/v4/pes/0"
 MAX_DAYS_PER_RUN = 31
 DAYS_PER_REQUEST = 7
-UPSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "upsert"}  # `_dlt_id` from the primary key
+# one row per primary key: dlt drops repeats within a load
+DELETE_INSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
 
 
 def fetch_half_hours(days: DateRange) -> list[dict[str, Any]]:
@@ -47,7 +48,10 @@ def pvlive_source(window: RunWindow) -> DltResource:
     end_value = f"{day_after(window.end)}T00:30:00Z" if window.end else None
 
     @dlt.resource(
-        name="pvlive__solar", write_disposition=UPSERT, primary_key=["pes_id", "datetime_gmt"], file_format="parquet"
+        name="pvlive__solar",
+        write_disposition=DELETE_INSERT,
+        primary_key=["pes_id", "datetime_gmt"],
+        file_format="parquet",
     )
     def solar(
         cursor: dlt.sources.incremental[str] = dlt.sources.incremental(

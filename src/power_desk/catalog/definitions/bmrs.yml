@@ -1,4 +1,8 @@
 # Source `bmrs` (Elexon Insights API): dbt source, raw tables and BMRS-specific fields.
+links:
+  bsc_section_t:
+    title: Balancing and Settlement Code, Section T Settlement and Trading Charges
+    url: https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges
 sources:
   bmrs:
     description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
@@ -39,6 +43,14 @@ tables:
     columns:
       generation: windfor_generation
       start_time: windfor_start_time
+  bmrs__mid:
+    refs:
+    - elexon:datasets/MID
+    - elexon:glossary/market-index-data
+    freshness: actuals
+    columns:
+      price: mid_price
+      volume: mid_volume
 columns:
   dataset:
     description: Elexon dataset code of the record (e.g. `FUELINST`, `INDO`).
@@ -47,7 +59,8 @@ columns:
       the latest value seen.'
   start_time:
     description: 'Start of the interval the value applies to (UTC): the 5-minute interval for FUELINST,
-      the settlement period for INDO, ITSDO and NDF.'
+      the settlement period for INDO, ITSDO, NDF and MID. MID publishes no publish time, so this is its
+      dlt incremental cursor.'
     refs:
     - elexon:glossary/spot-time
   windfor_start_time:
@@ -75,3 +88,22 @@ columns:
     description: Forecast wind generation for the hour, in MW.
     refs:
     - elexon:glossary/wind-generation-forecast
+  data_provider:
+    description: Market Index Data Provider whose market the record reflects, `APXMIDP` (APX) or `N2EXMIDP`
+      (N2EX).
+    refs:
+    - elexon:glossary/market-index-data-provider
+    - elexon:datasets/MID
+  mid_price:
+    description: Market Index Price for the settlement period, in GBP/MWh. Settlement derives the Market
+      Price from it, weighted by the Market Index Volume.
+    refs:
+    - elexon:glossary/market-index-price
+    - elexon:glossary/market-index-data
+    links: [{link: bsc_section_t, section: 1.5.3(a)}]
+  mid_volume:
+    description: Market Index Volume for the settlement period, in MWh. Zero when the volume the provider
+      would otherwise submit is below its Individual Liquidity Threshold.
+    refs:
+    - elexon:glossary/market-index-volume
+    links: [{link: bsc_section_t, section: 1.6.3}]

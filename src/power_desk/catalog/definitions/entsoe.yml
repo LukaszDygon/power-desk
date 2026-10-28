@@ -7,6 +7,9 @@ links:
   entsoe_ddd:
     title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
     url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+  entsoe_brs:
+    title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+    url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
   entsoe_codelist:
     title: Manual of Procedures v3.5, Ref. 13 ENTSO-E code lists V92 (zip package)
     url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
@@ -28,6 +31,9 @@ links:
   entsoe_extract_wind_solar_forecast:
     title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
     url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
+  entsoe_extract_energy_prices:
+    title: File Library extract specification, EnergyPrices_12.1.D_r3.1
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
 
 sources:
   entsoe:
@@ -90,6 +96,21 @@ tables:
     columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, day_ahead_generation_forecast_mwx: entsoe_day_ahead_forecast_mw,
               intraday_generation_forecast_mwx: entsoe_intraday_forecast_mw,
               current_generation_forecast_mwx: entsoe_current_forecast_mw}
+  entsoe__energy_prices:
+    title: Energy prices
+    description: >-
+      For every market time unit the energy prices in each bidding zone, in currency per MWh, for
+      bidding zones covered by an implicit allocation of cross-border transmission capacity. Day-ahead
+      prices are mandatory, published no later than one hour after gate closure (the output time of the
+      matching algorithms); intraday prices are published voluntarily. Prices are given per bidding zone,
+      contract type (time horizon) and delivery period.
+    links:
+    - {link: entsoe_ddd, section: Energy Prices, page: 56}
+    - {link: entsoe_brs, section: "7.22 Energy prices [12.1.D]", page: 128}
+    - {link: transparency_regulation, section: Article 12(1)(d)}
+    - {link: entsoe_file_library, path: TP_export/EnergyPrices_12.1.D_r3.1}
+    freshness: daily_exports
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, price_currency_m_whx: entsoe_energy_price}
 
 columns:
   date_time_utc:
@@ -136,7 +157,7 @@ columns:
       specifications, which publish no further definition. Used as the row's publication time
       (`publish_time_utc`, the ingest cursor).
     links: [entsoe_extract_actual_total_load, entsoe_extract_day_ahead_total_load_forecast,
-            entsoe_extract_generation_per_type, entsoe_extract_wind_solar_forecast]
+            entsoe_extract_generation_per_type, entsoe_extract_wind_solar_forecast, entsoe_extract_energy_prices]
   entsoe_actual_total_load_mw:
     description: Actual total load for the market time unit, in MW.
     links: [entsoe_ddd]
@@ -160,3 +181,24 @@ columns:
   entsoe_current_forecast_mw:
     description: Current forecast, the latest update, in MW.
     links: [entsoe_ddd]
+  instance_code:
+    description: >-
+      Extract column `InstanceCode`, of type "String [1]" (mandatory) in the extract specification, which
+      publishes no further definition. Rows of several instances can share a market time unit; where data
+      for the same time horizon, delivery period and classification sequence is received more than once,
+      the platform publishes the most recently received.
+    links: [entsoe_extract_energy_prices, {link: entsoe_brs, section: 7.22.4 Integration, page: 129}]
+  contract_type:
+    description: Time horizon of the price, `Day-ahead` or `Intraday`.
+    links: [entsoe_extract_energy_prices, {link: entsoe_brs, section: 7.22.1 Data description, page: 128}]
+  sequence:
+    description: >-
+      Classification sequence, also referred to as round: mandatory when two allocations have identical
+      delivery periods, which it distinguishes; blank (a space) otherwise.
+    links: [entsoe_extract_energy_prices, {link: entsoe_brs, section: 7.22.1 Data description, page: 128}]
+  currency:
+    description: Currency of the price, as an ISO 4217 code (e.g. `EUR`).
+    links: [entsoe_extract_energy_prices]
+  entsoe_energy_price:
+    description: Energy price for the market time unit, in `currency` per MWh.
+    links: [entsoe_extract_energy_prices, entsoe_ddd]

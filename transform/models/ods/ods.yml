@@ -284,3 +284,69 @@ models:
         description: "{{ doc('col_publish_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_energy_price
+    description: |
+      Electricity prices per area and interval, across sources: GB Market Index Data per settlement period
+      and data provider, ENTSO-E energy prices per bidding zone, time horizon, classification sequence and
+      market time unit.
+
+      {{ doc('dataset_bmrs__mid') }}
+
+      {{ doc('dataset_entsoe__energy_prices') }}
+    data_tests:
+      - dlt_unique:
+          name: ods_energy_price_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, time_horizon, classification_sequence, source_dataset, source_code]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_energy_price_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - accepted_values:
+              name: ods_energy_price_known_horizon
+              arguments:
+                values: [day_ahead, intraday]
+      - name: classification_sequence
+        description: "{{ doc('col_classification_sequence') }}"
+      - name: price_per_mwh
+        description: "{{ doc('col_price_per_mwh') }}"
+        data_tests:
+          - not_null
+      - name: currency
+        description: "{{ doc('col_currency') }}"
+        data_tests:
+          - not_null
+      - name: volume_mwh
+        description: "{{ doc('col_volume_mwh') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+        data_tests:
+          - not_null
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

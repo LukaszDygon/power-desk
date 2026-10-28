@@ -32,7 +32,7 @@ INGEST_JOBS = (
         "ingest_actuals",
         "actuals_halfhourly",
         "5,35 * * * *",
-        ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "pvlive__solar"),
+        ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "bmrs__mid", "pvlive__solar"),
         description="Outturn published every few minutes to half-hourly.",
     ),
     IngestJob(
@@ -49,6 +49,7 @@ INGEST_JOBS = (
         (
             "entsoe__actual_total_load",
             "entsoe__day_ahead_total_load_forecast",
+            "entsoe__energy_prices",
             "entsoe__generation_per_type",
             "entsoe__wind_solar_forecast",
         ),

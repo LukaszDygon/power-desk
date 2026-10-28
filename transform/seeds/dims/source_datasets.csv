@@ -5,8 +5,10 @@ INDO,bmrs,dataset,Elexon,demand_actual,30,10YGB----------A
 ITSDO,bmrs,dataset,Elexon,transmission_demand_actual,30,10YGB----------A
 NDF,bmrs,dataset,Elexon,demand_forecast,30,10YGB----------A
 WINDFOR,bmrs,dataset,Elexon,generation_forecast,60,10YGB----------A
+MID,bmrs,dataset,Elexon,energy_price,30,10YGB----------A
 ENTSOE_PSR,entsoe,code_list,ENTSO-E,,,
 ENTSOE_6.1.A,entsoe,dataset,ENTSO-E,demand_actual,,
 ENTSOE_6.1.B,entsoe,dataset,ENTSO-E,demand_forecast,,
 ENTSOE_14.1.D,entsoe,dataset,ENTSO-E,generation_forecast,,
 ENTSOE_16.1.B_C,entsoe,dataset,ENTSO-E,generation_actual,,
+ENTSOE_12.1.D,entsoe,dataset,ENTSO-E,energy_price,,

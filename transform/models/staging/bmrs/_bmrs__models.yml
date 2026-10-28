@@ -160,3 +160,49 @@ models:
         description: "{{ doc('col_publish_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__mid
+    description: |
+      MID typed, one row per settlement period per Market Index Data Provider.
+
+      {{ doc('dataset_bmrs__mid') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__mid_unique_key
+          arguments:
+            columns: [settlement_date, settlement_period, data_provider]
+      - expression_is_true:
+          name: stg_bmrs__mid_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - expression_is_true:
+          name: stg_bmrs__mid_volume_not_negative
+          arguments:
+            expression: "volume_mwh >= 0"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__mid_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: data_provider
+        description: "{{ doc('col_data_provider') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: stg_bmrs__mid_known_provider
+              config: {severity: warn}
+              arguments:
+                values: [APXMIDP, N2EXMIDP]
+      - name: price_per_mwh
+        description: "{{ doc('col_mid_price') }}"
+        data_tests: [not_null]
+      - name: volume_mwh
+        description: "{{ doc('col_mid_volume') }}"
+        data_tests: [not_null]
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

@@ -1,9 +1,9 @@
 """Elexon Insights Solution (BMRS) datasets, as streams.
 
-Each dataset is fetched by publish time, one day per request, from its incremental cursor
-(`publishTime`); records are stored as published and merged on their natural key. A failed
-request fails the run, so the cursor never moves past a gap. Settlement dates are UK-local, so
-requested date ranges are padded by a day.
+Each dataset is fetched one day per request from its incremental cursor: the publish time
+(`publishTime`), or for datasets without one (MID) the interval start (`startTime`); records are
+stored as published and merged on their natural key. A failed request fails the run, so the cursor
+never moves past a gap. Settlement dates are UK-local, so requested date ranges are padded by a day.
 """
 
 from __future__ import annotations
@@ -24,7 +24,8 @@ from power_desk.ingest.windows import DateRange, day_after, incremental_window
 logger = logging.getLogger(__name__)
 
 API_BASE = "https://data.elexon.co.uk/bmrs/api/v1/datasets"
-UPSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "upsert"}  # `_dlt_id` from the primary key
+# one row per primary key: dlt drops repeats within a load (Elexon republishes some records verbatim)
+DELETE_INSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
 MAX_DAYS_PER_RUN = 7
 
 
@@ -33,6 +34,8 @@ class Dataset:
     resource: str
     code: str  # Elexon dataset code
     primary_key: tuple[str, ...]
+    cursor: str = "publishTime"
+    time_filter: tuple[str, str] = ("publishDateTimeFrom", "publishDateTimeTo")  # query parameters on `cursor`
 
 
 DATASETS = (
@@ -41,17 +44,25 @@ DATASETS = (
     Dataset("bmrs__itsdo", "ITSDO", ("settlementDate", "settlementPeriod")),
     Dataset("bmrs__ndf", "NDF", ("settlementDate", "settlementPeriod", "publishTime")),
     Dataset("bmrs__windfor", "WINDFOR", ("startTime", "publishTime")),
+    Dataset(
+        "bmrs__mid",
+        "MID",
+        ("settlementDate", "settlementPeriod", "dataProvider"),
+        cursor="startTime",
+        time_filter=("from", "to"),
+    ),
 )
 
 
-def fetch_published(dataset: Dataset, days: DateRange) -> list[dict[str, Any]]:
-    """Records published from `days.first` 00:00 to `days.last` 23:59:59 UTC."""
+def fetch_records(dataset: Dataset, days: DateRange) -> list[dict[str, Any]]:
+    """Records whose cursor is from `days.first` 00:00 to `days.last` 23:59:59 UTC."""
     logger.info("%s: %s..%s", dataset.resource, days.first, days.last)
+    time_from, time_to = dataset.time_filter
     payload = http.fetch_json(
         f"{API_BASE}/{dataset.code}",
         params={
-            "publishDateTimeFrom": f"{days.first.isoformat()}T00:00:00Z",
-            "publishDateTimeTo": f"{days.last.isoformat()}T23:59:59Z",
+            time_from: f"{days.first.isoformat()}T00:00:00Z",
+            time_to: f"{days.last.isoformat()}T23:59:59Z",
         },
     )
     return payload.get("data", []) if isinstance(payload, dict) else payload
@@ -62,16 +73,19 @@ def stream(dataset: Dataset, window: RunWindow) -> DltResource:
     end_value = day_after(window.end) if window.end else None
 
     @dlt.resource(
-        name=dataset.resource, write_disposition=UPSERT, primary_key=list(dataset.primary_key), file_format="parquet"
+        name=dataset.resource,
+        write_disposition=DELETE_INSERT,
+        primary_key=list(dataset.primary_key),
+        file_format="parquet",
     )
     def records(
         cursor: dlt.sources.incremental[str] = dlt.sources.incremental(
-            "publishTime", initial_value=initial_value, end_value=end_value
+            dataset.cursor, initial_value=initial_value, end_value=end_value
         ),
     ) -> Iterator[list[dict[str, Any]]]:
         for day in incremental_window(cursor, window.max_days).chunks(days=1):
-            if published := fetch_published(dataset, day):
-                yield published
+            if rows := fetch_records(dataset, day):
+                yield rows
 
     return records
 

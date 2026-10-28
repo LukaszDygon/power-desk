@@ -13,7 +13,7 @@ publisher ─dlt─> raw ─> staging/<source> ─> ods (entities) ─> marts
 
 | Layer | Content | Rules |
 |---|---|---|
-| `raw` | dlt tables, one per resource | As published, keyed by the natural key: upserted (streams) or versioned (scd2: snapshots, file partitions). Never edited. |
+| `raw` | dlt tables, one per resource | As published, keyed by the natural key: replaced (streams) or versioned (scd2: snapshots, file partitions). Never edited. |
 | `staging/<source>` | views, one per raw table | Types, UTC time, names, source-specific dedup, shared column vocabulary. File partitions: incremental tables of the current versions, by natural key. |
 | `ods` | views, one per entity | Union of every source providing the entity, conformed to one grain and to dimension keys. |
 | `dims` | tables + seeds | Conformed dimensions, hierarchy bridges, and mappings from publisher codes. |
@@ -71,7 +71,9 @@ dimensions; the dimension tables explain what each key means and how keys relate
   changed since their last load, at most `max_days` of periods per run, as scd2 merged on the natural
   key (`merge_key` = `primary_key`): a revision closes the row's previous version, and the same row may
   arrive in several files. A row missing from a re-export stays current. The cursor is the latest
-  publication time (`UpdateTime`), since revisions and re-forecasts are new data.
+  publication time (`UpdateTime`), since revisions and re-forecasts are new data. Where an export lists
+  several documents per natural key (energy prices, `InstanceCode`), the document id joins the
+  `primary_key` but not the `merge_key`, so a revision closes them all; staging keeps the latest update.
 
 ### Write dispositions
 
@@ -81,7 +83,7 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 
 | Kind | Disposition | `_dlt_id` | Why |
 |---|---|---|---|
-| Streams (Elexon, PVLive) | `merge` + `upsert` on `primary_key` | hash of the primary key | one current row per key; a republication replaces it |
+| Streams (Elexon, PVLive) | `merge` + `delete-insert` on `primary_key` | row id | one row per key, also when a load repeats it; a republication replaces it |
 | Snapshots (EIC) | `merge` + `scd2` (full extract, no `merge_key`) | hash of the row (version) | every version kept; withdrawn codes are closed |
 | File partitions (ENTSO-E) | `merge` + `scd2`, `merge_key` = `primary_key` | hash of the row (version) | every version kept; only keys in the load are closed |
 

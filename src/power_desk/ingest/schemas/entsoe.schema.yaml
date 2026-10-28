@@ -1,5 +1,5 @@
 version: 2
-version_hash: 2LsxtYJpKta7S4/9xWsHgLQKW2pT+mYP1C/+nBzd4Dw=
+version_hash: 3YLw3orByF9dipumEIsCjYPtWyJplyMkO9WLjItobqU=
 engine_version: 11
 name: entsoe
 tables:
@@ -208,6 +208,9 @@ tables:
       actual_generation_output_mwx:
         data_type: double
         nullable: true
+      actual_consumption_mwx:
+        data_type: double
+        nullable: true
       update_time_utcx:
         data_type: timestamp
         nullable: true
@@ -220,9 +223,6 @@ tables:
         unique: false
         row_key: false
         data_type: text
-      actual_consumption_mwx:
-        data_type: double
-        nullable: true
     file_format: parquet
     x-merge-strategy: scd2
     write_disposition: merge
@@ -298,6 +298,81 @@ tables:
     resource: entsoe__wind_solar_forecast
     x-normalizer:
       seen-data: true
+  entsoe__energy_prices:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      instance_code:
+        nullable: false
+        primary_key: true
+        data_type: text
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      resolution_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      area_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      area_display_name:
+        data_type: text
+        nullable: true
+      area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      area_map_code:
+        data_type: text
+        nullable: true
+      contract_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      sequence:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      price_currency_m_whx:
+        data_type: double
+        nullable: true
+      currency:
+        data_type: text
+        nullable: true
+      update_time_utcx:
+        data_type: timestamp
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: entsoe__energy_prices
+    x-normalizer:
+      seen-data: true
   _dlt_pipeline_state:
     columns:
       version:
@@ -355,5 +430,5 @@ normalizers:
   json:
     module: dlt.common.normalizers.json.relational
 previous_hashes:
-- hnvIT0tr8WHVgf74fSuy1kZGQ4ztpKFKMAj1QEQVqZU=
-- V6Z7wJ5hyzm5phQNfgJKZYtf/vxAAziCJhvCPtO24aU=
+- 7bQjCh9GomtLwcQHv6aBprDCInwoh/ggpu/0Stw8Z7Q=
+- sPiZAsJG0+/bpF0At/shXzrW1OkNGJz57EJIvgwmbE0=

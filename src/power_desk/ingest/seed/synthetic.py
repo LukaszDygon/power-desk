@@ -1,7 +1,7 @@
 """Synthetic Elexon BMRS and PVLive payloads for a seed week, shaped like the API records.
 
-Deterministic (fixed random seed): FUELINST every 5 minutes per fuel type, INDO / ITSDO / NDF per
-settlement period, WINDFOR hourly, PVLive per half hour (half-hour ending).
+Deterministic (fixed random seed): FUELINST every 5 minutes per fuel type, INDO / ITSDO / NDF / MID
+per settlement period, WINDFOR hourly, PVLive per half hour (half-hour ending).
 """
 
 from __future__ import annotations
@@ -79,6 +79,22 @@ def fuelinst(period_start: datetime, settlement: dict[str, Any], fuels: dict[str
     ]
 
 
+def market_index(period_start: datetime, settlement: dict[str, Any], demand: int) -> list[dict[str, Any]]:
+    """One record per data provider; N2EX publishes zero price and volume, as it does live."""
+    priced = {"APXMIDP": (round(35 + (demand - 22000) / 250, 2), round(1500 + demand / 20, 3)), "N2EXMIDP": (0.0, 0.0)}
+    return [
+        {
+            "dataset": "MID",
+            "startTime": iso(period_start),
+            "dataProvider": provider,
+            **settlement,
+            "price": price,
+            "volume": volume,
+        }
+        for provider, (price, volume) in priced.items()
+    ]
+
+
 def period_records(day: date, period: int, period_start: datetime, wind_base: float) -> Records:
     hour = (period - 1) * 0.5
     settlement = {"settlementDate": day.isoformat(), "settlementPeriod": period}
@@ -103,6 +119,7 @@ def period_records(day: date, period: int, period_start: datetime, wind_base: fl
         "PVLIVE": [
             {"pes_id": 0, "datetime_gmt": iso(period_start + timedelta(minutes=30)), "generation_mw": float(solar)}
         ],
+        "MID": market_index(period_start, settlement, actual),
     }
     if period_start.minute == 0:
         records["WINDFOR"] = [

@@ -12,6 +12,7 @@ EicCode;EicDisplayName;EicLongName;EicParent;EicResponsibleParty;EicStatus;Marke
 10Y1001C--001065;FR-GB-IFA-AREA;Border Area for IFA;;10XFR-RTE------Q;Active;;;;Border Area;Y
 10Y1001C--001405;GB-NO-AREA;Border Area UK-Norway;;;Active;;;;Border Area;Y
 10Y1001C--001502;IE-GB-GIL-AREA;Border area between IE and GB;;;Active;;;;Border Area;Y
+10YAT-APG------L;AT;Austria;;;Active;1220;AT;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
 10YBE----------2;BE;Belgium;;;Active;;;;Bidding Zone,Control Area,LFC Area,LFC Block,Member State,Scheduling Area;Y
 10YDE-VE-------2;DE-50HERTZ;Germany 50Hertz;;;Active;;DE;;Control Area,LFC Area,Scheduling Area,Market Balance Area;Y
 10YDK-1--------W;DK1;Denmark DK1;;10X1001A1001A248;Active;;;;Bidding Zone,LFC Area,Scheduling Area;Y

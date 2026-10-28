@@ -19,9 +19,9 @@ existing source, extend that source's table of datasets and skip what already ex
 
 | Kind | Example | Progress kept in | Disposition | Keys |
 |---|---|---|---|---|
-| Stream (API by publish time) | Elexon, PVLive | `dlt.sources.incremental` + `incremental_window` | `merge` + `upsert` | `primary_key` = natural key |
+| Stream (API by publish time) | Elexon, PVLive | `dlt.sources.incremental` + `incremental_window` | `merge` + `delete-insert` | `primary_key` = natural key |
 | Snapshot (whole reference file) | EIC | ETag / hash in resource state | `merge` + `scd2`, no `merge_key` | `primary_key` = natural key (documents it) |
-| File partitions (re-exported periodic files) | ENTSO-E | files + `lastUpdated` in resource state; cursor = latest publication time | `merge` + `scd2` | `merge_key` = `primary_key` = natural key |
+| File partitions (re-exported periodic files) | ENTSO-E | files + `lastUpdated` in resource state; cursor = latest publication time | `merge` + `scd2` | `merge_key` = `primary_key` = natural key (a document id joins `primary_key` where an export repeats keys) |
 
 - **Natural key and definitions** come from the publisher's documentation, never invented; cite it.
 - **Entity:** which `ods_<entity>` the data feeds, or whether it is a new one.
@@ -117,5 +117,5 @@ pass, and `uv run pytest` and `uv run pyright` are green.
 - A `scd2` resource without `merge_key` closes every key missing from a load: right for full snapshots,
   wrong for partial files.
 - The cursor of revised data is its publication time (`UpdateTime`), not the value's date.
-- Never edit or backfill `raw` by hand; replaying older data makes it current under `scd2` and `upsert`.
+- Never edit or backfill `raw` by hand; replaying older data makes it current under `scd2` and `delete-insert`.
 - Arrow tables get no row hash from dlt, so `scd2` cannot run on them (ADR 0001 lists when to revisit).

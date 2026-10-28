@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from power_desk.ingest import http
 from power_desk.ingest.seed import synthetic
-from power_desk.ingest.sources import entsoe_eic
+from power_desk.ingest.sources import bmrs, entsoe_eic
 from power_desk.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient, export_file
 from power_desk.settings import DATA_DIR
 
@@ -54,8 +54,9 @@ class SeedPublishers:
         if "pvlive" in url:
             rows = [r for r in self.records["PVLIVE"] if params["start"] <= r["datetime_gmt"] <= params["end"]]
             return {"meta": ["pes_id", "datetime_gmt", "generation_mw"], "data": [list(r.values()) for r in rows]}
-        first, last = params["publishDateTimeFrom"], params["publishDateTimeTo"]
-        return {"data": [r for r in self.records[url.rsplit("/", 1)[1]] if first <= r["publishTime"] <= last]}
+        dataset = next(dataset for dataset in bmrs.DATASETS if url.endswith(f"/{dataset.code}"))
+        first, last = (params[name] for name in dataset.time_filter)
+        return {"data": [r for r in self.records[dataset.code] if first <= r[dataset.cursor] <= last]}
 
     def fetch_if_changed(self, url: str, etag: str | None = None) -> tuple[str | None, dict[str, str]]:
         self.requests.append(url)

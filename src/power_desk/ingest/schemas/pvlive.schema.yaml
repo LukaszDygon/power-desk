@@ -1,5 +1,5 @@
 version: 2
-version_hash: BdLJTBqynIGr2NAgQv4j7tig7teXKToJPOYD3u0tvVs=
+version_hash: TpPLOeEoPVaCWFcNYluCJ6Eh/mhBHDavQgVfZxiwdhA=
 engine_version: 11
 name: pvlive
 tables:
@@ -70,7 +70,7 @@ tables:
         unique: true
         row_key: true
     file_format: parquet
-    x-merge-strategy: upsert
+    x-merge-strategy: delete-insert
     write_disposition: merge
     resource: pvlive__solar
     x-normalizer:
@@ -137,5 +137,6 @@ normalizers:
           pvlive__solar:
             _dlt_id: _dlt_root_id
 previous_hashes:
-- n/H9rTyBOC+k5FnP8uORtV8Bfq8oduW8fBpoeMGUFbg=
-- rUoxoRdRhaXK5/SlKlbzLdJB+b3zlkxdZ6V0cQQQeGw=
+- W+4X3GcCJhebB2cQkzCVZKOSt4HGoJUsCGBLEe56Q9A=
+- yQJEhNSsW5ibmV6lIo+DJPG1l0IUm9wj6ZTwY5/ciBw=
+- BdLJTBqynIGr2NAgQv4j7tig7teXKToJPOYD3u0tvVs=

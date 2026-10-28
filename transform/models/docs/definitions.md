@@ -46,6 +46,43 @@ A forecast of generation for all Power Park Modules.
 This daily forecast provides values for 4 different times of day (04:30, 10:30, 16:30, 22:30) and each forecast includes 49 values covering the period from 21:00 on the current day (D) to 21:00 D+2.
 {% enddocs %}
 
+{% docs dataset_bmrs__mid %}
+**Market Index Data (MID)**
+
+This endpoint provides Market Index Data received from NGESO.
+
+Market Index Data is a key component in the calculation of System Buy Price and System Sell Price for each Settlement Period. This data is received from each of the appointed Market Index Data Providers (MIDPs) and reflects the price of wholesale electricity in Great Britain in the short term markets. The Market Index Data which is received from each MIDP for each Settlement Period consists of a Market Index Volume and Market Index Price, representing the volume and price of trading for the relevant period in the market operated by the MIDP. The Market Price (the volume weighed average Market Index Price) is used to derive the Reverse Price (SBP or SSP)."
+
+The two data providers available to query are N2EX ("N2EXMIDP") and APX ("APXMIDP").
+
+By default, the from and to parameters filter the data by time inclusively. If the settlementPeriodFrom or settlementPeriodTo parameters are provided, the corresponding from or to parameter instead filters on settlement date, allowing for searching by a combination of time and/or settlement date & settlement period. Note: When filtering via settlement date, from/to are treated as Dates only, with the time being ignored. For example, 2022-06-01T00:00Z and 2022-06-01T11:11Z are both treated as the settlement date 2022-06-01.
+
+All Dates and DateTimes should be expressed as defined within <a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6" target="_blank">RFC 3339</a>.
+
+Some examples of date parameter combinations are shown below.
+
+Filtering from start time to start time:
+
+/datasets/mid?from=2022-06-01T00:00Z&to=2022-07-01T00:00Z
+
+Filtering from start time to settlement date and period:
+
+/datasets/mid?from=2022-06-01T00:00Z&to=2022-07-01T00:00Z&settlementPeriodTo=1
+
+Filtering from settlement date and period to start time:
+
+/datasets/mid?from=2022-06-01T00:00Z&to=2022-07-01T00:00Z&settlementPeriodFrom=1
+
+Filtering from settlement date and period to settlement date and period:
+
+/datasets/mid?from=2022-06-01T00:00Z&to=2022-07-01T00:00Z&settlementPeriodFrom=1&settlementPeriodTo=1
+
+Market Index Data is a key component in the calculation of System Buy Price and System Sell Price for each Settlement Period. This data is received from each of the appointed Market Index Data Providers (MIDPs) and reflects the price of wholesale electricity in Great Britain in the short term markets.
+The Market Index Data which is received from each MIDP for each Settlement Period consists of a Market Index Volume and Market Index Price, representing the volume and price of trading for the relevant period in the market operated by the MIDP. The Market Price (the volume weighed average Market Index Price) is used to derive the Reverse Price (SBP or SSP).
+
+The data to be provided by the Market Index Data Provider(s) in accordance with the Market Index Definition Statement or, in relation to a particular Market Index Data Provider, the data to be so provided by that Market Index Data Provider, in each case as set out within the BSC.
+{% enddocs %}
+
 {% docs dataset_entsoe__actual_total_load %}
 **Actual total load per bidding zone per market time unit**
 
@@ -68,6 +105,12 @@ Actual aggregated net generation output per market time unit and per production 
 **Day-ahead generation forecasts for wind and solar**
 
 Forecasts of wind and solar net generation per bidding zone per market time unit of the following day, as three values: day-ahead (fixed at 18:00 Brussels time the day before), intraday (fixed at 08:00 Brussels time on the day) and current (the latest update). Published for bidding zones with significant wind or solar feed-in.
+{% enddocs %}
+
+{% docs dataset_entsoe__energy_prices %}
+**Energy prices**
+
+For every market time unit the energy prices in each bidding zone, in currency per MWh, for bidding zones covered by an implicit allocation of cross-border transmission capacity. Day-ahead prices are mandatory, published no later than one hour after gate closure (the output time of the matching algorithms); intraday prices are published voluntarily. Prices are given per bidding zone, contract type (time horizon) and delivery period.
 {% enddocs %}
 
 {% docs dataset_entsoe_eic__codes %}
@@ -103,7 +146,7 @@ Time Elexon published the record (UTC). dlt incremental cursor: each run resumes
 {% enddocs %}
 
 {% docs col_start_time %}
-Start of the interval the value applies to (UTC): the 5-minute interval for FUELINST, the settlement period for INDO, ITSDO and NDF.
+Start of the interval the value applies to (UTC): the 5-minute interval for FUELINST, the settlement period for INDO, ITSDO, NDF and MID. MID publishes no publish time, so this is its dlt incremental cursor.
 {% enddocs %}
 
 {% docs col_windfor_start_time %}
@@ -132,6 +175,18 @@ National Demand Forecast for the settlement period, in MW (average).
 
 {% docs col_windfor_generation %}
 Forecast wind generation for the hour, in MW.
+{% enddocs %}
+
+{% docs col_data_provider %}
+Market Index Data Provider whose market the record reflects, `APXMIDP` (APX) or `N2EXMIDP` (N2EX).
+{% enddocs %}
+
+{% docs col_mid_price %}
+Market Index Price for the settlement period, in GBP/MWh. Settlement derives the Market Price from it, weighted by the Market Index Volume.
+{% enddocs %}
+
+{% docs col_mid_volume %}
+Market Index Volume for the settlement period, in MWh. Zero when the volume the provider would otherwise submit is below its Individual Liquidity Threshold.
 {% enddocs %}
 
 {% docs col_valid_from %}
@@ -386,6 +441,26 @@ Intraday forecast at 08:00 Brussels time on the day of delivery, in MW; not upda
 Current forecast, the latest update, in MW.
 {% enddocs %}
 
+{% docs col_instance_code %}
+Extract column `InstanceCode`, of type "String [1]" (mandatory) in the extract specification, which publishes no further definition. Rows of several instances can share a market time unit; where data for the same time horizon, delivery period and classification sequence is received more than once, the platform publishes the most recently received.
+{% enddocs %}
+
+{% docs col_contract_type %}
+Time horizon of the price, `Day-ahead` or `Intraday`.
+{% enddocs %}
+
+{% docs col_sequence %}
+Classification sequence, also referred to as round: mandatory when two allocations have identical delivery periods, which it distinguishes; blank (a space) otherwise.
+{% enddocs %}
+
+{% docs col_currency %}
+Currency of the price, as an ISO 4217 code (e.g. `EUR`).
+{% enddocs %}
+
+{% docs col_entsoe_energy_price %}
+Energy price for the market time unit, in `currency` per MWh.
+{% enddocs %}
+
 {% docs col_eic_code %}
 Energy Identification Code: 16 characters, made of 2 characters identifying the issuing office, 1 character for the object type, 12 characters allocated by the issuing office to identify the object, and 1 check character. Use it as a complete string; do not derive meaning from its parts.
 {% enddocs %}
@@ -520,6 +595,22 @@ Latest day-ahead demand forecast for the interval, in MW. GB, National Demand Fo
 
 {% docs col_forecast_horizon %}
 Which forecast the value is: `day_ahead` (made the day before delivery: ENTSO-E fixed at 18:00 Brussels time for wind and solar, latest day-ahead update for load; Elexon NDF), `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision: ENTSO-E current forecast, Elexon WINDFOR).
+{% enddocs %}
+
+{% docs col_time_horizon %}
+Time horizon (ENTSO-E contract type) of the price: `day_ahead` or `intraday`. Null for Elexon MID, which reflects the GB short-term markets for delivery in the settlement period.
+{% enddocs %}
+
+{% docs col_classification_sequence %}
+ENTSO-E classification sequence (round), distinguishing allocations with identical delivery periods; null where it does not apply, and for Elexon MID.
+{% enddocs %}
+
+{% docs col_price_per_mwh %}
+Price of electricity for the interval, in `currency` per MWh. ENTSO-E, the energy price of the bidding zone for the time horizon; Elexon MID, the Market Index Price of the data provider, from which settlement derives the Market Price weighted by the Market Index Volume (`volume_mwh`).
+{% enddocs %}
+
+{% docs col_volume_mwh %}
+Volume behind the price, in MWh. Elexon MID, the Market Index Volume, zero when below the provider's Individual Liquidity Threshold; null for ENTSO-E energy prices, which publish none.
 {% enddocs %}
 
 {% docs col_generation_forecast_mw %}

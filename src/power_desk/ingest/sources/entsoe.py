@@ -45,7 +45,14 @@ AREA_KEY = ("DateTime(UTC)", "ResolutionCode", "AreaCode", "AreaTypeCode")
 class DataItem:
     resource: str
     folder: str  # <data item>_<Transparency Regulation article>_<release>
-    natural_key: tuple[str, ...]  # published column names
+    natural_key: tuple[str, ...]  # published column names; the merge key
+    # document id of exports listing several documents per natural key: in the primary key only,
+    # so a revision closes every document's version
+    document_key: tuple[str, ...] = ()
+
+    @property
+    def primary_key(self) -> list[str]:
+        return [*self.natural_key, *self.document_key]
 
 
 DATA_ITEMS = (
@@ -54,6 +61,12 @@ DATA_ITEMS = (
     DataItem("entsoe__generation_per_type", "AggregatedGenerationPerType_16.1.B_C_r3", (*AREA_KEY, "ProductionType")),
     DataItem(
         "entsoe__wind_solar_forecast", "GenerationForecastsForWindAndSolar_14.1.D_r3", (*AREA_KEY, "ProductionType")
+    ),
+    DataItem(
+        "entsoe__energy_prices",
+        "EnergyPrices_12.1.D_r3.1",
+        (*AREA_KEY, "ContractType", "Sequence"),
+        document_key=("InstanceCode",),
     ),
 )
 
@@ -125,7 +138,7 @@ def entsoe_source(window: RunWindow) -> list[DltResource]:
             file_partitions(client, item, window),
             name=item.resource,
             write_disposition=SCD2,
-            primary_key=list(item.natural_key),
+            primary_key=item.primary_key,
             merge_key=list(item.natural_key),
             file_format="parquet",
         )

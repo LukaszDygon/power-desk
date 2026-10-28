@@ -34,6 +34,29 @@ columns:
       `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision:
       ENTSO-E current forecast, Elexon WINDFOR)."
     links: [entsoe_ddd]
+  time_horizon:
+    description: "Time horizon (ENTSO-E contract type) of the price: `day_ahead` or `intraday`. Null for
+      Elexon MID, which reflects the GB short-term markets for delivery in the settlement period."
+    refs:
+    - elexon:glossary/market-index-data
+    links: [{link: entsoe_brs, section: 7.22.1 Data description, page: 128}]
+  classification_sequence:
+    description: ENTSO-E classification sequence (round), distinguishing allocations with identical delivery
+      periods; null where it does not apply, and for Elexon MID.
+    links: [{link: entsoe_brs, section: 7.22.1 Data description, page: 128}]
+  price_per_mwh:
+    description: Price of electricity for the interval, in `currency` per MWh. ENTSO-E, the energy price of
+      the bidding zone for the time horizon; Elexon MID, the Market Index Price of the data provider, from
+      which settlement derives the Market Price weighted by the Market Index Volume (`volume_mwh`).
+    refs:
+    - elexon:glossary/market-index-price
+    links: [entsoe_ddd, {link: bsc_section_t, section: 1.5.3(a)}]
+  volume_mwh:
+    description: Volume behind the price, in MWh. Elexon MID, the Market Index Volume, zero when below the
+      provider's Individual Liquidity Threshold; null for ENTSO-E energy prices, which publish none.
+    refs:
+    - elexon:glossary/market-index-volume
+    links: [{link: bsc_section_t, section: 1.6.3}]
   generation_forecast_mw:
     description: Forecast generation for the technology over the interval, in MW.
     refs:
