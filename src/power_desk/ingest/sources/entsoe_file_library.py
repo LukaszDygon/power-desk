@@ -1,6 +1,7 @@
-"""ENTSO-E Transparency Platform File Library: listing, downloading and parsing exports.
+"""ENTSO-E Transparency Platform File Library: listing and downloading exports.
 
-Exports are tab-separated files under `TP_export/<folder>/`, downloaded zip-compressed. The
+Exports are tab-separated files under `TP_export/<folder>/`, downloaded zip-compressed and written
+to disk as published (streamed, so memory does not grow with the file). The
 client logs in with a Transparency Platform account, resolved by dlt on first use from
 `sources.entsoe.credentials.{user,password}` (e.g. `SOURCES__ENTSOE__CREDENTIALS__USER`), and
 renews its token before it expires.
@@ -10,16 +11,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-import io
+from pathlib import Path
 import re
+import shutil
 import time
 from typing import Any
 import zipfile
 
 import dlt
 from dlt.sources.helpers import requests
-import pyarrow as pa
-import pyarrow.csv as pa_csv
 
 from power_desk.ingest.http import USER_AGENT
 from power_desk.ingest.windows import DateRange
@@ -28,9 +28,9 @@ TOKEN_URL = "https://keycloak.tp.entsoe.eu/realms/tp/protocol/openid-connect/tok
 CLIENT_ID = "tp-fms-public"
 API_URL = "https://fms.tp.entsoe.eu"
 ROOT = "/TP_export/"
-SOURCE_FILE = "_source_file"
 TOKEN_RENEWAL_MARGIN_SECONDS = 30  # renew this long before the token expires
 LIST_PAGE_SIZE = 500
+CHUNK_BYTES = 1 << 20
 MONTHLY_EXPORT = re.compile(r"^(\d{4})_(\d{2})_")
 
 
@@ -83,10 +83,12 @@ class FileLibraryClient:
             if not page.get("contentItemList") or len(items) >= page["pageInfo"]["total"]:
                 return [file for item in items if (file := export_file(item))]
 
-    def download(self, folder: str, filename: str) -> bytes:
+    def download(self, folder: str, filename: str, target: Path) -> Path:
+        """The export written to `target`, as published."""
         response = self._post(
             "downloadFileContent",
             timeout=(15, 120),
+            stream=True,
             json={
                 "folder": f"{ROOT}{folder}/",
                 "filename": filename,
@@ -94,8 +96,18 @@ class FileLibraryClient:
                 "topLevelFolder": ROOT.strip("/"),
             },
         )
-        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-            return archive.read(archive.namelist()[0])
+        zipped = target.with_name(f"{target.name}.zip")
+        with zipped.open("wb") as file:
+            for chunk in response.iter_content(CHUNK_BYTES):
+                file.write(chunk)
+        with (
+            zipfile.ZipFile(zipped) as archive,
+            archive.open(archive.namelist()[0]) as export,
+            target.open("wb") as out,
+        ):
+            shutil.copyfileobj(export, out, CHUNK_BYTES)
+        zipped.unlink()
+        return target
 
     def _post(self, endpoint: str, **kwargs: Any) -> requests.Response:
         response = requests.post(f"{API_URL}/{endpoint}", headers=self._headers(), **kwargs)
@@ -119,37 +131,3 @@ class FileLibraryClient:
             self._token = token["access_token"]
             self._expires_at = time.monotonic() + token["expires_in"] - TOKEN_RENEWAL_MARGIN_SECONDS
         return {"Authorization": f"Bearer {self._token}", "User-Agent": USER_AGENT}
-
-
-def column_name(header: str) -> str:
-    """`DateTime(UTC)` -> `DateTime_UTC`, which dlt snake_cases to `date_time_utc`."""
-    return re.sub(r"[(\[](\w+)[)\]]", r"_\1", header)
-
-
-def parse_export(content: bytes, source_file: str) -> pa.Table:
-    """An export as an arrow table: `(UTC)` columns as UTC timestamps, `[MW]` as doubles, the rest
-    as text, plus `_source_file`."""
-    headers = content[: content.index(b"\n")].decode("utf-8-sig").strip().split("\t")
-    types = {
-        h: pa.timestamp("us") if h.endswith("(UTC)") else pa.float64() if h.endswith("[MW]") else pa.string()
-        for h in headers
-    }
-    table = pa_csv.read_csv(
-        io.BytesIO(content),
-        parse_options=pa_csv.ParseOptions(delimiter="\t"),
-        convert_options=pa_csv.ConvertOptions(column_types=types, strings_can_be_null=True),
-    )
-    columns = [
-        column.cast(pa.timestamp("us", "UTC")) if pa.types.is_timestamp(column.type) else column
-        for column in table.columns
-    ]
-    partition = pa.array([source_file] * table.num_rows, pa.string())
-    return pa.Table.from_arrays(
-        [*columns, partition],
-        schema=pa.schema(
-            [
-                *(pa.field(column_name(h), c.type) for h, c in zip(table.column_names, columns, strict=False)),
-                pa.field(SOURCE_FILE, pa.string(), nullable=False),
-            ]
-        ),
-    )

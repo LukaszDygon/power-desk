@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 import dlt
+from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk.ingest import http
@@ -23,6 +24,7 @@ from power_desk.ingest.windows import DateRange, day_after, incremental_window
 logger = logging.getLogger(__name__)
 
 API_BASE = "https://data.elexon.co.uk/bmrs/api/v1/datasets"
+UPSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "upsert"}  # `_dlt_id` from the primary key
 MAX_DAYS_PER_RUN = 7
 
 
@@ -59,7 +61,9 @@ def stream(dataset: Dataset, window: RunWindow) -> DltResource:
     initial_value = window.start.isoformat()
     end_value = day_after(window.end) if window.end else None
 
-    @dlt.resource(name=dataset.resource, write_disposition="merge", primary_key=list(dataset.primary_key))
+    @dlt.resource(
+        name=dataset.resource, write_disposition=UPSERT, primary_key=list(dataset.primary_key), file_format="parquet"
+    )
     def records(
         cursor: dlt.sources.incremental[str] = dlt.sources.incremental(
             "publishTime", initial_value=initial_value, end_value=end_value

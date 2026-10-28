@@ -16,12 +16,25 @@ links:
   entsoe_file_library:
     title: Transparency Platform File Library guide
     url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+  entsoe_extract_actual_total_load:
+    title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+  entsoe_extract_day_ahead_total_load_forecast:
+    title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+  entsoe_extract_generation_per_type:
+    title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+  entsoe_extract_wind_solar_forecast:
+    title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
 
 sources:
   entsoe:
     description: >-
       ENTSO-E Transparency Platform data items, loaded by the `entsoe` dlt pipeline from the File
-      Library's monthly exports; each published file replaces the rows previously loaded from it.
+      Library's monthly exports, as published; each table keeps the versions of its rows (scd2) merged
+      on the natural key.
 tables:
   entsoe__actual_total_load:
     title: Actual total load per bidding zone per market time unit
@@ -35,7 +48,7 @@ tables:
     - {link: transparency_regulation, section: Article 6(1)(a)}
     - {link: entsoe_file_library, path: TP_export/ActualTotalLoad_6.1.A_r3}
     freshness: daily_exports
-    columns: {total_load_mw: entsoe_actual_total_load_mw}
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, total_load_mwx: entsoe_actual_total_load_mw}
   entsoe__day_ahead_total_load_forecast:
     title: Day-ahead forecast of the total load per market time unit
     description: >-
@@ -48,7 +61,7 @@ tables:
     - {link: transparency_regulation, section: Article 6(1)(b)}
     - {link: entsoe_file_library, path: TP_export/DayAheadTotalLoadForecast_6.1.B_r3}
     freshness: daily_exports
-    columns: {total_load_mw: entsoe_day_ahead_total_load_mw}
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, total_load_mwx: entsoe_day_ahead_total_load_mw}
   entsoe__generation_per_type:
     title: Aggregated generation per type
     description: >-
@@ -60,6 +73,8 @@ tables:
     - {link: transparency_regulation, section: Article 16(1)(b) and (c)}
     - {link: entsoe_file_library, path: TP_export/AggregatedGenerationPerType_16.1.B_C_r3}
     freshness: daily_exports
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, actual_generation_output_mwx: actual_generation_output_mw,
+              actual_consumption_mwx: actual_consumption_mw}
   entsoe__wind_solar_forecast:
     title: Day-ahead generation forecasts for wind and solar
     description: >-
@@ -72,9 +87,9 @@ tables:
     - {link: transparency_regulation, section: Article 14(1)(d)}
     - {link: entsoe_file_library, path: TP_export/GenerationForecastsForWindAndSolar_14.1.D_r3}
     freshness: daily_exports
-    columns: {day_ahead_generation_forecast_mw: entsoe_day_ahead_forecast_mw,
-              intraday_generation_forecast_mw: entsoe_intraday_forecast_mw,
-              current_generation_forecast_mw: entsoe_current_forecast_mw}
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, day_ahead_generation_forecast_mwx: entsoe_day_ahead_forecast_mw,
+              intraday_generation_forecast_mwx: entsoe_intraday_forecast_mw,
+              current_generation_forecast_mwx: entsoe_current_forecast_mw}
 
 columns:
   date_time_utc:
@@ -116,8 +131,12 @@ columns:
     description: Definition of the PsrType in the ENTSO-E code lists.
     links: [{link: entsoe_codelist, section: PsrType, page: 8}]
   update_time_utc:
-    description: Time the value was last submitted or updated on the Transparency Platform (UTC).
-    links: [entsoe_file_library]
+    description: >-
+      Extract column `UpdateTime(UTC)`, of type "Date/Time [1]" (mandatory) in the ENTSO-E extract
+      specifications, which publish no further definition. Used as the row's publication time
+      (`publish_time_utc`, the ingest cursor).
+    links: [entsoe_extract_actual_total_load, entsoe_extract_day_ahead_total_load_forecast,
+            entsoe_extract_generation_per_type, entsoe_extract_wind_solar_forecast]
   entsoe_actual_total_load_mw:
     description: Actual total load for the market time unit, in MW.
     links: [entsoe_ddd]

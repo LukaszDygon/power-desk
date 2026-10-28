@@ -1,5 +1,5 @@
 version: 2
-version_hash: E61U3mJK3VHbCRRqmUXx6pJ0yI+WNQams+jwCJPwiUs=
+version_hash: PaiE+I9XBu2ZneXUeJvGPMLnhUpNXKuN2oF82efvK28=
 engine_version: 11
 name: bmrs
 tables:
@@ -83,6 +83,8 @@ tables:
         nullable: false
         unique: true
         row_key: true
+    file_format: parquet
+    x-merge-strategy: upsert
     write_disposition: merge
     resource: bmrs__fuelinst
     x-normalizer:
@@ -118,6 +120,8 @@ tables:
         nullable: false
         unique: true
         row_key: true
+    file_format: parquet
+    x-merge-strategy: upsert
     write_disposition: merge
     resource: bmrs__indo
     x-normalizer:
@@ -153,6 +157,8 @@ tables:
         nullable: false
         unique: true
         row_key: true
+    file_format: parquet
+    x-merge-strategy: upsert
     write_disposition: merge
     resource: bmrs__itsdo
     x-normalizer:
@@ -192,6 +198,8 @@ tables:
         nullable: false
         unique: true
         row_key: true
+    file_format: parquet
+    x-merge-strategy: upsert
     write_disposition: merge
     resource: bmrs__ndf
     x-normalizer:
@@ -221,6 +229,8 @@ tables:
         nullable: false
         unique: true
         row_key: true
+    file_format: parquet
+    x-merge-strategy: upsert
     write_disposition: merge
     resource: bmrs__windfor
     x-normalizer:
@@ -295,5 +305,5 @@ normalizers:
           bmrs__windfor:
             _dlt_id: _dlt_root_id
 previous_hashes:
-- qyQ5HtHquKtzWvVf+9jR5OMGEaepkBkpwZ5CEKCvp1o=
-- jq5BFd3Kftt9uO+iAOVMPF5C8vQxVSuC916F+6YFZQk=
+- 9tWdH6PNePFtrmoljG00j0ab6ybelYgD6/Uyu7ya8HY=
+- lRxxq8ofb+JHbUT8NM0bMdG1DTeGVfNtkMcAZSDtO2w=

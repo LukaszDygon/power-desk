@@ -4,7 +4,6 @@ Raw tables (dlt resources) are named `<source>__<dataset>`, like their staging m
 `stg_<source>__<dataset>`. dlt keeps pipeline state in `raw._dlt_pipeline_state` and restores it
 from there, so the local working directory is disposable. Each run exports the dlt schema to
 `ingest/schemas/`, which defines the dbt sources (`POWER_DESK_EXPORT_SCHEMAS=0` disables it).
-Arrow tables (bulk file sources) get the same lineage columns (`_dlt_load_id`, `_dlt_id`) as JSON rows.
 """
 
 from __future__ import annotations
@@ -32,8 +31,6 @@ SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
 
 def make_pipeline(name: str, db_path: Path | str | None = None, schemas_dir: Path | None = SCHEMAS_DIR) -> dlt.Pipeline:
     """Pipeline `name` into the warehouse; it exports its schema to `schemas_dir` unless that is None."""
-    dlt.config["normalize.parquet_normalizer.add_dlt_load_id"] = True
-    dlt.config["normalize.parquet_normalizer.add_dlt_id"] = True
     if os.environ.get("POWER_DESK_EXPORT_SCHEMAS", "1") == "0":
         schemas_dir = None
     return dlt.pipeline(

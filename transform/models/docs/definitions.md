@@ -355,7 +355,7 @@ Definition of the PsrType in the ENTSO-E code lists.
 {% enddocs %}
 
 {% docs col_update_time_utc %}
-Time the value was last submitted or updated on the Transparency Platform (UTC).
+Extract column `UpdateTime(UTC)`, of type "Date/Time [1]" (mandatory) in the ENTSO-E extract specifications, which publish no further definition. Used as the row's publication time (`publish_time_utc`, the ingest cursor).
 {% enddocs %}
 
 {% docs col_entsoe_actual_total_load_mw %}
@@ -744,10 +744,6 @@ Start of the row's interval as a UTC timestamp; the interval length is `interval
 
 {% docs col_interval_minutes %}
 Length of the row's interval in minutes (the publisher's resolution, e.g. the market time unit). Several resolutions coexist across areas and over time.
-{% enddocs %}
-
-{% docs col__source_file %}
-Published file the row was loaded from; a re-published file replaces all its rows.
 {% enddocs %}
 
 {% docs col_publish_time_utc %}

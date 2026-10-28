@@ -20,7 +20,6 @@ class IngestJob:
     schedule: str
     cron: str  # UTC
     tables: tuple[str, ...]  # raw tables (dlt resources), from any source
-    max_cursor_lag_minutes: int | None  # lag check threshold (cadence + slack); None for snapshots
     description: str
 
     @property
@@ -34,7 +33,6 @@ INGEST_JOBS = (
         "actuals_halfhourly",
         "5,35 * * * *",
         ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "pvlive__solar"),
-        max_cursor_lag_minutes=120,
         description="Outturn published every few minutes to half-hourly.",
     ),
     IngestJob(
@@ -42,7 +40,6 @@ INGEST_JOBS = (
         "forecasts_3h",
         "15 */3 * * *",
         ("bmrs__ndf", "bmrs__windfor"),
-        max_cursor_lag_minutes=360,
         description="Forecasts published a few times a day.",
     ),
     IngestJob(
@@ -55,7 +52,6 @@ INGEST_JOBS = (
             "entsoe__generation_per_type",
             "entsoe__wind_solar_forecast",
         ),
-        max_cursor_lag_minutes=36 * 60,
         description="Monthly files re-exported daily around 05:40 UTC; unchanged files are skipped.",
     ),
     IngestJob(
@@ -63,7 +59,6 @@ INGEST_JOBS = (
         "reference_daily",
         "0 6 * * *",
         ("entsoe_eic__codes", "entsoe_eic__functions", "entsoe_eic__issuing_offices"),
-        max_cursor_lag_minutes=None,
         description="Reference snapshots (scd2), skipped while unchanged.",
     ),
 )

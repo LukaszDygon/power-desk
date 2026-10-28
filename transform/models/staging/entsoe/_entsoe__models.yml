@@ -1,6 +1,6 @@
-# Per-data-item guards and completeness for the entsoe source. Where an area changes its market time
-# unit, the overlap is published at both resolutions; staging keeps the finest (keep_finest_resolution).
-# File partitions: incremental tables, each pending load replacing the rows of its files.
+# Per-data-item guards and completeness for the entsoe source. Staging holds the current version of each
+# row (raw tables are scd2, merged on the natural key), incrementally by natural key. Where an area changes
+# its market time unit, the overlap is published at both resolutions; the ods views keep the finest.
 # Completeness is checked per day across all areas: an area's coverage is the publisher's (new areas,
 # gaps), a missing day is a loading gap.
 models:
@@ -13,7 +13,7 @@ models:
       - dlt_unique:
           name: stg_entsoe__actual_total_load_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, area_type_code]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -37,8 +37,6 @@ models:
         description: "{{ doc('col_entsoe_actual_total_load_mw') }}"
       - name: publish_time_utc
         description: "{{ doc('col_update_time_utc') }}"
-      - name: _source_file
-        description: "{{ doc('col__source_file') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
 
@@ -51,7 +49,7 @@ models:
       - dlt_unique:
           name: stg_entsoe__day_ahead_total_load_forecast_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, area_type_code]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -75,8 +73,6 @@ models:
         description: "{{ doc('col_entsoe_day_ahead_total_load_mw') }}"
       - name: publish_time_utc
         description: "{{ doc('col_update_time_utc') }}"
-      - name: _source_file
-        description: "{{ doc('col__source_file') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
 
@@ -90,7 +86,7 @@ models:
       - dlt_unique:
           name: stg_entsoe__generation_per_type_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, production_type]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, area_type_code, production_type]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -125,8 +121,6 @@ models:
         description: "{{ doc('col_actual_consumption_mw') }}"
       - name: publish_time_utc
         description: "{{ doc('col_update_time_utc') }}"
-      - name: _source_file
-        description: "{{ doc('col__source_file') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
 
@@ -140,7 +134,7 @@ models:
       - dlt_unique:
           name: stg_entsoe__wind_solar_forecast_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, production_type]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, area_type_code, production_type]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -177,7 +171,5 @@ models:
         description: "{{ doc('col_entsoe_current_forecast_mw') }}"
       - name: publish_time_utc
         description: "{{ doc('col_update_time_utc') }}"
-      - name: _source_file
-        description: "{{ doc('col__source_file') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"

@@ -70,9 +70,10 @@ class SeedPublishers:
         ]
         return [file for item in listed if (file := export_file(item))]
 
-    def download(self, folder: str, filename: str) -> bytes:
+    def download(self, folder: str, filename: str, target: Path) -> Path:
         self.requests.append(f"{folder}/{filename}")
-        return self.exports[folder][filename][1]
+        target.write_bytes(self.exports[folder][filename][1])
+        return target
 
 
 @contextmanager

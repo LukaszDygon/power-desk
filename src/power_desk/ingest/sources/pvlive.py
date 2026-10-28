@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 import dlt
+from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk.ingest import http
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 API_URL = "https://api.pvlive.uk/pvlive/api/v4/pes/0"
 MAX_DAYS_PER_RUN = 31
 DAYS_PER_REQUEST = 7
+UPSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "upsert"}  # `_dlt_id` from the primary key
 
 
 def fetch_half_hours(days: DateRange) -> list[dict[str, Any]]:
@@ -44,7 +46,9 @@ def pvlive_source(window: RunWindow) -> DltResource:
     # half-hour ending: a day ends at D+1 00:00
     end_value = f"{day_after(window.end)}T00:30:00Z" if window.end else None
 
-    @dlt.resource(name="pvlive__solar", write_disposition="merge", primary_key=["pes_id", "datetime_gmt"])
+    @dlt.resource(
+        name="pvlive__solar", write_disposition=UPSERT, primary_key=["pes_id", "datetime_gmt"], file_format="parquet"
+    )
     def solar(
         cursor: dlt.sources.incremental[str] = dlt.sources.incremental(
             "datetime_gmt",

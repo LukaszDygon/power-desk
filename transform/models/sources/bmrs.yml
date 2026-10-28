@@ -16,6 +16,7 @@ sources:
           pipeline: bmrs
           resource: bmrs__fuelinst
           write_disposition: merge
+          merge_strategy: upsert
           primary_key:
           - start_time
           - settlement_date
@@ -149,6 +150,7 @@ sources:
           pipeline: bmrs
           resource: bmrs__indo
           write_disposition: merge
+          merge_strategy: upsert
           primary_key:
           - settlement_date
           - settlement_period
@@ -272,6 +274,7 @@ sources:
           pipeline: bmrs
           resource: bmrs__itsdo
           write_disposition: merge
+          merge_strategy: upsert
           primary_key:
           - settlement_date
           - settlement_period
@@ -387,6 +390,7 @@ sources:
           pipeline: bmrs
           resource: bmrs__ndf
           write_disposition: merge
+          merge_strategy: upsert
           primary_key:
           - publish_time
           - settlement_date
@@ -511,6 +515,7 @@ sources:
           pipeline: bmrs
           resource: bmrs__windfor
           write_disposition: merge
+          merge_strategy: upsert
           primary_key:
           - publish_time
           - start_time

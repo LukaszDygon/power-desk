@@ -1,5 +1,5 @@
 version: 2
-version_hash: IyFNt8V3XcHDrPUOrl45ztLFYTlG6gSybR8LndRbOfw=
+version_hash: 1Hxc2He5rtCYfzWsJyIeX/6L3UjkC89CsLYtGV3pE7g=
 engine_version: 11
 name: entsoe_eic
 tables:
@@ -59,8 +59,9 @@ tables:
         x-valid-to: true
         x-active-record-timestamp: null
       eic_code:
+        nullable: false
+        primary_key: true
         data_type: text
-        nullable: true
       eic_display_name:
         data_type: text
         nullable: true
@@ -100,6 +101,7 @@ tables:
         unique: false
         row_key: false
         data_type: text
+    file_format: parquet
     x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe_eic__codes
@@ -117,17 +119,20 @@ tables:
         x-valid-to: true
         x-active-record-timestamp: null
       eic_function:
+        nullable: false
+        primary_key: true
         data_type: text
-        nullable: true
       eic_type:
+        nullable: false
+        primary_key: true
         data_type: text
-        nullable: true
       definition:
         data_type: text
         nullable: true
       valid_in_market:
+        nullable: false
+        primary_key: true
         data_type: text
-        nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
@@ -137,6 +142,7 @@ tables:
         unique: false
         row_key: false
         data_type: text
+    file_format: parquet
     x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe_eic__functions
@@ -154,8 +160,9 @@ tables:
         x-valid-to: true
         x-active-record-timestamp: null
       lio_code:
+        nullable: false
+        primary_key: true
         data_type: text
-        nullable: true
       name:
         data_type: text
         nullable: true
@@ -186,6 +193,7 @@ tables:
         unique: false
         row_key: false
         data_type: text
+    file_format: parquet
     x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe_eic__issuing_offices
@@ -248,5 +256,5 @@ normalizers:
   json:
     module: dlt.common.normalizers.json.relational
 previous_hashes:
-- QnncZrRPtRcgDLhZ8mYOno31b79NkgTvcoj5EMb8c/w=
-- QScg30KZyOdJf31m+DJSat9Zw/ZBW2PfLdFpYAY+ah8=
+- 9Wrnvoz8BHxjmDMB2zCru2X+CyI81usA2dVCDl2XKTQ=
+- sCDA3GnFUTwDRTxbJJlt9LRypO6Vj05h0CJhfIIfKqM=

@@ -51,7 +51,6 @@ class LastWindow(TypedDict, total=False):
     capped: bool
     # file partitions only
     files_loaded: int
-    checked_at: str
     cursor_last_value: str | None
 
 

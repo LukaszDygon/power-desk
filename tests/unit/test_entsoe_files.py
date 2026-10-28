@@ -1,45 +1,17 @@
 from datetime import date
 
-import pyarrow as pa
-
 from power_desk.ingest.sources.entsoe import FilePlan, plan_files
-from power_desk.ingest.sources.entsoe_file_library import (
-    SOURCE_FILE,
-    ExportFile,
-    export_file,
-    export_month,
-    parse_export,
-)
+from power_desk.ingest.sources.entsoe_file_library import ExportFile, export_file, export_month
 from power_desk.ingest.spec import RunWindow
 from power_desk.ingest.windows import DateRange
 
 FOLDER = "ActualTotalLoad_6.1.A_r3"
 OPEN_ENDED = RunWindow(date(2024, 1, 1), None, max_days=400)
-EXPORT = (
-    "﻿DateTime(UTC)\tResolutionCode\tAreaCode\tTotalLoad[MW]\tUpdateTime(UTC)\n"
-    "2024-03-01 00:00:00\tPT15M\t10YFR-RTE------C\t51000.5\t2024-03-01 01:00:00\n"
-    "2024-03-01 00:15:00\tPT15M\t10YFR-RTE------C\t\t2024-03-01 01:00:00\n"
-).encode()
 
 
 def files(*months: int) -> list[ExportFile]:
     listed = [{"name": f"2024_{m:02d}_{FOLDER}.csv", "lastUpdatedTimestamp": "t1"} for m in months]
     return [file for item in listed if (file := export_file(item))]
-
-
-def test_parse_export_types_columns_and_tags_the_file():
-    table = parse_export(EXPORT, "f.csv")
-    assert table.column_names == [
-        "DateTime_UTC",
-        "ResolutionCode",
-        "AreaCode",
-        "TotalLoad_MW",
-        "UpdateTime_UTC",
-        SOURCE_FILE,
-    ]
-    assert table.schema.field("DateTime_UTC").type == pa.timestamp("us", "UTC")
-    assert table["TotalLoad_MW"].to_pylist() == [51000.5, None]
-    assert table[SOURCE_FILE].to_pylist() == ["f.csv", "f.csv"]
 
 
 def test_plan_files_takes_changed_months_oldest_first_up_to_the_cap():

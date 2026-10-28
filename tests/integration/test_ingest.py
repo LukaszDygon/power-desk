@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -84,22 +85,27 @@ def test_a_failed_request_fails_the_run_and_keeps_the_state(tmp_path, monkeypatc
     assert resource_progress(pipeline, "bmrs") == {}
 
 
-def test_republished_month_replaces_its_rows_and_unchanged_months_are_skipped(tmp_path):
+def test_a_republished_value_is_a_new_version_and_unchanged_months_are_skipped(tmp_path):
     publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
     item = entsoe.DATA_ITEMS[0]
     [(name, (_, content))] = publishers.exports[item.folder].items()
     load("entsoe", db, publishers, resources=[item.resource])
+    published = query(db, f"select count(*) from raw.{item.resource}")[0][0]
     downloads = len(publishers.requests)
 
     load("entsoe", db, publishers, resources=[item.resource])
     assert len(publishers.requests) == downloads
 
+    # a re-export carrying one revised row: merged on the natural key, the other rows stay current
     header, first_row, *_ = content.decode().splitlines()
     fields = first_row.split("\t")
     fields[header.split("\t").index("TotalLoad[MW]")] = "1.5"
     publishers.exports[item.folder][name] = ("republished", "\n".join([header, "\t".join(fields), ""]).encode())
     load("entsoe", db, publishers, resources=[item.resource])
-    assert query(db, f"select count(*), sum(total_load_mw) from raw.{item.resource}") == [(1, 1.5)]
+    versions = f"select count(*), count(*) filter (where _dlt_valid_to is null) from raw.{item.resource}"
+    assert query(db, versions) == [(published + 1, published)]
+    revised = f"select total_load_mwx from raw.{item.resource} where _dlt_valid_to is null and total_load_mwx = 1.5"
+    assert query(db, revised) == [(1.5,)]
 
 
 def test_snapshot_keeps_every_version_and_skips_an_unchanged_file(tmp_path):
@@ -119,3 +125,13 @@ def test_snapshot_keeps_every_version_and_skips_an_unchanged_file(tmp_path):
     publishers.files[entsoe_eic.CODES_URL] = f"{header}\n{renamed}\n"
     load("entsoe_eic", db, publishers, resources=["entsoe_eic__codes"])
     assert query(db, current) == [(1, 3)]
+
+
+def test_file_partition_cursor_is_the_latest_update_not_the_latest_value_time(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    item = entsoe.DATA_ITEMS[1]  # day-ahead load forecast: re-forecast after its value times
+    cursor = load("entsoe", db, publishers, resources=[item.resource])[item.resource]["cursor_last_value"]
+    [(latest_update, latest_value)] = query(
+        db, f"select max(update_time_utcx), max(date_time_utcx) from raw.{item.resource}"
+    )
+    assert datetime.fromisoformat(cursor) == latest_update and latest_update > latest_value

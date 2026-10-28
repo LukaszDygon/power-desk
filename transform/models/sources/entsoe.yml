@@ -2,7 +2,7 @@
 sources:
 - name: entsoe
   description: ENTSO-E Transparency Platform data items, loaded by the `entsoe` dlt pipeline from the File Library's monthly
-    exports; each published file replaces the rows previously loaded from it.
+    exports, as published; each table keeps the versions of its rows (scd2) merged on the natural key.
   schema: raw
   tables:
   - name: entsoe__actual_total_load
@@ -17,8 +17,12 @@ sources:
           pipeline: entsoe
           resource: entsoe__actual_total_load
           write_disposition: merge
-          merge_strategy: delete-insert
-          primary_key: []
+          merge_strategy: scd2
+          primary_key:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -42,12 +46,31 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: entsoe__actual_total_load_unique_dlt_id
+        name: entsoe__actual_total_load_unique_natural_key
+        arguments:
+          columns:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+    - dlt_unique:
+        name: entsoe__actual_total_load_unique_row_version
         arguments:
           columns:
           - _dlt_id
+          - _dlt_valid_from
     columns:
-    - name: date_time_utc
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: date_time_utcx
       description: '{{ doc(''col_date_time_utc'') }}'
       config:
         meta:
@@ -55,6 +78,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: resolution_code
       description: '{{ doc(''col_resolution_code'') }}'
       config:
@@ -63,6 +88,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_code
       description: '{{ doc(''col_area_code'') }}'
       config:
@@ -73,6 +100,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: area_display_name
       description: '{{ doc(''col_area_display_name'') }}'
       config:
@@ -104,6 +133,8 @@ sources:
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_map_code
       description: '{{ doc(''col_area_map_code'') }}'
       config:
@@ -112,7 +143,7 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: total_load_mw
+    - name: total_load_mwx
       description: '{{ doc(''col_entsoe_actual_total_load_mw'') }}'
       config:
         meta:
@@ -120,21 +151,20 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: update_time_utc
+    - name: update_time_utcx
       description: '{{ doc(''col_update_time_utc'') }}'
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
           references:
-          - title: Transparency Platform File Library guide
-            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: _source_file
-      description: '{{ doc(''col__source_file'') }}'
-      config:
-        meta:
-          dlt_data_type: VARCHAR
-      data_tests:
-      - not_null
+          - title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+          - title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+          - title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+          - title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -159,8 +189,12 @@ sources:
           pipeline: entsoe
           resource: entsoe__day_ahead_total_load_forecast
           write_disposition: merge
-          merge_strategy: delete-insert
-          primary_key: []
+          merge_strategy: scd2
+          primary_key:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -184,12 +218,31 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: entsoe__day_ahead_total_load_forecast_unique_dlt_id
+        name: entsoe__day_ahead_total_load_forecast_unique_natural_key
+        arguments:
+          columns:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+    - dlt_unique:
+        name: entsoe__day_ahead_total_load_forecast_unique_row_version
         arguments:
           columns:
           - _dlt_id
+          - _dlt_valid_from
     columns:
-    - name: date_time_utc
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: date_time_utcx
       description: '{{ doc(''col_date_time_utc'') }}'
       config:
         meta:
@@ -197,6 +250,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: resolution_code
       description: '{{ doc(''col_resolution_code'') }}'
       config:
@@ -205,6 +260,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_code
       description: '{{ doc(''col_area_code'') }}'
       config:
@@ -215,6 +272,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: area_display_name
       description: '{{ doc(''col_area_display_name'') }}'
       config:
@@ -246,6 +305,8 @@ sources:
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_map_code
       description: '{{ doc(''col_area_map_code'') }}'
       config:
@@ -254,7 +315,7 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: total_load_mw
+    - name: total_load_mwx
       description: '{{ doc(''col_entsoe_day_ahead_total_load_mw'') }}'
       config:
         meta:
@@ -262,21 +323,20 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: update_time_utc
+    - name: update_time_utcx
       description: '{{ doc(''col_update_time_utc'') }}'
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
           references:
-          - title: Transparency Platform File Library guide
-            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: _source_file
-      description: '{{ doc(''col__source_file'') }}'
-      config:
-        meta:
-          dlt_data_type: VARCHAR
-      data_tests:
-      - not_null
+          - title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+          - title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+          - title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+          - title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -301,8 +361,13 @@ sources:
           pipeline: entsoe
           resource: entsoe__generation_per_type
           write_disposition: merge
-          merge_strategy: delete-insert
-          primary_key: []
+          merge_strategy: scd2
+          primary_key:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+          - production_type
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -326,12 +391,32 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: entsoe__generation_per_type_unique_dlt_id
+        name: entsoe__generation_per_type_unique_natural_key
+        arguments:
+          columns:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+          - production_type
+    - dlt_unique:
+        name: entsoe__generation_per_type_unique_row_version
         arguments:
           columns:
           - _dlt_id
+          - _dlt_valid_from
     columns:
-    - name: date_time_utc
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: date_time_utcx
       description: '{{ doc(''col_date_time_utc'') }}'
       config:
         meta:
@@ -339,6 +424,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: resolution_code
       description: '{{ doc(''col_resolution_code'') }}'
       config:
@@ -347,6 +434,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_code
       description: '{{ doc(''col_area_code'') }}'
       config:
@@ -357,6 +446,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: area_display_name
       description: '{{ doc(''col_area_display_name'') }}'
       config:
@@ -388,6 +479,8 @@ sources:
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_map_code
       description: '{{ doc(''col_area_map_code'') }}'
       config:
@@ -406,7 +499,9 @@ sources:
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
             section: PsrType
             page: 8
-    - name: actual_generation_output_mw
+      data_tests:
+      - not_null
+    - name: actual_generation_output_mwx
       description: '{{ doc(''col_actual_generation_output_mw'') }}'
       config:
         meta:
@@ -414,29 +509,20 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: actual_consumption_mw
-      description: '{{ doc(''col_actual_consumption_mw'') }}'
-      config:
-        meta:
-          dlt_data_type: DOUBLE
-          references:
-          - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
-            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: update_time_utc
+    - name: update_time_utcx
       description: '{{ doc(''col_update_time_utc'') }}'
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
           references:
-          - title: Transparency Platform File Library guide
-            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: _source_file
-      description: '{{ doc(''col__source_file'') }}'
-      config:
-        meta:
-          dlt_data_type: VARCHAR
-      data_tests:
-      - not_null
+          - title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+          - title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+          - title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+          - title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -449,6 +535,14 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+    - name: actual_consumption_mwx
+      description: '{{ doc(''col_actual_consumption_mw'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
   - name: entsoe__wind_solar_forecast
     description: '{{ doc(''dataset_entsoe__wind_solar_forecast'') }}'
     config:
@@ -461,8 +555,13 @@ sources:
           pipeline: entsoe
           resource: entsoe__wind_solar_forecast
           write_disposition: merge
-          merge_strategy: delete-insert
-          primary_key: []
+          merge_strategy: scd2
+          primary_key:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+          - production_type
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -486,12 +585,32 @@ sources:
           period: hour
     data_tests:
     - dlt_unique:
-        name: entsoe__wind_solar_forecast_unique_dlt_id
+        name: entsoe__wind_solar_forecast_unique_natural_key
+        arguments:
+          columns:
+          - date_time_utcx
+          - resolution_code
+          - area_code
+          - area_type_code
+          - production_type
+    - dlt_unique:
+        name: entsoe__wind_solar_forecast_unique_row_version
         arguments:
           columns:
           - _dlt_id
+          - _dlt_valid_from
     columns:
-    - name: date_time_utc
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: date_time_utcx
       description: '{{ doc(''col_date_time_utc'') }}'
       config:
         meta:
@@ -499,6 +618,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: resolution_code
       description: '{{ doc(''col_resolution_code'') }}'
       config:
@@ -507,6 +628,8 @@ sources:
           references:
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_code
       description: '{{ doc(''col_area_code'') }}'
       config:
@@ -517,6 +640,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: area_display_name
       description: '{{ doc(''col_area_display_name'') }}'
       config:
@@ -548,6 +673,8 @@ sources:
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
     - name: area_map_code
       description: '{{ doc(''col_area_map_code'') }}'
       config:
@@ -566,7 +693,9 @@ sources:
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
             section: PsrType
             page: 8
-    - name: day_ahead_generation_forecast_mw
+      data_tests:
+      - not_null
+    - name: day_ahead_generation_forecast_mwx
       description: '{{ doc(''col_entsoe_day_ahead_forecast_mw'') }}'
       config:
         meta:
@@ -574,7 +703,7 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: intraday_generation_forecast_mw
+    - name: intraday_generation_forecast_mwx
       description: '{{ doc(''col_entsoe_intraday_forecast_mw'') }}'
       config:
         meta:
@@ -582,7 +711,7 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: current_generation_forecast_mw
+    - name: current_generation_forecast_mwx
       description: '{{ doc(''col_entsoe_current_forecast_mw'') }}'
       config:
         meta:
@@ -590,21 +719,20 @@ sources:
           references:
           - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
             url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
-    - name: update_time_utc
+    - name: update_time_utcx
       description: '{{ doc(''col_update_time_utc'') }}'
       config:
         meta:
           dlt_data_type: TIMESTAMP WITH TIME ZONE
           references:
-          - title: Transparency Platform File Library guide
-            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
-    - name: _source_file
-      description: '{{ doc(''col__source_file'') }}'
-      config:
-        meta:
-          dlt_data_type: VARCHAR
-      data_tests:
-      - not_null
+          - title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+          - title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+          - title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+          - title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:

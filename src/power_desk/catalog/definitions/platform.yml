@@ -82,8 +82,6 @@ columns:
   interval_minutes:
     description: Length of the row's interval in minutes (the publisher's resolution, e.g. the market time
       unit). Several resolutions coexist across areas and over time.
-  _source_file:
-    description: Published file the row was loaded from; a re-published file replaces all its rows.
   publish_time_utc:
     description: Publication time of the value (UTC); for sources without one, the end of the interval.
   source_dataset:

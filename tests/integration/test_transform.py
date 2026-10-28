@@ -96,7 +96,7 @@ def test_a_duplicated_raw_row_fails_its_guard_and_keeps_the_load_pending(warehou
     assert build(warehouse_copy, tmp_path) != 0
     assert query(
         warehouse_copy,
-        "select settlement_date, settlement_period, n_rows " "from test_failures.bmrs__indo_unique_natural_key",
+        "select settlement_date, settlement_period, n_rows from test_failures.bmrs__indo_unique_natural_key",
     ) == [("2024-03-05", 20, 2)]
     audited = {
         r[0]
@@ -119,7 +119,7 @@ def test_completeness_flags_a_missing_settlement_period(warehouse_copy, tmp_path
     )
     assert query(
         warehouse_copy,
-        "select settlement_date::text, settlement_period " "from test_failures.stg_bmrs__indo_no_missing_periods",
+        "select settlement_date::text, settlement_period from test_failures.stg_bmrs__indo_no_missing_periods",
     ) == [("2024-03-04", 17)]
 
 
@@ -138,7 +138,8 @@ def test_scoped_tests_read_only_rows_of_pending_loads(seeded_warehouse, tmp_path
     assert "_dlt_load_id in (select unnest(cast(['L1'] as varchar[])) as load_id)" in compiled
 
 
-def test_a_first_build_by_hand_processes_every_load(tmp_path):
+def test_a_first_build_by_hand_processes_every_load(tmp_path, monkeypatch):
+    monkeypatch.setenv("POWER_DESK_PIPELINES_DIR", str(tmp_path / "pipelines"))  # no state from other tests' loads
     db = tmp_path / "fresh.duckdb"
     load_seed(db)
     assert run_dbt(["build"], db, target_path=tmp_path / "target") == 0

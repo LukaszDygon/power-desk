@@ -33,6 +33,8 @@ entsoe as (
         'ENTSOE_16.1.B_C' as source_dataset, 'ENTSOE_PSR' as code_list, area_eic_code,
         _dlt_load_id
     from {{ ref('stg_entsoe__generation_per_type') }}
+    -- an area changing its market time unit publishes the overlap at both resolutions: keep the finest
+    {{ keep_finest_resolution(['area_eic_code', 'production_type']) }}
 ),
 
 unioned as (

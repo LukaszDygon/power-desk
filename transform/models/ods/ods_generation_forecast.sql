@@ -14,7 +14,8 @@ with windfor as (
     join {{ ref('source_datasets') }} ds on ds.source_dataset = 'WINDFOR'
 ),
 
--- one row per published horizon
+-- one row per published horizon; an area changing its market time unit publishes the overlap at both
+-- resolutions: keep the finest
 entsoe as (
     {% for horizon in ['day_ahead', 'intraday', 'current'] %}
     select
@@ -30,6 +31,7 @@ entsoe as (
         _dlt_load_id
     from {{ ref('stg_entsoe__wind_solar_forecast') }}
     where {{ horizon }}_forecast_mw is not null
+    {{ keep_finest_resolution(['area_eic_code', 'production_type']) }}
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 ),

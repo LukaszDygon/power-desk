@@ -26,3 +26,5 @@ select
     publish_time_utc,
     _dlt_load_id
 from {{ ref('stg_entsoe__day_ahead_total_load_forecast') }}
+-- an area changing its market time unit publishes the overlap at both resolutions: keep the finest
+{{ keep_finest_resolution(['area_eic_code']) }}

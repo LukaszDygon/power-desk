@@ -8,6 +8,7 @@ from dagster import AssetKey, DagsterInstance, build_sensor_context
 import pytest
 
 from power_desk.ingest.seed.replay import SeedPublishers, replay
+from power_desk.orchestration.jobs import INGEST_JOBS
 from power_desk.orchestration.runs import latest_metadata
 from power_desk.transform.dbt import run_dbt
 from power_desk.transform.loads import tracked_models
@@ -38,6 +39,14 @@ def test_ingest_jobs_load_then_transform_and_audit_every_load(defs, live):
     assert actuals.success
     metadata = latest_metadata(instance, AssetKey(["raw", "bmrs__indo"]))
     assert metadata["dlt_load_ids"] and metadata["window_capped"] is False
+    checks = {
+        (e.asset_key, e.check_name): e
+        for e in actuals.get_asset_check_evaluations()
+        if e.check_name.startswith("recent")
+    }
+    for key in INGEST_JOBS[0].asset_keys:
+        assert checks[key, "recently_fetched"].passed  # loaded just now
+        assert checks[key, "recent_data"].metadata["newest"].value  # judged by the cursor, whatever its age
     audit = query(live, "select load_id, model_name, orchestrator_run_id from dlt_meta.dlt_load_audit")
     assert {r[1] for r in audit} == set(tracked_models())
     assert {r[0] for r in audit} >= set(metadata["dlt_load_ids"]) and {r[2] for r in audit} == {actuals.run_id}

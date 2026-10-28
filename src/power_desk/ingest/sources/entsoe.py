@@ -1,55 +1,60 @@
 """ENTSO-E Transparency Platform data items, as monthly file partitions of the File Library.
 
-The File Library re-exports a month's file daily while its data changes. Each run lists a data
-item's folder and loads the files new or changed since their last load (the publisher's
-`lastUpdatedTimestamp`, kept in resource state), oldest month first, covering at most
-`max_days` days of months; `capped` is recorded when more changed files remain. A loaded
-file replaces every row previously loaded from it (`merge_key` `_source_file`), so revisions and
-withdrawals follow the publication. Bounded backfills (`window.end`) load every file in range and
-leave the state untouched.
+The File Library re-exports a month's file while its data changes. Each run lists a data item's
+folder and loads the files new or changed since their last load (the publisher's
+`lastUpdatedTimestamp`, kept in resource state), oldest month first, covering at most `max_days`
+days of months; `capped` is recorded when more changed files remain. Bounded backfills
+(`window.end`) load every file in range and leave the state untouched.
+
+Rows are loaded as published: DuckDB's CSV reader infers their types and dlt names and hashes them.
+Each table keeps versions (`scd2`) merged on its natural key, so a revision closes the row's previous
+version; the same row may come from more than one file. The cursor is the latest `UpdateTime(UTC)`:
+revisions and re-forecasts of earlier periods are new data.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, timedelta
 import logging
+from pathlib import Path
+import tempfile
 
 import dlt
 from dlt.common.schema.typing import TMergeDispositionDict
+from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
-import pyarrow as pa
-import pyarrow.compute as pc
+from dlt.sources.filesystem.helpers import fetch_json
+import duckdb
 
-from power_desk.ingest.sources.entsoe_file_library import (
-    SOURCE_FILE,
-    ExportFile,
-    FileLibraryClient,
-    column_name,
-    parse_export,
-)
+from power_desk.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient
 from power_desk.ingest.spec import RunWindow, SourceSpec
 from power_desk.ingest.windows import DateRange, LastWindow
 
 logger = logging.getLogger(__name__)
 
-PARTITION_REPLACE: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
+SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
 MAX_DAYS_PER_RUN = 186  # about six monthly files per data item and run
-MTU_START = column_name("DateTime(UTC)")
+BATCH_ROWS = 50_000
+UPDATE_TIME = "UpdateTime(UTC)"
+AREA_KEY = ("DateTime(UTC)", "ResolutionCode", "AreaCode", "AreaTypeCode")
 
 
 @dataclass(frozen=True)
 class DataItem:
     resource: str
     folder: str  # <data item>_<Transparency Regulation article>_<release>
+    natural_key: tuple[str, ...]  # published column names
 
 
 DATA_ITEMS = (
-    DataItem("entsoe__actual_total_load", "ActualTotalLoad_6.1.A_r3"),
-    DataItem("entsoe__day_ahead_total_load_forecast", "DayAheadTotalLoadForecast_6.1.B_r3"),
-    DataItem("entsoe__generation_per_type", "AggregatedGenerationPerType_16.1.B_C_r3"),
-    DataItem("entsoe__wind_solar_forecast", "GenerationForecastsForWindAndSolar_14.1.D_r3"),
+    DataItem("entsoe__actual_total_load", "ActualTotalLoad_6.1.A_r3", AREA_KEY),
+    DataItem("entsoe__day_ahead_total_load_forecast", "DayAheadTotalLoadForecast_6.1.B_r3", AREA_KEY),
+    DataItem("entsoe__generation_per_type", "AggregatedGenerationPerType_16.1.B_C_r3", (*AREA_KEY, "ProductionType")),
+    DataItem(
+        "entsoe__wind_solar_forecast", "GenerationForecastsForWindAndSolar_14.1.D_r3", (*AREA_KEY, "ProductionType")
+    ),
 )
 
 
@@ -80,12 +85,7 @@ def plan_files(files: list[ExportFile], loaded: dict[str, str], window: RunWindo
     return FilePlan(batch, capped=len(batch) < len(changed))
 
 
-def latest_mtu(table: pa.Table, cursor: str | None) -> str | None:
-    latest = pc.max(table[MTU_START]).as_py()  # pyright: ignore[reportAttributeAccessIssue]  # generated at import
-    return max(filter(None, [cursor, latest.isoformat() if latest else None]), default=None)
-
-
-def file_partitions(client: FileLibraryClient, item: DataItem, window: RunWindow) -> Iterator[pa.Table]:
+def file_partitions(client: FileLibraryClient, item: DataItem, window: RunWindow) -> Iterator[TDataItems]:
     state = {} if window.bounded else dlt.current.resource_state()
     loaded: dict[str, str] = state.setdefault("source_files", {})
     previous: LastWindow = state.get("last_window", {})
@@ -93,23 +93,23 @@ def file_partitions(client: FileLibraryClient, item: DataItem, window: RunWindow
     cursor = previous.get("cursor_last_value")
     for file in plan.files:
         logger.info("%s: loading %s (%s bytes zipped)", item.resource, file.name, file.size)
-        table = parse_export(client.download(item.folder, file.name), file.name)
-        if table.num_rows:
-            cursor = latest_mtu(table, cursor)
-            yield table
+        with tempfile.TemporaryDirectory() as tmp, duckdb.connect() as con:
+            export = con.read_csv(str(client.download(item.folder, file.name, Path(tmp) / file.name)), sep="\t")
+            cursor = latest_update(export, cursor)
+            yield from fetch_json(export, BATCH_ROWS)
         loaded[file.name] = file.last_updated
     if not window.bounded:
         state["last_window"] = window_record(plan, cursor, previous)
 
 
+def latest_update(export: duckdb.DuckDBPyRelation, cursor: str | None) -> str | None:
+    [(latest,)] = export.aggregate(f'max("{UPDATE_TIME}")').fetchall()
+    return max(filter(None, [cursor, latest.replace(tzinfo=UTC).isoformat() if latest else None]), default=None)
+
+
 def window_record(plan: FilePlan, cursor: str | None, previous: LastWindow) -> LastWindow:
-    """The run's `last_window`: months covered (else the previous run's), `capped`, and the latest MTU loaded."""
-    record = LastWindow(
-        capped=plan.capped,
-        files_loaded=len(plan.files),
-        checked_at=datetime.now(UTC).isoformat(timespec="seconds"),
-        cursor_last_value=cursor,
-    )
+    """The run's `last_window`: months covered (else the previous run's), `capped`, and the latest update loaded."""
+    record = LastWindow(capped=plan.capped, files_loaded=len(plan.files), cursor_last_value=cursor)
     if months := plan.months:
         record["first_day"], record["last_day"] = months.first.isoformat(), months.last.isoformat()
     elif "first_day" in previous and "last_day" in previous:
@@ -124,8 +124,10 @@ def entsoe_source(window: RunWindow) -> list[DltResource]:
         dlt.resource(
             file_partitions(client, item, window),
             name=item.resource,
-            write_disposition=PARTITION_REPLACE,
-            merge_key=SOURCE_FILE,
+            write_disposition=SCD2,
+            primary_key=list(item.natural_key),
+            merge_key=list(item.natural_key),
+            file_format="parquet",
         )
         for item in DATA_ITEMS
     ]

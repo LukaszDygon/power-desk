@@ -1,5 +1,5 @@
 version: 2
-version_hash: dKt+aBf+gNMSJhLf2x2JRcTshkncqkexy91WrogoZ+A=
+version_hash: 2LsxtYJpKta7S4/9xWsHgLQKW2pT+mYP1C/+nBzd4Dw=
 engine_version: 11
 name: entsoe
 tables:
@@ -49,195 +49,251 @@ tables:
     description: Created by DLT. Tracks completed loads
   entsoe__actual_total_load:
     columns:
-      date_time_utc:
+      _dlt_valid_from:
+        data_type: timestamp
         nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: timestamp
       resolution_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_display_name:
-        nullable: true
         data_type: text
-      area_type_code:
         nullable: true
+      area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_map_code:
-        nullable: true
         data_type: text
-      total_load_mw:
         nullable: true
+      total_load_mwx:
         data_type: double
-      update_time_utc:
         nullable: true
+      update_time_utcx:
         data_type: timestamp
-      _source_file:
-        nullable: false
-        data_type: text
-        merge_key: true
+        nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
-        precision: 64
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
-        precision: 64
-    x-merge-strategy: delete-insert
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe__actual_total_load
     x-normalizer:
       seen-data: true
   entsoe__day_ahead_total_load_forecast:
     columns:
-      date_time_utc:
+      _dlt_valid_from:
+        data_type: timestamp
         nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: timestamp
       resolution_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_display_name:
-        nullable: true
         data_type: text
-      area_type_code:
         nullable: true
+      area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_map_code:
-        nullable: true
         data_type: text
-      total_load_mw:
         nullable: true
+      total_load_mwx:
         data_type: double
-      update_time_utc:
         nullable: true
+      update_time_utcx:
         data_type: timestamp
-      _source_file:
-        nullable: false
-        data_type: text
-        merge_key: true
+        nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
-        precision: 64
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
-        precision: 64
-    x-merge-strategy: delete-insert
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe__day_ahead_total_load_forecast
     x-normalizer:
       seen-data: true
   entsoe__generation_per_type:
     columns:
-      date_time_utc:
+      _dlt_valid_from:
+        data_type: timestamp
         nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: timestamp
       resolution_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_display_name:
-        nullable: true
         data_type: text
-      area_type_code:
         nullable: true
+      area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_map_code:
-        nullable: true
         data_type: text
+        nullable: true
       production_type:
-        nullable: true
-        data_type: text
-      actual_generation_output_mw:
-        nullable: true
-        data_type: double
-      actual_consumption_mw:
-        nullable: true
-        data_type: double
-      update_time_utc:
-        nullable: true
-        data_type: timestamp
-      _source_file:
         nullable: false
-        data_type: text
+        primary_key: true
         merge_key: true
+        data_type: text
+      actual_generation_output_mwx:
+        data_type: double
+        nullable: true
+      update_time_utcx:
+        data_type: timestamp
+        nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
-        precision: 64
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
-        precision: 64
-    x-merge-strategy: delete-insert
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+      actual_consumption_mwx:
+        data_type: double
+        nullable: true
+    file_format: parquet
+    x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe__generation_per_type
     x-normalizer:
       seen-data: true
   entsoe__wind_solar_forecast:
     columns:
-      date_time_utc:
+      _dlt_valid_from:
+        data_type: timestamp
         nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: timestamp
       resolution_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_code:
-        nullable: true
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_display_name:
-        nullable: true
         data_type: text
-      area_type_code:
         nullable: true
+      area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
         data_type: text
       area_map_code:
-        nullable: true
         data_type: text
+        nullable: true
       production_type:
-        nullable: true
-        data_type: text
-      day_ahead_generation_forecast_mw:
-        nullable: true
-        data_type: double
-      intraday_generation_forecast_mw:
-        nullable: true
-        data_type: double
-      current_generation_forecast_mw:
-        nullable: true
-        data_type: double
-      update_time_utc:
-        nullable: true
-        data_type: timestamp
-      _source_file:
         nullable: false
-        data_type: text
+        primary_key: true
         merge_key: true
+        data_type: text
+      day_ahead_generation_forecast_mwx:
+        data_type: double
+        nullable: true
+      intraday_generation_forecast_mwx:
+        data_type: double
+        nullable: true
+      current_generation_forecast_mwx:
+        data_type: double
+        nullable: true
+      update_time_utcx:
+        data_type: timestamp
+        nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
-        precision: 64
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
-        precision: 64
-    x-merge-strategy: delete-insert
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
     write_disposition: merge
     resource: entsoe__wind_solar_forecast
     x-normalizer:
@@ -298,17 +354,6 @@ normalizers:
   names: snake_case
   json:
     module: dlt.common.normalizers.json.relational
-    config:
-      propagation:
-        tables:
-          entsoe__actual_total_load:
-            _dlt_id: _dlt_root_id
-          entsoe__day_ahead_total_load_forecast:
-            _dlt_id: _dlt_root_id
-          entsoe__generation_per_type:
-            _dlt_id: _dlt_root_id
-          entsoe__wind_solar_forecast:
-            _dlt_id: _dlt_root_id
 previous_hashes:
-- 17SamARbO2Hfw2Rg2xmnB58R6mTfDCGB8vGPCFf5joA=
-- so5HAuyb7ikAlIJEEUwQYQafb0/WONA0dAa8f6owXKo=
+- hnvIT0tr8WHVgf74fSuy1kZGQ4ztpKFKMAj1QEQVqZU=
+- V6Z7wJ5hyzm5phQNfgJKZYtf/vxAAziCJhvCPtO24aU=

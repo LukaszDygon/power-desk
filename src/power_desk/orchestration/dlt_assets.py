@@ -1,11 +1,11 @@
 """One Dagster asset per dlt resource (`raw/<source>__<dataset>`), one multi-asset per source.
 
-Each materialization records the run's dlt load ids and, for open-ended runs, the resource's
-cursor, last window and whether it was capped (read by the catch-up sensor and lag checks).
+Each materialization records the run's dlt load ids and the resource's cursor (read by the
+`recent_data` check; bounded backfills leave it as it was) and, for open-ended runs, the last window
+and whether it was capped (read by the catch-up sensor).
 """
 
 from collections.abc import Iterator
-from datetime import UTC, datetime
 from typing import Any
 
 from dagster import AssetExecutionContext, AssetKey, Config, MaterializeResult
@@ -39,14 +39,6 @@ class IngestConfig(Config):
     refresh: str | None = None  # dlt refresh mode: drop_sources | drop_resources | drop_data
 
 
-def minutes_behind(cursor: Any, now: datetime | None = None) -> float | None:
-    if not cursor:
-        return None
-    value = cursor if isinstance(cursor, datetime) else datetime.fromisoformat(str(cursor).replace("Z", "+00:00"))
-    value = value if value.tzinfo else value.replace(tzinfo=UTC)
-    return round(((now or datetime.now(UTC)) - value).total_seconds() / 60, 1)
-
-
 def load_metadata(pipeline: dlt.Pipeline, window: RunWindow) -> dict[str, Any]:
     """The run's dlt loads."""
     load_info = pipeline.last_trace.last_load_info if pipeline.last_trace else None
@@ -58,13 +50,10 @@ def load_metadata(pipeline: dlt.Pipeline, window: RunWindow) -> dict[str, Any]:
 
 
 def progress_metadata(progress: dict[str, Any]) -> dict[str, Any]:
-    """An open-ended run's progress: cursor, lag, window and whether it was capped."""
-    lag = minutes_behind(progress.get("cursor_last_value"))
+    """An open-ended run's progress: window and whether it was capped, and snapshot file validators."""
     return {
-        "cursor_last_value": str(progress.get("cursor_last_value") or ""),
         "window_capped": bool(progress.get("capped", False)),
         "window": f"{progress.get('first_day', '')}..{progress.get('last_day', '')}",
-        **({"cursor_lag_minutes": lag} if lag is not None else {}),
         **{k: str(v) for k, v in progress.items() if k.startswith("source_") and v is not None},
     }
 
@@ -89,7 +78,11 @@ def source_assets(name: str):
         for result in results:
             assert result.asset_key is not None  # dagster-dlt materializes one asset per resource
             progress = resource_progress(pipeline, source.name).get(result.asset_key.path[-1], {})
-            metadata = {**(result.metadata or {}), **load_metadata(pipeline, window)}
+            metadata = {
+                **(result.metadata or {}),
+                **load_metadata(pipeline, window),
+                "cursor_last_value": str(progress.get("cursor_last_value") or ""),
+            }
             if not window.bounded:
                 metadata |= progress_metadata(progress)
             yield MaterializeResult(asset_key=result.asset_key, metadata=metadata)

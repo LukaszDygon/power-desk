@@ -18,7 +18,8 @@ sources:
           resource: entsoe_eic__codes
           write_disposition: merge
           merge_strategy: scd2
-          primary_key: []
+          primary_key:
+          - eic_code
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -32,6 +33,11 @@ sources:
           url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/Mandatory_attributes_of_the_EIC_codes.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
+    - dlt_unique:
+        name: entsoe_eic__codes_unique_natural_key
+        arguments:
+          columns:
+          - eic_code
     - dlt_unique:
         name: entsoe_eic__codes_unique_row_version
         arguments:
@@ -57,6 +63,8 @@ sources:
           references:
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: eic_display_name
       description: '{{ doc(''col_display_name'') }}'
       config:
@@ -170,7 +178,10 @@ sources:
           resource: entsoe_eic__functions
           write_disposition: merge
           merge_strategy: scd2
-          primary_key: []
+          primary_key:
+          - eic_function
+          - eic_type
+          - valid_in_market
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -182,6 +193,13 @@ sources:
           url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
+    - dlt_unique:
+        name: entsoe_eic__functions_unique_natural_key
+        arguments:
+          columns:
+          - eic_function
+          - eic_type
+          - valid_in_market
     - dlt_unique:
         name: entsoe_eic__functions_unique_row_version
         arguments:
@@ -207,6 +225,8 @@ sources:
           references:
           - title: EIC functions and definitions
             url: https://www.entsoe.eu/data/eic-functions/
+      data_tests:
+      - not_null
     - name: eic_type
       description: '{{ doc(''col_eic_type'') }}'
       config:
@@ -215,6 +235,8 @@ sources:
           references:
           - title: EIC Reference Manual 5.5
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      data_tests:
+      - not_null
     - name: definition
       description: '{{ doc(''col_role_definition'') }}'
       config:
@@ -231,6 +253,8 @@ sources:
           references:
           - title: EIC functions and definitions
             url: https://www.entsoe.eu/data/eic-functions/
+      data_tests:
+      - not_null
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -256,7 +280,8 @@ sources:
           resource: entsoe_eic__issuing_offices
           write_disposition: merge
           merge_strategy: scd2
-          primary_key: []
+          primary_key:
+          - lio_code
           cursor_column: null
         dlt_recent_column: _dlt_load_id
         references:
@@ -268,6 +293,11 @@ sources:
           url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
     data_tests:
+    - dlt_unique:
+        name: entsoe_eic__issuing_offices_unique_natural_key
+        arguments:
+          columns:
+          - lio_code
     - dlt_unique:
         name: entsoe_eic__issuing_offices_unique_row_version
         arguments:
@@ -295,6 +325,8 @@ sources:
             url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
           - title: EIC Local Issuing Offices
             url: https://www.entsoe.eu/data/energy-identification-codes-eic/
+      data_tests:
+      - not_null
     - name: name
       description: '{{ doc(''col_issuing_office_name'') }}'
       config:

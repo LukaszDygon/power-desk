@@ -112,12 +112,18 @@ class Snapshot:
     resource: str
     url: str
     parse: Callable[[str], list[dict[str, Any]]]
+    natural_key: tuple[str, ...]  # published column names
 
 
 SNAPSHOTS = (
-    Snapshot("entsoe_eic__codes", CODES_URL, lambda text: parse_csv(text, ";")),
-    Snapshot("entsoe_eic__functions", FUNCTIONS_URL, lambda text: parse_csv(text, ",")),
-    Snapshot("entsoe_eic__issuing_offices", ISSUING_OFFICES_URL, parse_issuing_offices),
+    Snapshot("entsoe_eic__codes", CODES_URL, lambda text: parse_csv(text, ";"), ("EicCode",)),
+    Snapshot(
+        "entsoe_eic__functions",
+        FUNCTIONS_URL,
+        lambda text: parse_csv(text, ","),
+        ("EIC Function", "EIC Type", "Valid in Market"),
+    ),
+    Snapshot("entsoe_eic__issuing_offices", ISSUING_OFFICES_URL, parse_issuing_offices, ("lio_code",)),
 )
 
 
@@ -145,7 +151,14 @@ def changed_rows(snapshot: Snapshot) -> Iterator[list[dict[str, Any]]]:
 def entsoe_eic_source(window: RunWindow | None = None) -> list[DltResource]:
     """Snapshots ignore the run window of the shared source interface."""
     return [
-        dlt.resource(changed_rows(snapshot), name=snapshot.resource, write_disposition=SCD2) for snapshot in SNAPSHOTS
+        dlt.resource(
+            changed_rows(snapshot),
+            name=snapshot.resource,
+            write_disposition=SCD2,
+            primary_key=list(snapshot.natural_key),
+            file_format="parquet",
+        )
+        for snapshot in SNAPSHOTS
     ]
 
 
