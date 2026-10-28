@@ -1,0 +1,566 @@
+{
+ "replay_order": {
+  "append": {
+   "after_v2": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "after_identical_redelivery": {
+    "exists": true,
+    "rows": 4000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "after_older_version": {
+    "exists": true,
+    "rows": 6000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 0,
+    "loads": 3
+   }
+  },
+  "upsert": {
+   "after_v2": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "after_identical_redelivery": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "after_older_version": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 0,
+    "loads": 3
+   }
+  },
+  "scd2": {
+   "after_v2": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "after_identical_redelivery": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "after_older_version": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 0,
+    "loads": 3
+   }
+  },
+  "insert_only": {
+   "after_v2": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "after_identical_redelivery": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "after_older_version": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 3
+   }
+  },
+  "delete_insert_version": {
+   "after_v2": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "after_identical_redelivery": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "after_older_version": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 3
+   }
+  },
+  "seconds": 4.3
+ },
+ "extract_failure": {
+  "error": "PipelineStepFailed",
+  "after_failure": {
+   "destination": {
+    "exists": false
+   },
+   "local_source_files": {},
+   "pending_packages": false,
+   "extracted_packages": []
+  },
+  "after_rerun": {
+   "destination": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 0,
+    "loads": 1
+   },
+   "local_source_files": {
+    "2024_03": "t1"
+   }
+  },
+  "seconds": 0.3
+ },
+ "crash_before_load": {
+  "child_exit": 1,
+  "pending_after_crash": true,
+  "destination_after_crash": {
+   "exists": true,
+   "rows": 2000,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 0,
+   "loads": 1
+  },
+  "after_next_run": {
+   "exists": true,
+   "rows": 2000,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 0,
+   "loads": 2
+  },
+  "local_source_files_after_next_run": {
+   "2024_02": "t1",
+   "2024_03": "t1"
+  },
+  "after_run_after_that": {
+   "exists": true,
+   "rows": 2020,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 20,
+   "loads": 3
+  },
+  "seconds": 1.4
+ },
+ "load_failure_lock": {
+  "error": "PipelineStepFailed <- IOException",
+  "pending_after_failure": true,
+  "destination_while_pending": {
+   "exists": true,
+   "rows": 2000,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 0,
+   "loads": 1
+  },
+  "after_retry": {
+   "exists": true,
+   "rows": 2000,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 0,
+   "loads": 2
+  },
+  "pending_after_retry": false,
+  "seconds": 8.7
+ },
+ "kill_during_load": {
+  "kill_append_0_3": {
+   "pending_after_kill": true,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 182000,
+    "current_keys": 182000,
+    "keys_showing_a_revision": 88000,
+    "loads": 0
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 224000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "kill_scd2_0_3": {
+   "pending_after_kill": true,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 0,
+    "current_keys": 0,
+    "keys_showing_a_revision": 0,
+    "loads": 0
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "kill_append_0_8": {
+   "pending_after_kill": false,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "kill_scd2_0_8": {
+   "pending_after_kill": false,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "kill_append_1_5": {
+   "pending_after_kill": false,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "kill_scd2_1_5": {
+   "pending_after_kill": false,
+   "destination_after_kill": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   },
+   "after_rerun": {
+    "exists": true,
+    "rows": 200000,
+    "current_keys": 200000,
+    "keys_showing_a_revision": 100000,
+    "loads": 1
+   }
+  },
+  "seconds": 39.9
+ },
+ "local_state_lost": {
+  "after_rerun_same_export": {
+   "exists": true,
+   "rows": 2000,
+   "current_keys": 2000,
+   "keys_showing_a_revision": 0,
+   "loads": 1
+  },
+  "local_source_files": {
+   "2024_03": "t1"
+  },
+  "seconds": 0.4
+ },
+ "destination_lost": {
+  "scd2": {
+   "before_loss": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "rerun_after_loss": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "packages_before_loss": 2,
+   "packages_left_after_rerun": 1,
+   "replayed_files": 2,
+   "after_replay": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "load_ids_in_table_after_replay": 2,
+   "after_replay_and_v3": {
+    "exists": true,
+    "rows": 2040,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 40,
+    "loads": 3
+   }
+  },
+  "insert_only": {
+   "before_loss": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "rerun_after_loss": {
+    "exists": true,
+    "rows": 2000,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 1
+   },
+   "packages_before_loss": 2,
+   "packages_left_after_rerun": 1,
+   "replayed_files": 2,
+   "after_replay": {
+    "exists": true,
+    "rows": 2020,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 20,
+    "loads": 2
+   },
+   "load_ids_in_table_after_replay": 2,
+   "after_replay_and_v3": {
+    "exists": true,
+    "rows": 2040,
+    "current_keys": 2000,
+    "keys_showing_a_revision": 40,
+    "loads": 3
+   }
+  },
+  "seconds": 2.9
+ },
+ "kill_repeat": {
+  "killr_append_0_1": {
+   "pending_after_kill": true,
+   "rows": 203000,
+   "duplicate_rows": 3000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_1": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_1": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": 0
+  },
+  "killr_insert_only_0_1": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_1": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_append_0_2": {
+   "pending_after_kill": true,
+   "rows": 203000,
+   "duplicate_rows": 3000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_2": {
+   "pending_after_kill": true,
+   "rows": 204000,
+   "duplicate_rows": 4000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_2": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": 2000
+  },
+  "killr_insert_only_0_2": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_2": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_append_0_3": {
+   "pending_after_kill": true,
+   "rows": 201000,
+   "duplicate_rows": 1000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_3": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_3": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": 2000
+  },
+  "killr_insert_only_0_3": {
+   "pending_after_kill": true,
+   "rows": 202000,
+   "duplicate_rows": 2000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_3": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_append_0_4": {
+   "pending_after_kill": false,
+   "rows": 201000,
+   "duplicate_rows": 1000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_4": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_4": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": 0
+  },
+  "killr_insert_only_0_4": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_4": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_append_0_5": {
+   "pending_after_kill": false,
+   "rows": 201000,
+   "duplicate_rows": 1000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_5": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_5": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": 0
+  },
+  "killr_insert_only_0_5": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_5": {
+   "pending_after_kill": false,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_append_0_6": {
+   "pending_after_kill": false,
+   "rows": 201000,
+   "duplicate_rows": 1000,
+   "keys_with_two_open_versions": null
+  },
+  "killr_upsert_0_6": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_scd2_0_6": {
+   "pending_after_kill": true,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": 0
+  },
+  "killr_insert_only_0_6": {
+   "pending_after_kill": false,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "killr_delete_insert_version_0_6": {
+   "pending_after_kill": false,
+   "rows": 200000,
+   "duplicate_rows": 0,
+   "keys_with_two_open_versions": null
+  },
+  "seconds": 188.7
+ }
+}

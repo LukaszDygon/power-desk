@@ -55,3 +55,6 @@ transform/dbt_packages/
 !.dagster/*/dagster.yaml
 
 .env
+# Ingestion experiments (bench/ingestion): downloaded data and run directories
+bench/ingestion/data/
+bench/ingestion/runs/

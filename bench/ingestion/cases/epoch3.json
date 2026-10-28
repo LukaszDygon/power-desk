@@ -1,0 +1,21 @@
+[
+ {"name": "e3_arrow_duckdb_iov", "reader": "arrow", "disposition": "insert_only_version"},
+ {"name": "e3_arrow_duckdb_upsert", "reader": "arrow", "disposition": "upsert"},
+ {"name": "e3_arrow_duckdb_append", "reader": "arrow", "disposition": "append"},
+ {"name": "e3_arrow_lake_iov", "reader": "arrow", "destination": "ducklake", "disposition": "insert_only_version"},
+ {"name": "e3_arrow_delta_iov", "reader": "arrow", "destination": "delta", "disposition": "insert_only_version"},
+ {"name": "e3_arrow_iceberg_append", "reader": "arrow", "destination": "iceberg", "disposition": "append"},
+ {"name": "e3_dlthash_duckdb_scd2", "reader": "arrow_dlthash", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e3_dlthash_lake_scd2", "reader": "arrow_dlthash", "destination": "ducklake", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e3_json_duckdb_scd2", "reader": "json", "disposition": "scd2"},
+ {"name": "e3_json_duckdb_scd2_nw2", "reader": "json", "disposition": "scd2", "normalize_workers": 2, "file_max_items": 100000},
+ {"name": "e3_json_duckdb_scd2_nw4", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000},
+ {"name": "e3_json_duckdb_scd2_nw6", "reader": "json", "disposition": "scd2", "normalize_workers": 6, "file_max_items": 50000},
+ {"name": "e3_json_lake_scd2_nw4", "reader": "json", "destination": "ducklake", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000},
+ {"name": "e3_arrow_duckdb_iov_mem512", "reader": "arrow", "disposition": "insert_only_version", "duckdb_memory_limit": "512MB"},
+ {"name": "e3_json_duckdb_scd2_nw4_mem512", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000, "duckdb_memory_limit": "512MB"},
+ {"name": "e3_dlthash_duckdb_scd2_mem512", "reader": "arrow_dlthash", "disposition": "scd2", "duckdb_memory_limit": "512MB", "extra_deps": ["pandas"]},
+ {"name": "e3_dlthash_duckdb_scd2_f25", "reader": "arrow_dlthash", "disposition": "scd2", "fraction": 0.25, "extra_deps": ["pandas"]},
+ {"name": "e3_dlthash_duckdb_scd2_f50", "reader": "arrow_dlthash", "disposition": "scd2", "fraction": 0.5, "extra_deps": ["pandas"]},
+ {"name": "e3_json_duckdb_scd2_nw4_f50", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000, "fraction": 0.5}
+]

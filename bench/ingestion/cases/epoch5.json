@@ -1,0 +1,421 @@
+[
+ {
+  "name": "e5_j_duckdb_base_a",
+  "reader": "json",
+  "disposition": "scd2"
+ },
+ {
+  "name": "e5_j_duckdb_base_b",
+  "reader": "json",
+  "disposition": "scd2"
+ },
+ {
+  "name": "e5_j_duckdb_fmt_jsonl",
+  "reader": "json",
+  "disposition": "scd2",
+  "file_format": "jsonl"
+ },
+ {
+  "name": "e5_j_duckdb_fmt_insert_values",
+  "reader": "json",
+  "disposition": "scd2",
+  "file_format": "insert_values"
+ },
+ {
+  "name": "e5_j_duckdb_nocompress",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__DISABLE_COMPRESSION": "true"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_buf1k",
+  "reader": "json",
+  "disposition": "scd2",
+  "buffer_max_items": 1000
+ },
+ {
+  "name": "e5_j_duckdb_buf20k",
+  "reader": "json",
+  "disposition": "scd2",
+  "buffer_max_items": 20000
+ },
+ {
+  "name": "e5_j_duckdb_buf100k",
+  "reader": "json",
+  "disposition": "scd2",
+  "buffer_max_items": 100000
+ },
+ {
+  "name": "e5_j_duckdb_filebytes32m",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__FILE_MAX_BYTES": 33554432
+  }
+ },
+ {
+  "name": "e5_j_duckdb_pq_zstd",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "zstd"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_pq_none",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "none"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_pq_lz4",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "lz4"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_pq_v26",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "DATA_WRITER__VERSION": "2.6"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_typed",
+  "reader": "json",
+  "disposition": "scd2",
+  "columns": "typed"
+ },
+ {
+  "name": "e5_j_duckdb_typed_frozen",
+  "reader": "json",
+  "disposition": "scd2",
+  "columns": "typed",
+  "schema_contract": {
+   "tables": "evolve",
+   "columns": "freeze",
+   "data_type": "freeze"
+  }
+ },
+ {
+  "name": "e5_j_duckdb_nesting0",
+  "reader": "json",
+  "disposition": "scd2",
+  "max_table_nesting": 0
+ },
+ {
+  "name": "e5_j_duckdb_nodetect",
+  "reader": "json",
+  "disposition": "scd2",
+  "detections": "none"
+ },
+ {
+  "name": "e5_j_duckdb_loadw1",
+  "reader": "json",
+  "disposition": "scd2",
+  "load_workers": 1
+ },
+ {
+  "name": "e5_j_duckdb_loadw4",
+  "reader": "json",
+  "disposition": "scd2",
+  "load_workers": 4
+ },
+ {
+  "name": "e5_j_duckdb_extractw1",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "EXTRACT__WORKERS": 1
+  }
+ },
+ {
+  "name": "e5_j_duckdb_truncstage",
+  "reader": "json",
+  "disposition": "scd2",
+  "env": {
+   "LOAD__TRUNCATE_STAGING_DATASET": "true"
+  }
+ },
+ {
+  "name": "e5_h_duckdb_base_a",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ]
+ },
+ {
+  "name": "e5_h_duckdb_base_b",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ]
+ },
+ {
+  "name": "e5_h_duckdb_fmt_jsonl",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "file_format": "jsonl"
+ },
+ {
+  "name": "e5_h_duckdb_fmt_insert_values",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "file_format": "insert_values"
+ },
+ {
+  "name": "e5_h_duckdb_nocompress",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "env": {
+   "DATA_WRITER__DISABLE_COMPRESSION": "true"
+  }
+ },
+ {
+  "name": "e5_h_duckdb_buf1k",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "buffer_max_items": 1000
+ },
+ {
+  "name": "e5_h_duckdb_buf100k",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "buffer_max_items": 100000
+ },
+ {
+  "name": "e5_h_duckdb_filebytes32m",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "env": {
+   "DATA_WRITER__FILE_MAX_BYTES": 33554432
+  }
+ },
+ {
+  "name": "e5_h_duckdb_pq_zstd",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "env": {
+   "DATA_WRITER__COMPRESSION": "zstd"
+  }
+ },
+ {
+  "name": "e5_h_duckdb_pq_none",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "env": {
+   "DATA_WRITER__COMPRESSION": "none"
+  }
+ },
+ {
+  "name": "e5_h_duckdb_typed",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "columns": "typed"
+ },
+ {
+  "name": "e5_h_duckdb_typed_frozen",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "columns": "typed",
+  "schema_contract": {
+   "tables": "evolve",
+   "columns": "freeze",
+   "data_type": "freeze"
+  }
+ },
+ {
+  "name": "e5_h_duckdb_loadw1",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "load_workers": 1
+ },
+ {
+  "name": "e5_h_duckdb_truncstage",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "env": {
+   "LOAD__TRUNCATE_STAGING_DATASET": "true"
+  }
+ },
+ {
+  "name": "e5_v_duckdb_base_a",
+  "reader": "arrow",
+  "disposition": "insert_only_version"
+ },
+ {
+  "name": "e5_v_duckdb_base_b",
+  "reader": "arrow",
+  "disposition": "insert_only_version"
+ },
+ {
+  "name": "e5_v_duckdb_fmt_jsonl",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "file_format": "jsonl"
+ },
+ {
+  "name": "e5_v_duckdb_fmt_insert_values",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "file_format": "insert_values"
+ },
+ {
+  "name": "e5_v_duckdb_nocompress",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "env": {
+   "DATA_WRITER__DISABLE_COMPRESSION": "true"
+  }
+ },
+ {
+  "name": "e5_v_duckdb_buf1k",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "buffer_max_items": 1000
+ },
+ {
+  "name": "e5_v_duckdb_buf100k",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "buffer_max_items": 100000
+ },
+ {
+  "name": "e5_v_duckdb_pq_zstd",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "zstd"
+  }
+ },
+ {
+  "name": "e5_v_duckdb_pq_none",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "none"
+  }
+ },
+ {
+  "name": "e5_v_duckdb_typed",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "columns": "typed"
+ },
+ {
+  "name": "e5_v_duckdb_loadw1",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "load_workers": 1
+ },
+ {
+  "name": "e5_h_ducklake_base_a",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "destination": "ducklake"
+ },
+ {
+  "name": "e5_h_ducklake_pq_zstd",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "destination": "ducklake",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "zstd"
+  }
+ },
+ {
+  "name": "e5_h_ducklake_pq_none",
+  "reader": "arrow_dlthash",
+  "disposition": "scd2",
+  "extra_deps": [
+   "pandas"
+  ],
+  "destination": "ducklake",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "none"
+  }
+ },
+ {
+  "name": "e5_v_ducklake_base_a",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "destination": "ducklake"
+ },
+ {
+  "name": "e5_v_ducklake_pq_zstd",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "destination": "ducklake",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "zstd"
+  }
+ },
+ {
+  "name": "e5_v_ducklake_pq_none",
+  "reader": "arrow",
+  "disposition": "insert_only_version",
+  "destination": "ducklake",
+  "env": {
+   "DATA_WRITER__COMPRESSION": "none"
+  }
+ },
+ {
+  "name": "e5_arrow_duckdb_scd2_add_dlt_id",
+  "reader": "arrow",
+  "disposition": "scd2",
+  "env": {
+   "NORMALIZE__PARQUET_NORMALIZER__ADD_DLT_ID": "true"
+  }
+ }
+]

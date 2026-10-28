@@ -1,0 +1,29 @@
+[
+ {
+  "name": "e6_v_duckdb_delete_insert_version",
+  "reader": "arrow",
+  "disposition": "delete_insert_version"
+ },
+ {
+  "name": "e6_v_ducklake_delete_insert_version",
+  "reader": "arrow",
+  "destination": "ducklake",
+  "disposition": "delete_insert_version"
+ },
+ {
+  "name": "e6_v_delta_delete_insert_version",
+  "reader": "arrow",
+  "destination": "delta",
+  "disposition": "delete_insert_version"
+ },
+ {
+  "name": "e6_j_duckdb_delete_insert_version",
+  "reader": "json",
+  "disposition": "delete_insert_version"
+ },
+ {
+  "name": "e6_v_duckdb_insert_only_rerun",
+  "reader": "arrow",
+  "disposition": "insert_only_version"
+ }
+]

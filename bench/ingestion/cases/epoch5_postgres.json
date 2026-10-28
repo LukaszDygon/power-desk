@@ -1,0 +1,53 @@
+[
+ {
+  "name": "e5_j_postgres_scd2",
+  "reader": "json",
+  "destination": "postgres",
+  "disposition": "scd2",
+  "file_format": "default",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "name": "e5_j_postgres_scd2_csv",
+  "reader": "json",
+  "destination": "postgres",
+  "disposition": "scd2",
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "name": "e5_h_postgres_scd2_csv",
+  "reader": "arrow_dlthash",
+  "destination": "postgres",
+  "disposition": "scd2",
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary",
+   "pandas"
+  ]
+ },
+ {
+  "name": "e5_v_postgres_iov_csv",
+  "reader": "arrow",
+  "destination": "postgres",
+  "disposition": "insert_only_version",
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "name": "e5_a_postgres_append_csv",
+  "reader": "arrow",
+  "destination": "postgres",
+  "disposition": "append",
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ }
+]

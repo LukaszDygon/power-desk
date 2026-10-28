@@ -1,0 +1,333 @@
+[
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_1",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_arrow_append_10",
+  "runs": 100,
+  "destination": "duckdb",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_upsert_10",
+  "runs": 100,
+  "destination": "duckdb",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_batched",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_arrow_upsert_10",
+  "runs": 100,
+  "destination": "duckdb",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_1",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_10",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_arrow_append_10",
+  "runs": 100,
+  "destination": "ducklake",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_upsert_10",
+  "runs": 100,
+  "destination": "ducklake",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_10_batched",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_arrow_upsert_10",
+  "runs": 100,
+  "destination": "ducklake",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_json_append_1",
+  "runs": 100,
+  "destination": "delta",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_json_append_10",
+  "runs": 100,
+  "destination": "delta",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_arrow_append_10",
+  "runs": 100,
+  "destination": "delta",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_json_upsert_10",
+  "runs": 100,
+  "destination": "delta",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_json_append_10_batched",
+  "runs": 100,
+  "destination": "delta",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_arrow_upsert_10",
+  "runs": 100,
+  "destination": "delta",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_sqlite_json_append_1",
+  "runs": 100,
+  "destination": "sqlite",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_sqlite_json_append_10",
+  "runs": 100,
+  "destination": "sqlite",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_sqlite_arrow_append_10",
+  "runs": 100,
+  "destination": "sqlite",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_sqlite_json_upsert_10",
+  "runs": 100,
+  "destination": "sqlite",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_sqlite_json_append_10_batched",
+  "runs": 100,
+  "destination": "sqlite",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_json_append_1",
+  "runs": 100,
+  "destination": "postgres",
+  "rows": 1,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_json_append_10",
+  "runs": 100,
+  "destination": "postgres",
+  "rows": 10,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_arrow_append_10",
+  "runs": 100,
+  "destination": "postgres",
+  "reader": "arrow",
+  "rows": 10,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_json_upsert_10",
+  "runs": 100,
+  "destination": "postgres",
+  "disposition": "upsert",
+  "rows": 10,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_json_append_10_batched",
+  "runs": 100,
+  "destination": "postgres",
+  "rows": 10,
+  "batched": true,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_arrow_upsert_10",
+  "runs": 100,
+  "destination": "postgres",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10,
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_100",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 100
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_100",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 100
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_10_compact",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 10,
+  "compact": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_100_compact",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 100,
+  "compact": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_delta_json_append_10_compact",
+  "runs": 100,
+  "destination": "delta",
+  "rows": 10,
+  "compact": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_insert_values",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "file_format": "insert_values"
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_nocompress",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "env": {
+   "DATA_WRITER__DISABLE_COMPRESSION": "true"
+  }
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_loadw1",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "env": {
+   "LOAD__WORKERS": 1
+  }
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_delete_jobs",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "env": {
+   "LOAD__DELETE_COMPLETED_JOBS": "true"
+  }
+ },
+ {
+  "script": "micro.py",
+  "name": "m_postgres_json_append_10_csv",
+  "runs": 100,
+  "destination": "postgres",
+  "rows": 10,
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ }
+]

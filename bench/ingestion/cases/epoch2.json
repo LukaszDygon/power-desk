@@ -1,0 +1,20 @@
+[
+ {"name": "arrow_iov_6loads", "reader": "arrow", "disposition": "insert_only_version", "loads": ["month", "month_revised", "month", "month_revised", "month", "month_revised"]},
+ {"name": "json_scd2_6loads", "reader": "json", "disposition": "scd2", "loads": ["month", "month_revised", "month", "month_revised", "month", "month_revised"]},
+ {"name": "arrow_append_x1", "reader": "arrow", "disposition": "append", "loads": ["month"]},
+ {"name": "arrow_append_x2", "reader": "arrow", "disposition": "append", "loads": ["month"], "repeat": 2},
+ {"name": "arrow_append_x4", "reader": "arrow", "disposition": "append", "loads": ["month"], "repeat": 4},
+ {"name": "json_append_x2", "reader": "json", "disposition": "append", "loads": ["month"], "repeat": 2},
+ {"name": "arrow_iov_mem256", "reader": "arrow", "disposition": "insert_only_version", "duckdb_memory_limit": "256MB"},
+ {"name": "json_scd2_mem256", "reader": "json", "disposition": "scd2", "duckdb_memory_limit": "256MB"},
+ {"name": "arrow_append_x4_mem256", "reader": "arrow", "disposition": "append", "loads": ["month"], "repeat": 4, "duckdb_memory_limit": "256MB"},
+ {"name": "json_scd2_nw2", "reader": "json", "disposition": "scd2", "normalize_workers": 2, "file_max_items": 100000},
+ {"name": "json_scd2_nw4", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000},
+ {"name": "json_scd2_buf100k", "reader": "json", "disposition": "scd2", "buffer_max_items": 100000},
+ {"name": "json_scd2_batch5k", "reader": "json", "disposition": "scd2", "batch_rows": 5000},
+ {"name": "json_scd2_batch200k", "reader": "json", "disposition": "scd2", "batch_rows": 200000},
+ {"name": "json_scd2_sqlcs", "reader": "json", "disposition": "scd2", "naming": "sql_cs_v1"},
+ {"name": "arrow_iov_batch200k", "reader": "arrow", "disposition": "insert_only_version", "batch_rows": 200000},
+ {"name": "arrow_iov_batch5k", "reader": "arrow", "disposition": "insert_only_version", "batch_rows": 5000},
+ {"name": "lake_arrow_iov_6loads", "reader": "arrow", "destination": "ducklake", "disposition": "insert_only_version", "loads": ["month", "month_revised", "month", "month_revised", "month", "month_revised"]}
+]

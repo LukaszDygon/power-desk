@@ -21,7 +21,8 @@ uv run python -m power_desk.catalog.describe <relation>     # columns, units and
 
 - Prefer `marts`: business marts (incremental, tested), or the `marts/combined` views for any area
   and source (one area level at a time); then `ods` entities.
-- Avoid `staging` and `raw`: they are source-specific and may change.
+- Avoid `staging` and `raw`: they are source-specific and may change. Data not yet in a mart or entity is
+  onboarded first (the `onboard-source` skill).
 - Join `dims` tables for labels and roll-ups (e.g. `bridge_*_hierarchy` to aggregate to a broader level).
 - Columns starting with `_` are lineage metadata. Don't chart them.
 
@@ -44,7 +45,7 @@ uv run python -m power_desk.catalog.describe <relation>     # columns, units and
 
 Colours (`color`, `color_positive`, `color_negative`) name the energy palette (`WIND`, `SOLAR`, `NUCLEAR`,
 `CCGT`, `BIOMASS`, `HYDRO`, `STORAGE`, `COAL`, `IMPORTS`, `DEMAND_ACTUAL`, `DEMAND_FORECAST`, `DELTA_POSITIVE`,
-`DELTA_NEGATIVE`; defined in `dashboard.css` `:root`) or give any CSS colour.
+`DELTA_NEGATIVE`; keys in `static/js/chart-theme.js`, values in `dashboard.css` `:root`) or give any CSS colour.
 
 `grid` sets the card's position and size on a 12-column grid: `{x, y, w, h}`.
 

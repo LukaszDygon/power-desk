@@ -1,0 +1,117 @@
+[
+ {
+  "name": "e5_j_postgres_scd2_workmem256",
+  "reader": "json",
+  "destination": "postgres",
+  "disposition": "scd2",
+  "file_format": "default",
+  "extra_deps": [
+   "psycopg2-binary"
+  ]
+ },
+ {
+  "name": "e5_h_postgres_scd2_csv_workmem256",
+  "reader": "arrow_dlthash",
+  "destination": "postgres",
+  "disposition": "scd2",
+  "file_format": "csv",
+  "extra_deps": [
+   "psycopg2-binary",
+   "pandas"
+  ]
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_1_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_arrow_append_10_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_upsert_10_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_json_append_10_batched_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_duckdb_arrow_upsert_10_rerun",
+  "runs": 100,
+  "destination": "duckdb",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_1_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 1
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_10_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_arrow_append_10_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "reader": "arrow",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_upsert_10_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "disposition": "upsert",
+  "rows": 10
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_json_append_10_batched_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "rows": 10,
+  "batched": true
+ },
+ {
+  "script": "micro.py",
+  "name": "m_ducklake_arrow_upsert_10_rerun",
+  "runs": 100,
+  "destination": "ducklake",
+  "reader": "arrow",
+  "disposition": "upsert",
+  "rows": 10
+ }
+]

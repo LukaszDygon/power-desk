@@ -4,7 +4,9 @@ An analyst dashboard for power and energy data, on a local dlt → DuckDB → db
 orchestrated by Dagster.
 
 - [Architecture](docs/architecture.md): layers, dimensions, load-id contract, data quality, catalogue
-- [Add a data source](.agents/skills/add-source/SKILL.md) · [Add a dashboard widget](.agents/skills/create-widget/SKILL.md)
+- [Ingestion study](docs/ingestion-study.md): how to store versioned publisher data with dlt, measured
+- [ADR 0001](docs/adr/0001-keep-dlt-defaults-for-ingestion.md): keep dlt's default row handling; the measured avenues for later
+- [Agent skills](#agent-skills): onboard a source or dataset, add a dashboard widget
 
 ## Layout
 
@@ -19,6 +21,7 @@ src/power_desk/cli/             command-line entry points
 transform/                      dbt project: staging, ods, dims, marts, dlt_meta; seeds (dims, mappings)
 data/seed/                      recorded publisher payloads for the seed week
 tests/unit, tests/integration   logic in isolation; pipelines, dbt, jobs and API on the seed
+.agents/skills/                 agent skills; .claude/skills links here
 ```
 
 ## Commands
@@ -39,6 +42,17 @@ uv run dbt docs serve --project-dir transform --profiles-dir transform --target-
 uv run pytest
 uv run pyright                                     # type check src and tests
 ```
+
+## Agent skills
+
+Step-by-step procedures for coding agents, one `SKILL.md` each in `.agents/skills/`. `.claude/skills` is a
+link to that folder, so Claude Code loads the same files (`/onboard-source`, `/create-widget`, or picked by
+description). Edit them in `.agents/skills/` only.
+
+- [`onboard-source`](.agents/skills/onboard-source/SKILL.md): a new publisher or dataset through every
+  stage, from the dlt source to marts, with a check per stage
+- [`create-widget`](.agents/skills/create-widget/SKILL.md): a dashboard card from a query over marts or
+  entities
 
 ## Settings
 

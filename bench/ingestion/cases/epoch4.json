@@ -1,0 +1,20 @@
+[
+ {"name": "e4_dlthash_duckdb_scd2_a", "reader": "arrow_dlthash", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e4_dlthash_lake_scd2_a", "reader": "arrow_dlthash", "destination": "ducklake", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e4_arrow_duckdb_iov_a", "reader": "arrow", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_lake_iov_a", "reader": "arrow", "destination": "ducklake", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_delta_iov_a", "reader": "arrow", "destination": "delta", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_iceberg_append_a", "reader": "arrow", "destination": "iceberg", "disposition": "append"},
+ {"name": "e4_json_duckdb_scd2_nw4_a", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000},
+ {"name": "e4_dlthash_duckdb_scd2_b", "reader": "arrow_dlthash", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e4_dlthash_lake_scd2_b", "reader": "arrow_dlthash", "destination": "ducklake", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e4_arrow_duckdb_iov_b", "reader": "arrow", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_lake_iov_b", "reader": "arrow", "destination": "ducklake", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_delta_iov_b", "reader": "arrow", "destination": "delta", "disposition": "insert_only_version"},
+ {"name": "e4_arrow_iceberg_append_b", "reader": "arrow", "destination": "iceberg", "disposition": "append"},
+ {"name": "e4_json_duckdb_scd2_nw4_b", "reader": "json", "disposition": "scd2", "normalize_workers": 4, "file_max_items": 100000},
+ {"name": "e4_dlthash_duckdb_scd2_b200k", "reader": "arrow_dlthash", "disposition": "scd2", "batch_rows": 200000, "extra_deps": ["pandas"]},
+ {"name": "e4_dlthash_duckdb_scd2_b10k", "reader": "arrow_dlthash", "disposition": "scd2", "batch_rows": 10000, "extra_deps": ["pandas"]},
+ {"name": "e4_dlthash_lake_scd2_sql", "reader": "arrow_dlthash", "transform": "sql", "destination": "ducklake", "disposition": "scd2", "extra_deps": ["pandas"]},
+ {"name": "e4_dlthash_duckdb_scd2_6loads", "reader": "arrow_dlthash", "disposition": "scd2", "loads": ["month", "month_revised", "month", "month_revised", "month", "month_revised"], "extra_deps": ["pandas"]}
+]

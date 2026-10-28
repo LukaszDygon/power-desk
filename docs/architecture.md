@@ -13,8 +13,8 @@ publisher ─dlt─> raw ─> staging/<source> ─> ods (entities) ─> marts
 
 | Layer | Content | Rules |
 |---|---|---|
-| `raw` | dlt tables, one per resource | As published, merged on the natural key (snapshots: scd2). Never edited. |
-| `staging/<source>` | views, one per raw table | Types, UTC time, source-specific dedup, shared column vocabulary. Bulk file partitions are incremental tables, replaced per file. |
+| `raw` | dlt tables, one per resource | As published, keyed by the natural key: upserted (streams) or versioned (scd2: snapshots, file partitions). Never edited. |
+| `staging/<source>` | views, one per raw table | Types, UTC time, names, source-specific dedup, shared column vocabulary. File partitions: incremental tables of the current versions, by natural key. |
 | `ods` | views, one per entity | Union of every source providing the entity, conformed to one grain and to dimension keys. |
 | `dims` | tables + seeds | Conformed dimensions, hierarchy bridges, and mappings from publisher codes. |
 | `marts` | incremental tables | Built on `ods` + `dims`; rebuild only grains touched by pending loads. |
@@ -68,14 +68,41 @@ dimensions; the dimension tables explain what each key means and how keys relate
 - **Snapshots** (reference files) re-read the whole file, skip it while unchanged (ETag / hash), and
   load with scd2, so changes and withdrawals keep their history.
 - **File partitions** (periodic files the publisher re-exports when revised) load the files new or
-  changed since their last load, at most `max_days` of periods per run, and replace each
-  file's rows (`merge_key`), so revisions and withdrawals follow the publication.
+  changed since their last load, at most `max_days` of periods per run, as scd2 merged on the natural
+  key (`merge_key` = `primary_key`): a revision closes the row's previous version, and the same row may
+  arrive in several files. A row missing from a re-export stays current. The cursor is the latest
+  publication time (`UpdateTime`), since revisions and re-forecasts are new data.
+
+### Write dispositions
+
+dlt names, types and keys every row; we add no columns and change no values before loading.
+Measurements and alternatives (Arrow, DuckLake, Delta, Iceberg): [ingestion study](ingestion-study.md);
+why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-defaults-for-ingestion.md).
+
+| Kind | Disposition | `_dlt_id` | Why |
+|---|---|---|---|
+| Streams (Elexon, PVLive) | `merge` + `upsert` on `primary_key` | hash of the primary key | one current row per key; a republication replaces it |
+| Snapshots (EIC) | `merge` + `scd2` (full extract, no `merge_key`) | hash of the row (version) | every version kept; withdrawn codes are closed |
+| File partitions (ENTSO-E) | `merge` + `scd2`, `merge_key` = `primary_key` | hash of the row (version) | every version kept; only keys in the load are closed |
+
+- **Rows, not Arrow:** dlt computes the scd2 row hash only for row items (dicts); for Arrow tables it
+  adds none and scd2 cannot run. ENTSO-E exports are streamed to disk, read by DuckDB (which infers
+  their types) and yielded in batches with dlt's `fetch_json`, so memory stays at batch size.
+- **Parquet load files** for every resource: dlt's DuckDB default (`insert_values`) is 30-50x slower
+  to load. Measured on one ENTSO-E month (848k rows): about 25 s, of which dlt's per-row normalize is
+  about 14 s; the merge itself adds 1-2 s.
+- **Names:** dlt's `snake_case` keeps a trailing `x` for brackets (`DateTime(UTC)` -> `date_time_utcx`);
+  staging renames.
 - **dlt schemas** are exported to `ingest/schemas/` and define the dbt sources.
 
 ## Orchestration
 
 - **`orchestration/jobs.py`** groups raw tables by publication cadence; every raw table is in exactly
-  one job. Each entry yields a job, a schedule, cursor-lag checks and a catch-up branch.
+  one job. Each entry yields a job, a schedule and a catch-up branch.
+- **Freshness** has two checks per raw table, both against its catalog `freshness` preset:
+  `recently_fetched` (the newest dlt load, `_dlt_load_id`) shows ingestion is delivering;
+  `recent_data` (the newest data by its own datetime, the dlt cursor) ignores re-delivered copies and
+  backfills of old data. Ingestion time comes only from dlt's metadata.
 - **Every ingest job builds all dbt models.** Staging reads raw tables through `dlt_source()`, which is
   empty until a table's first load, so entities build from the sources loaded so far; tests
   downstream of a never-loaded table are skipped.
