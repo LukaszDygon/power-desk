@@ -1,0 +1,27 @@
+{{- with .Values.landing.volume }}
+{{- if and .enabled (not .hostPath) }}
+{{- range $name, $svc := $.Values.services }}
+{{- if $svc.enabled }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+# one claim per service: each lands into its own folder, and ReadWriteOnce claims cannot be shared across nodes
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "pds.serviceName" $ctx }}-landing
+  labels:
+    {{- include "pds.serviceLabels" $ctx | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep  # landed data outlives the release
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with $.Values.landing.volume.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $.Values.landing.volume.size }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

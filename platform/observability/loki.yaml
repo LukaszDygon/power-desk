@@ -1,0 +1,42 @@
+# Loki on a local cluster: one binary, filesystem storage, a week of logs. Structured metadata carries the
+# log standard's identifiers (docs/logging.md) without making them labels.
+deploymentMode: SingleBinary
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index: {prefix: loki_index_, period: 24h}
+  limits_config:
+    allow_structured_metadata: true
+    retention_period: 168h
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+  pattern_ingester:
+    enabled: true
+
+singleBinary:
+  replicas: 1
+  persistence:
+    size: 5Gi
+  resources:
+    requests: {cpu: 100m, memory: 192Mi}
+    limits: {memory: 512Mi}
+
+# the scalable targets, caches, gateway and self-tests are for larger installs
+read: {replicas: 0}
+write: {replicas: 0}
+backend: {replicas: 0}
+chunksCache: {enabled: false}
+resultsCache: {enabled: false}
+gateway: {enabled: false}
+lokiCanary: {enabled: false}
+test: {enabled: false}

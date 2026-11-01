@@ -6,8 +6,8 @@
   file) counts as well.
 - `recent_data`: the newest data by its own datetime, the dlt cursor, is recent, so re-delivered copies
   and backfills of old data do not count. The cursor is the publication time for Elexon (actuals and
-  forecasts), the half hour for PVLive and the update time for ENTSO-E, whose revisions and re-forecasts
-  of earlier periods are new data.
+  forecasts), the half hour for PVLive, the update time for ENTSO-E, whose revisions and re-forecasts
+  of earlier periods are new data, and the upload time for NESO, whose resubmissions are.
 """
 
 from datetime import UTC, datetime, timedelta

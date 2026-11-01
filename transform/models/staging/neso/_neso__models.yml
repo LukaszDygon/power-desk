@@ -1,0 +1,126 @@
+# Per-interconnector guards for the neso source. Staging holds the latest upload of each (operational
+# period, auction) among the current versions (raw tables are scd2, merged on that key), incrementally.
+# No completeness test: NESO publishes values only where it applied a restriction.
+models:
+  - name: stg_neso__ifa_ntc
+    description: |
+      IFA: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__ifa_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__ifa_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__ifa_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns:
+      &ntc_columns
+      - name: timestamp_utc
+        description: "{{ doc('col_operational_period_start_date_and_time_gmt') }}"
+        data_tests: [not_null]
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: auction_type
+        description: "{{ doc('col_auction_type') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Day Ahead, Intraday 1, Intraday 2, Intraday 3, Intraday 4]
+      - name: to_gb_mw
+        description: "{{ doc('col_flow_in_mw_to_gb') }}"
+        data_tests: [not_null]
+      - name: to_gb_restriction_reason
+        description: "{{ doc('col_reason_for_restriction_to_gb') }}"
+      - name: from_gb_mw
+        description: "{{ doc('col_flow_in_mw_from_gb') }}"
+        data_tests: [not_null]
+      - name: from_gb_restriction_reason
+        description: "{{ doc('col_reason_for_restriction_from_gb') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_data_upload_time_gmt') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_neso__ifa2_ntc
+    description: |
+      IFA2: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__ifa2_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__ifa2_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__ifa2_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns: *ntc_columns
+
+  - name: stg_neso__eleclink_ntc
+    description: |
+      ElecLink: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__eleclink_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__eleclink_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__eleclink_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns: *ntc_columns
+
+  - name: stg_neso__nemolink_ntc
+    description: |
+      NemoLink: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__nemolink_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__nemolink_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__nemolink_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns: *ntc_columns
+
+  - name: stg_neso__nsl_ntc
+    description: |
+      North Sea Link: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__nsl_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__nsl_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__nsl_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns: *ntc_columns
+
+  - name: stg_neso__viking_ntc
+    description: |
+      Viking Link: NESO's restrictions typed, one row per auction and hourly operational period (latest upload).
+
+      {{ doc('dataset_neso__viking_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_neso__viking_ntc_unique_key
+          arguments:
+            columns: [timestamp_utc, auction_type]
+      - expression_is_true:
+          name: stg_neso__viking_ntc_flows_not_negative
+          arguments:
+            expression: "to_gb_mw >= 0 and from_gb_mw >= 0"
+    columns: *ntc_columns

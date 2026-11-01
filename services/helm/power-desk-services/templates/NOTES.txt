@@ -1,0 +1,11 @@
+Power Desk services in {{ .Release.Namespace }}: landing into {{ .Values.landing.url }}
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+- {{ $name }}: kubectl -n {{ $.Release.Namespace }} logs -f deploy/{{ include "pds.serviceName" (dict "root" $ "name" $name) }}
+{{- end }}
+{{- end }}
+{{- if not .Values.existingSecret }}
+
+No secret configured: set existingSecret to a Secret with the publishers' credentials,
+e.g. SOURCES__IRIS__CREDENTIALS__CLIENT_ID; services that need them exit until then.
+{{- end }}

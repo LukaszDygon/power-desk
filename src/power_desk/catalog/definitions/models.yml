@@ -28,18 +28,23 @@ columns:
     refs:
     - elexon:glossary/national-demand-forecast
     links: [entsoe_ddd]
-  forecast_horizon:
-    description: "Which forecast the value is: `day_ahead` (made the day before delivery: ENTSO-E
-      fixed at 18:00 Brussels time for wind and solar, latest day-ahead update for load; Elexon NDF),
-      `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision:
-      ENTSO-E current forecast, Elexon WINDFOR)."
-    links: [entsoe_ddd]
   time_horizon:
-    description: "Time horizon (ENTSO-E contract type) of the price: `day_ahead` or `intraday`. Null for
-      Elexon MID, which reflects the GB short-term markets for delivery in the settlement period."
+    description: "Time horizon of the value (`dim_time_horizon`), one vocabulary for forecasts, prices and
+      capacities. Forecasts: `day_ahead` (made the day before delivery: ENTSO-E fixed at 18:00 Brussels time
+      for wind and solar, latest day-ahead update for load; Elexon NDF), `intraday` (ENTSO-E, fixed at 08:00
+      on the day) or `current` (the latest published revision: ENTSO-E current forecast, Elexon WINDFOR).
+      Prices: the ENTSO-E contract type, `day_ahead` or `intraday`; null for Elexon MID, which reflects the
+      GB short-term markets for delivery in the settlement period. Capacities: `day_ahead`, `week_ahead`,
+      `month_ahead`, `year_ahead` (ENTSO-E contract type) or the NESO auction, `day_ahead` or `intraday`
+      (the auction round is the `source_code`)."
     refs:
     - elexon:glossary/market-index-data
-    links: [{link: entsoe_brs, section: 7.22.1 Data description, page: 128}]
+    links:
+    - entsoe_ddd
+    - {link: entsoe_codelist, section: 2.26 ProcessType enumeration, page: 45}
+    - {link: entsoe_brs, section: 7.22.1 Data description, page: 128}
+    - entsoe_extract_forecasted_transfer_capacities
+    - neso_nsl
   classification_sequence:
     description: ENTSO-E classification sequence (round), distinguishing allocations with identical delivery
       periods; null where it does not apply, and for Elexon MID.
@@ -167,3 +172,28 @@ columns:
     description: Highest settlement-period national demand within the hour, in MW.
   min_demand_mw:
     description: Lowest settlement-period national demand within the hour, in MW.
+  out_area_eic_code:
+    description: EIC of the area flows come out from (the out area of an oriented couple of areas).
+    links: [{link: entsoe_brs, section: 7.4.1 Data description, page: 66}]
+  in_area_eic_code:
+    description: EIC of the area flows come into (the in area of an oriented couple of areas).
+    links: [{link: entsoe_brs, section: 7.4.1 Data description, page: 66}]
+  transfer_capacity_mw:
+    description: >-
+      Capacity for flows from the out area to the in area over the interval, in MW. ENTSO-E, the forecasted
+      transfer capacity (the minimum submitted for the couple of areas; may be negative where the market
+      algorithm restricts the exchange to one direction); NESO, the maximum flow NESO submits to the
+      interconnector's capacity calculation, which the final capacity may undercut. Compare within one source.
+    links:
+    - {link: entsoe_brs, section: 7.4.6 Processing, page: 67}
+    - {link: entsoe_ddd, section: Estimated and offered cross-zonal capacity, page: 38}
+    - neso_nsl
+  restriction_reason:
+    description: NESO's reason for the restriction in this direction (e.g. `Network Constraints`, `No Restriction`); null for ENTSO-E.
+    links: [neso_nsl]
+  coverage:
+    description: Fraction of the hour (0.0-1.0) holding data from the series' source. Means are over those
+      minutes; multiply by `coverage` for the mean over the whole hour with missing minutes as zero.
+  _series_key:
+    description: Hash of the columns identifying the series (all but time, measures and provenance); with
+      `timestamp_utc`, the row's key.

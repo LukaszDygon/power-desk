@@ -1,0 +1,7 @@
+time_horizon,name,entsoe_process_type,description
+day_ahead,Day ahead,A01,The information provided concerns a day ahead process.
+intraday,Intraday,A40,The process being described is for intraday process.
+week_ahead,Week ahead,A31,The process being described is for the week ahead.
+month_ahead,Month ahead,A32,The process being described is for the month ahead.
+year_ahead,Year ahead,A33,The process being described is for the year ahead.
+current,Current,,"The latest update of a forecast, submitted at no fixed time (ENTSO-E current forecast for wind and solar; Elexon WINDFOR's latest publication)."

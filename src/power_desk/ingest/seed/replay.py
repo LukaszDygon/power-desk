@@ -1,4 +1,4 @@
-"""Publishers replaced by the seed: Elexon / PVLive APIs, EIC files and the ENTSO-E File Library."""
+"""Publishers replaced by the seed: Elexon / PVLive / NESO APIs, EIC files and the ENTSO-E File Library."""
 
 from __future__ import annotations
 
@@ -8,12 +8,13 @@ from dataclasses import dataclass, field
 import gzip
 import hashlib
 from pathlib import Path
+import re
 from typing import Any
 from unittest.mock import patch
 
 from power_desk.ingest import http
 from power_desk.ingest.seed import synthetic
-from power_desk.ingest.sources import bmrs, entsoe_eic
+from power_desk.ingest.sources import bmrs, entsoe_eic, neso
 from power_desk.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient, export_file
 from power_desk.settings import DATA_DIR
 
@@ -25,13 +26,17 @@ EIC_FILES = {
     entsoe_eic.FUNCTIONS_URL: "eicFunctions.csv",
     entsoe_eic.ISSUING_OFFICES_URL: "eic-issuing-offices.html",
 }
+# the parts of a NESO upload query (`neso.upload_query`) the replay answers
+NESO_QUERY = re.compile(
+    r"from \"(?P<resource_id>[^\"]+)\" .* >= '(?P<first>[^']+)' .* < '(?P<end>[^']+)' .* offset (?P<offset>\d+)"
+)
 
 
 @dataclass
 class SeedPublishers:
     """Payloads served per publisher; tests may change them between runs."""
 
-    records: dict[str, list[dict[str, Any]]]  # Elexon dataset code / "PVLIVE" -> API records
+    records: dict[str, list[dict[str, Any]]]  # Elexon dataset code / "PVLIVE" / NESO raw table -> API records
     files: dict[str, str]  # url -> published file text
     exports: dict[str, dict[str, tuple[str, bytes]]]  # folder -> file name -> (lastUpdatedTimestamp, content)
     requests: list[str] = field(default_factory=list)
@@ -54,9 +59,22 @@ class SeedPublishers:
         if "pvlive" in url:
             rows = [r for r in self.records["PVLIVE"] if params["start"] <= r["datetime_gmt"] <= params["end"]]
             return {"meta": ["pes_id", "datetime_gmt", "generation_mw"], "data": [list(r.values()) for r in rows]}
+        if url == neso.SQL_URL:
+            return {"result": {"records": self.neso_page(params["sql"])}}
         dataset = next(dataset for dataset in bmrs.DATASETS if url.endswith(f"/{dataset.code}"))
         first, last = (params[name] for name in dataset.time_filter)
         return {"data": [r for r in self.records[dataset.code] if first <= r[dataset.cursor] <= last]}
+
+    def neso_page(self, sql: str) -> list[dict[str, Any]]:
+        query = NESO_QUERY.search(sql)
+        assert query, sql
+        dataset = next(dataset for dataset in neso.DATASETS if dataset.resource_id == query["resource_id"])
+        rows = sorted(
+            (r for r in self.records[dataset.resource] if query["first"] <= r[neso.UPLOAD_TIME] < query["end"]),
+            key=lambda r: r[neso.UPLOAD_TIME],
+        )
+        offset = int(query["offset"])
+        return [{"_id": offset + i, **row} for i, row in enumerate(rows[offset : offset + neso.PAGE_ROWS], 1)]
 
     def fetch_if_changed(self, url: str, etag: str | None = None) -> tuple[str | None, dict[str, str]]:
         self.requests.append(url)

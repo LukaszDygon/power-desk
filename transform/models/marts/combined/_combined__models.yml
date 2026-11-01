@@ -1,126 +1,250 @@
-# One view per entity, named as the entity, over every source and area. Grain and dimension keys
-# are tested on the ODS entity each view selects from.
+# Hourly marts, one per entity: every source and area on an hourly spine (macros/time/hourly_series.sql).
+# A row per series (the dimension keys) and hour holding data; overlapping published periods resolve to the
+# most recently published, and `coverage` is the fraction of the hour with data. Areas are published at
+# several levels (e.g. ENTSO-E bidding zone, control area, country): pick a level before summing areas.
 models:
   - name: mart_generation_actual
     description: |
-      Actual generation for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
-      `source_dataset`, `source_code`.
-
-      Roll areas and technologies up through the dimensions (`bridge_area_hierarchy`,
-      `bridge_technology_hierarchy`). Areas are published at several levels (bidding zone, country,
-      control area), so aggregate over one level. Rows keep their native interval; energy is
-      `generation_mw * interval_minutes / 60` (MWh).
+      Actual generation per area, technology and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `technology_code`, `border_area_eic_code`, `source_dataset`, `source_code`).
+    data_tests:
+      - dlt_unique:
+          name: mart_generation_actual_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_generation_actual_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
       - name: technology_code
         description: "{{ doc('col_technology_code') }}"
       - name: border_area_eic_code
         description: "{{ doc('col_border_area_eic_code') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
       - name: generation_mw
         description: "{{ doc('col_generation_mw') }}"
       - name: consumption_mw
         description: "{{ doc('col_consumption_mw') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
-      - name: source_code
-        description: "{{ doc('col_source_code') }}"
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
 
   - name: mart_generation_forecast
     description: |
-      Generation forecasts for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
-      `source_dataset`, `source_code`, `forecast_horizon`; filter on one horizon. Dimensions as
-      `mart_generation_actual`.
+      Generation forecasts per area, technology, horizon and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `technology_code`, `time_horizon`, `source_dataset`, `source_code`).
+    data_tests:
+      - dlt_unique:
+          name: mart_generation_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_generation_forecast_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
       - name: technology_code
         description: "{{ doc('col_technology_code') }}"
-      - name: forecast_horizon
-        description: "{{ doc('col_forecast_horizon') }}"
-      - name: generation_mw
-        description: "{{ doc('col_generation_forecast_mw') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_forecast_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: source_dataset
         description: "{{ doc('col_source_dataset') }}"
       - name: source_code
         description: "{{ doc('col_source_code') }}"
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
+      - name: generation_mw
+        description: "{{ doc('col_generation_forecast_mw') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
 
   - name: mart_demand_actual
     description: |
-      Actual demand for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
-      `source_dataset`. Joins to `mart_demand_forecast` on the same keys. Source definitions differ
-      (see `demand_mw`).
+      Actual demand per area and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `source_dataset`).
+    data_tests:
+      - dlt_unique:
+          name: mart_demand_actual_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_demand_actual_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
-      - name: demand_mw
-        description: "{{ doc('col_demand_mw') }}"
       - name: source_dataset
         description: "{{ doc('col_source_dataset') }}"
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
+      - name: demand_mw
+        description: "{{ doc('col_demand_mw') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
 
   - name: mart_demand_forecast
     description: |
-      Day-ahead demand forecast for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
-      `source_dataset`, `forecast_horizon`.
+      Demand forecasts per area, horizon and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `time_horizon`, `source_dataset`).
+    data_tests:
+      - dlt_unique:
+          name: mart_demand_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_demand_forecast_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
-      - name: area_eic_code
-        description: "{{ doc('col_area_eic_code') }}"
-      - name: forecast_horizon
-        description: "{{ doc('col_forecast_horizon') }}"
-      - name: demand_mw
-        description: "{{ doc('col_forecast_demand_mw') }}"
-      - name: source_dataset
-        description: "{{ doc('col_source_dataset') }}"
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
-
-  - name: mart_energy_price
-    description: |
-      Electricity prices for every area and source. Grain: `timestamp_utc`, `area_eic_code`,
-      `time_horizon`, `classification_sequence`, `source_dataset`, `source_code`; filter on one source and
-      horizon. Prices are in `currency` per MWh; weight MID prices by `volume_mwh`.
-    columns:
-      - name: timestamp_utc
-        description: "{{ doc('col_timestamp_utc') }}"
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - relationships:
+              name: mart_demand_forecast_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: demand_mw
+        description: "{{ doc('col_forecast_demand_mw') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
+
+  - name: mart_energy_price
+    description: |
+      Electricity prices per area, horizon and hour, for every source and area; prices in `currency` per MWh. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `time_horizon`, `classification_sequence`, `currency`, `source_dataset`, `source_code`).
+    data_tests:
+      - dlt_unique:
+          name: mart_energy_price_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_energy_price_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - relationships:
+              name: mart_energy_price_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: classification_sequence
         description: "{{ doc('col_classification_sequence') }}"
-      - name: price_per_mwh
-        description: "{{ doc('col_price_per_mwh') }}"
       - name: currency
         description: "{{ doc('col_currency') }}"
-      - name: volume_mwh
-        description: "{{ doc('col_volume_mwh') }}"
       - name: source_dataset
         description: "{{ doc('col_source_dataset') }}"
       - name: source_code
         description: "{{ doc('col_source_code') }}"
-      - name: _dlt_load_id
-        description: "{{ doc('col__dlt_load_id') }}"
+      - name: price_per_mwh
+        description: "{{ doc('col_price_per_mwh') }}"
+      - name: volume_mwh
+        description: "{{ doc('col_volume_mwh') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
+
+  - name: mart_transfer_capacity
+    description: |
+      Transfer capacities per oriented couple of areas, horizon and hour, for every source. NESO rows are per interconnector (`border_area_eic_code`). Grain: `timestamp_utc` (hour start) and the series (`out_area_eic_code`, `in_area_eic_code`, `border_area_eic_code`, `time_horizon`, `source_dataset`, `source_code`).
+    data_tests:
+      - dlt_unique:
+          name: mart_transfer_capacity_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_transfer_capacity_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: out_area_eic_code
+        description: "{{ doc('col_out_area_eic_code') }}"
+      - name: in_area_eic_code
+        description: "{{ doc('col_in_area_eic_code') }}"
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - relationships:
+              name: mart_transfer_capacity_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: transfer_capacity_mw
+        description: "{{ doc('col_transfer_capacity_mw') }}"
+      - name: restriction_reason
+        description: "{{ doc('col_restriction_reason') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"

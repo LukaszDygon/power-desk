@@ -12,3 +12,10 @@ ENTSOE_6.1.B,entsoe,dataset,ENTSO-E,demand_forecast,,
 ENTSOE_14.1.D,entsoe,dataset,ENTSO-E,generation_forecast,,
 ENTSOE_16.1.B_C,entsoe,dataset,ENTSO-E,generation_actual,,
 ENTSOE_12.1.D,entsoe,dataset,ENTSO-E,energy_price,,
+ENTSOE_11.1.A,entsoe,dataset,ENTSO-E,transfer_capacity,,
+NESO_IFA,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_IFA2,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_ELECLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_NEMOLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_NSL,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_VIKING,neso,dataset,NESO,transfer_capacity,60,10YGB----------A

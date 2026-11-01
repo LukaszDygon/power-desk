@@ -1,0 +1,61 @@
+# Shared by every service ------------------------------------------------------------------------------
+
+image:
+  repository: power-desk-services
+  tag: ""  # default: the chart's appVersion
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+environment: prod  # POWER_DESK_ENV: `deployment.environment.name` of every log record
+
+# The landing zone services append to (a dlt filesystem destination); the orchestrator loads it into
+# the warehouse.
+landing:
+  # A path inside the pod, backed by `volume`, or an object-storage URL (e.g. s3://power-desk/landing)
+  # with `volume.enabled: false` and credentials as DESTINATION__FILESYSTEM__CREDENTIALS__* in the secret.
+  url: /landing
+  # One ReadWriteOnce claim per service.
+  volume:
+    enabled: true
+    hostPath: ""  # local clusters only: a node directory instead of a claim
+    size: 20Gi
+    storageClass: ""
+
+logLevel: INFO
+
+# Environment for every service: non-secret dlt config, e.g. SOURCES__IRIS__MAX_SECONDS: "60".
+env: {}
+
+# An existing Secret with the dlt secrets of every service, e.g. SOURCES__IRIS__CREDENTIALS__CLIENT_SECRET
+# (External Secrets, Sealed Secrets, `kubectl create secret generic --from-env-file`).
+existingSecret: ""
+
+podAnnotations: {}
+
+# One Deployment (one pod) per service, running `power-desk-service <name>` -----------------------------
+
+services:
+  iris:
+    enabled: true
+    resources:
+      requests: {cpu: 50m, memory: 256Mi}
+      limits: {memory: 1Gi}
+
+  entsoe-subscription:
+    enabled: true
+    resources:
+      requests: {cpu: 50m, memory: 256Mi}
+      limits: {memory: 1Gi}
+    servicePort: 80
+    # The Transparency Platform pushes over HTTPS (TLS 1.2+, a certificate from a public CA) from
+    # 4.185.182.62 and 4.182.105.72. Restrict sources and issue the certificate with your controller's
+    # annotations, e.g.:
+    #   cert-manager.io/cluster-issuer: letsencrypt
+    #   nginx.ingress.kubernetes.io/whitelist-source-range: 4.185.182.62/32,4.182.105.72/32
+    # The channel URL to register is https://<host>/subscriptions.
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      host: ""
+      tlsSecretName: ""

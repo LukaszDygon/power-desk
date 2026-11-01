@@ -7,7 +7,8 @@ function cssVar(name) {
 }
 
 // The colours are defined once, in dashboard.css (:root). Widget configs refer to them by these
-// keys (e.g. "color": "WIND"); a config may also give any CSS colour.
+// keys (e.g. "color": "WIND"); a config may also give any CSS colour. SERIES_* are the categorical
+// slots, in fixed order, for series that are not fuels (zones, prices).
 const ENERGY_COLORS = {
   WIND: cssVar("--energy-wind"),
   SOLAR: cssVar("--energy-solar"),
@@ -21,12 +22,29 @@ const ENERGY_COLORS = {
   DEMAND_ACTUAL: cssVar("--energy-demand"),
   DEMAND_FORECAST: cssVar("--energy-forecast"),
   DELTA_POSITIVE: cssVar("--energy-delta-positive"),
-  DELTA_NEGATIVE: cssVar("--energy-delta-negative")
+  DELTA_NEGATIVE: cssVar("--energy-delta-negative"),
+  SERIES_1: cssVar("--series-1"),
+  SERIES_2: cssVar("--series-2"),
+  SERIES_3: cssVar("--series-3"),
+  SERIES_4: cssVar("--series-4"),
+  SERIES_5: cssVar("--series-5"),
+  SERIES_6: cssVar("--series-6"),
+  SERIES_7: cssVar("--series-7"),
+  SERIES_8: cssVar("--series-8")
 };
 const UNKNOWN_FUEL_COLOR = cssVar("--text-secondary");
 
 window.EnergyPalette = {
   ...ENERGY_COLORS,
+
+  series: [1, 2, 3, 4, 5, 6, 7, 8].map(slot => ENERGY_COLORS[`SERIES_${slot}`]),
+
+  // Zone map: a one-hue ramp from low (recedes into the dark card) to high, zones without data, selection.
+  map: {
+    ramp: [1, 2, 3, 4, 5].map(step => cssVar(`--map-ramp-${step}`)),
+    noData: cssVar("--map-no-data"),
+    selected: cssVar("--map-selected")
+  },
 
   // A palette key from ENERGY_COLORS, or the value itself as a CSS colour (undefined stays undefined).
   resolve: function(color) {
@@ -41,8 +59,9 @@ window.EnergyPalette = {
     if (f.includes("SOLAR")) return this.SOLAR;
     if (f.includes("NUCLEAR")) return this.NUCLEAR;
     if (f.includes("CCGT") || f.includes("GAS")) return this.CCGT;
-    if (f.includes("BIOMASS")) return this.BIOMASS;
+    if (f.includes("BIO")) return this.BIOMASS;
     if (f.includes("HYD") || f.includes("PS")) return this.HYDRO;
+    if (f.includes("STORAGE")) return this.STORAGE;
     if (f.includes("COAL")) return this.COAL;
     if (f.includes("INT")) return this.IMPORTS;
     return UNKNOWN_FUEL_COLOR;

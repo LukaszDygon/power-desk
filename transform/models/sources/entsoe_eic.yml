@@ -38,6 +38,7 @@ sources:
         arguments:
           columns:
           - eic_code
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe_eic__codes_unique_row_version
         arguments:
@@ -200,6 +201,7 @@ sources:
           - eic_function
           - eic_type
           - valid_in_market
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe_eic__functions_unique_row_version
         arguments:
@@ -298,6 +300,7 @@ sources:
         arguments:
           columns:
           - lio_code
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe_eic__issuing_offices_unique_row_version
         arguments:

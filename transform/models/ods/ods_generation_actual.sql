@@ -4,7 +4,7 @@ with fuelinst as (
         fuel_type as source_code, generation_mw, cast(null as double) as consumption_mw, publish_time_utc,
         'FUELINST' as source_dataset, 'FUELINST' as code_list, cast(null as varchar) as area_eic_code,
         _dlt_load_id
-    from {{ ref('stg_bmrs__fuelinst') }}
+    from {{ pending_partitions(ref('stg_bmrs__fuelinst')) }}
 ),
 
 -- half-hourly rows spread over the six 5-minute intervals of their period
@@ -22,7 +22,7 @@ pvlive as (
         'PVLIVE' as code_list,
         cast(null as varchar) as area_eic_code,
         s._dlt_load_id
-    from {{ ref('stg_pvlive__solar') }} s
+    from {{ pending_partitions(ref('stg_pvlive__solar')) }} s
     cross join range(6) t(tick)
 ),
 
@@ -32,9 +32,7 @@ entsoe as (
         psr_type as source_code, generation_mw, consumption_mw, publish_time_utc,
         'ENTSOE_16.1.B_C' as source_dataset, 'ENTSOE_PSR' as code_list, area_eic_code,
         _dlt_load_id
-    from {{ ref('stg_entsoe__generation_per_type') }}
-    -- an area changing its market time unit publishes the overlap at both resolutions: keep the finest
-    {{ keep_finest_resolution(['area_eic_code', 'production_type']) }}
+    from {{ pending_partitions(ref('stg_entsoe__generation_per_type'), ['area_eic_code']) }}
 ),
 
 unioned as (

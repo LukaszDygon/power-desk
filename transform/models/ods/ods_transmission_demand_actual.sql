@@ -8,5 +8,5 @@ select
     s.settlement_period,
     s.publish_time_utc,
     s._dlt_load_id
-from {{ ref('stg_bmrs__itsdo') }} s
+from {{ pending_partitions(ref('stg_bmrs__itsdo')) }} s
 join {{ ref('source_datasets') }} ds on ds.source_dataset = 'ITSDO'

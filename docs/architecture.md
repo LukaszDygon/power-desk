@@ -15,10 +15,10 @@ publisher ─dlt─> raw ─> staging/<source> ─> ods (entities) ─> marts
 |---|---|---|
 | `raw` | dlt tables, one per resource | As published, keyed by the natural key: replaced (streams) or versioned (scd2: snapshots, file partitions). Never edited. |
 | `staging/<source>` | views, one per raw table | Types, UTC time, names, source-specific dedup, shared column vocabulary. File partitions: incremental tables of the current versions, by natural key. |
-| `ods` | views, one per entity | Union of every source providing the entity, conformed to one grain and to dimension keys. |
+| `ods` | incremental tables, one per entity | Union of every source providing the entity at its published intervals (every resolution published), conformed to units and dimension keys. A build replaces the (area, hour) partitions pending loads touch, transforming only those. |
 | `dims` | tables + seeds | Conformed dimensions, hierarchy bridges, and mappings from publisher codes. |
 | `marts` | incremental tables | Built on `ods` + `dims`; rebuild only grains touched by pending loads. |
-| `marts/combined` | views, one per entity | Every source and area: values, interval, dimension keys, provenance. |
+| `marts/combined` | incremental tables, one per entity | Every source and area on an hourly spine: one row per series and hour, values, `coverage`, dimension keys, provenance. |
 | `dlt_meta` | views + audit table | Which dlt load each mart processed, in which dbt / Dagster run. |
 
 `staging`, `ods`, `dims` and `marts` may be revised as new data arrives; `raw` stays true to
@@ -31,22 +31,41 @@ the source.
 | raw table (dlt resource) | `<source>__<dataset>` |
 | staging model | `stg_<source>__<dataset>` |
 | entity | `ods_<entity>` (e.g. `generation_actual`, `demand_forecast`) |
-| combined mart | `mart_<entity>`, the same entity across sources and areas |
+| combined mart | `mart_<entity>`, the same entity across sources and areas, hourly |
 | business mart | `mart_<scope>_<subject>` (e.g. `mart_gb_generation_mix`) |
 
-Entity and mart columns come in a fixed order: time (`timestamp_utc`, `interval_minutes`), dimension
-keys (`*_eic_code`, `technology_code`, `forecast_horizon`), measures (`<quantity>_mw`), then
-provenance (`source_dataset`, `source_code`, `_dlt_load_id`). A measure keeps one name across actual
-and forecast entities.
+Entity and mart columns come in a fixed order: time (`timestamp_utc`, `interval_minutes` in entities),
+dimension keys (`*_eic_code`, `technology_code`, `time_horizon`), measures (`<quantity>_mw`; `coverage`
+in hourly marts), then provenance (`source_dataset`, `source_code`, `_dlt_load_id`). A measure keeps one
+name across actual and forecast entities.
+
+### Hourly marts
+
+Each combined mart puts its entity on an hourly spine (`hourly_series`): one row per series (the
+dimension keys) and hour holding data, so every entity is queried by shared dimension keys and the
+hour.
+
+- **Precedence:** where a series' published periods overlap (a period republished at another
+  resolution), the most recently published row prevails, 5 minutes at a time.
+- **UTC periods:** every period is a UTC interval. Days and months published from local midnight
+  last 23 or 25 hours at clock changes, so they end where the series' next period starts (when that is
+  within an hour of the nominal length), not after a fixed 24 hours.
+- **`coverage`:** the fraction of the hour (0.0-1.0) holding data from the source.
+- **Aggregation** follows the measure (`dim_metric`): power, prices and capacities are the
+  time-weighted mean over the covered minutes (times `coverage` for the mean with missing minutes as
+  zero); volumes (MWh) are pro-rated into the hour and summed.
+- **Areas** stay at every level the publisher uses (bidding zone, control area, country); choosing a
+  level before summing areas is the query's business.
 
 ## Dimensions
 
 **Goal:** a query needs only values, a datetime, and the natural keys of a small set of shared
 dimensions; the dimension tables explain what each key means and how keys relate.
 
-- **Mart rows** are `timestamp_utc` (+ interval), dimension keys, measures, and provenance
+- **Mart rows** are `timestamp_utc` (the hour), dimension keys, measures, `coverage` and provenance
   (`source_dataset`, `_last_dlt_load_id`).
-- **Conformed dimensions:** area, border, technology, resource, party, source dataset. Each is keyed
+- **Conformed dimensions:** area, border, technology, time horizon, resource, party, source dataset,
+  plus the metrics the marts carry (unit, hourly aggregation). Each is keyed
   by a natural key (EIC code or canonical code) and versioned where its publisher revises it.
 - **Bridges** relate keys across granularities (unit → plant, zone → member state, technology →
   group). Rolling a row up to any level is one join. They are graphs, not trees.
@@ -65,6 +84,10 @@ dimensions; the dimension tables explain what each key means and how keys relate
   so the dev warehouse and the integration tests run the real pipelines.
 - **Streams** have one cursor per resource and fetch at most `max_days` new days from it.
   Bounded backfills leave the cursor untouched. Fetch errors fail the run, so no gap is skipped.
+- **Revised streams** (NESO) are streams of rows the publisher revises in place: the cursor is the
+  upload time, so a resubmission is new data, and they load as scd2 merged on the natural key, like
+  file partitions. NESO at times appends a resubmission instead of replacing it, so the upload time
+  joins the `primary_key` but not the `merge_key`; staging keeps the latest upload.
 - **Snapshots** (reference files) re-read the whole file, skip it while unchanged (ETag / hash), and
   load with scd2, so changes and withdrawals keep their history.
 - **File partitions** (periodic files the publisher re-exports when revised) load the files new or
@@ -86,6 +109,7 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 | Streams (Elexon, PVLive) | `merge` + `delete-insert` on `primary_key` | row id | one row per key, also when a load repeats it; a republication replaces it |
 | Snapshots (EIC) | `merge` + `scd2` (full extract, no `merge_key`) | hash of the row (version) | every version kept; withdrawn codes are closed |
 | File partitions (ENTSO-E) | `merge` + `scd2`, `merge_key` = `primary_key` | hash of the row (version) | every version kept; only keys in the load are closed |
+| Revised streams (NESO) | `merge` + `scd2`, `merge_key` = natural key | hash of the row (version) | every submission kept; only keys in the load are closed |
 
 - **Rows, not Arrow:** dlt computes the scd2 row hash only for row items (dicts); for Arrow tables it
   adds none and scd2 cannot run. ENTSO-E exports are streamed to disk, read by DuckDB (which infers
@@ -96,6 +120,14 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 - **Names:** dlt's `snake_case` keeps a trailing `x` for brackets (`DateTime(UTC)` -> `date_time_utcx`);
   staging renames.
 - **dlt schemas** are exported to `ingest/schemas/` and define the dbt sources.
+
+### Services (push feeds)
+
+Feeds the publisher pushes (Elexon IRIS, ENTSO-E subscriptions) are received by long-running
+services (`services/`, on Kubernetes). They never write the warehouse: each batch is a dlt load into
+a landing zone (filesystem destination, appended as published), acknowledged to the publisher only
+after it lands (at least once). The orchestrator loads the landing zone into `raw` like any other
+source. Details: [services](../services/README.md).
 
 ## Orchestration
 
@@ -112,6 +144,14 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 - **Nightly** runs every test unscoped and refreshes dbt docs.
 - **One run at a time:** DuckDB allows a single writer.
 
+## Logging and provenance
+
+Every process logs one record format (OpenTelemetry's log data model), and records about data carry the
+identifiers dlt, dbt and Dagster already issue: `dlt.load_id`, `dbt.invocation_id`, `dagster.run_id`. Shared
+code binds them (a dlt tracking hook, Dagster's run metadata), so call sites log plain messages; each dlt
+load is a `dlt.load` event, and dbt stamps the Dagster run id into its artifacts. Details, and what
+OpenMetadata reads from where: [logging and provenance](logging.md).
+
 ## Load-id contract
 
 1. A completed dlt load (`raw._dlt_loads.status = 0`) is pending for a mart until
@@ -127,7 +167,7 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 
 | Check | Layer | On failure |
 |---|---|---|
-| Natural-key / row-version uniqueness | raw | blocks |
+| Natural-key (per valid-to under scd2) / row-version uniqueness | raw | blocks |
 | Key uniqueness, ranges, completeness | staging | blocks; completeness warns in scheduled runs, errors nightly |
 | Entity-key uniqueness, dimension keys resolve | ods | blocks; unmapped codes warn |
 | Mapping keys exist in their dimension | dims | blocks |

@@ -31,11 +31,15 @@ models:
       +materialized: view
       +meta:
         dlt_recent_column: _dlt_load_id
-    # ods/: source-agnostic entities; each unions the staging models that provide it
+    # ods/: source-agnostic entities; each unions the staging models that provide it. Incremental
+    # tables: a build replaces the (area, hour) partitions pending loads touch (macros/dlt/partitions.sql)
     ods:
       +schema: ods
-      +materialized: view
+      +materialized: incremental
+      +incremental_strategy: delete+insert
+      +unique_key: [timestamp_utc, area_eic_code, source_dataset]
       +meta:
+        dlt_tracked: true
         dlt_recent_column: _dlt_load_id
     # dims/: conformed dimensions + hierarchy bridges (reference data, every version kept)
     dims:
@@ -43,11 +47,14 @@ models:
       +materialized: table
     marts:
       +schema: marts
-      # marts/combined/: one view per entity across sources and areas (values, dimension keys, provenance)
+      # marts/combined/: one hourly table per entity across sources and areas (values, coverage, dimension
+      # keys, provenance), rebuilt for the (series, hour) pairs pending loads touch (macros/time/hourly_series.sql)
       combined:
-        +materialized: view
+        +materialized: incremental
+        +incremental_strategy: delete+insert
         +meta:
-          dlt_recent_column: _dlt_load_id
+          dlt_tracked: true
+          dlt_recent_column: _last_dlt_load_id
       # marts/<scope>/: incremental business tables, rebuilt for the grains pending loads touch
       gb:
         +materialized: incremental

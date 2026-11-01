@@ -1,0 +1,93 @@
+// Ships logs to Loki: every pod's on this node, and the local Dagster runs' (`data/logs/<env>/*.jsonl`,
+// mounted into the node at /power-desk-data). Records in the log standard (docs/logging.md) are parsed:
+// level, service and event become labels, identifiers structured metadata; other lines pass as they are.
+
+discovery.kubernetes "pods" {
+  role = "pod"
+  selectors {
+    role  = "pod"
+    field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+  }
+}
+
+discovery.relabel "pods" {
+  targets = discovery.kubernetes.pods.targets
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    target_label  = "app"
+  }
+}
+
+loki.source.kubernetes "pods" {
+  targets    = discovery.relabel.pods.output
+  forward_to = [loki.process.standard.receiver]
+}
+
+local.file_match "dagster_runs" {
+  path_targets = [{"__path__" = "/power-desk-data/logs/*/*.jsonl", "job" = "dagster"}]
+}
+
+loki.source.file "dagster_runs" {
+  targets    = local.file_match.dagster_runs.targets
+  forward_to = [loki.process.standard.receiver]
+  // the mount does not notify file changes; poll
+  file_watch {
+    min_poll_frequency = "1s"
+    max_poll_frequency = "5s"
+  }
+}
+
+loki.process "standard" {
+  stage.json {
+    expressions = {
+      timestamp         = "timestamp",
+      level             = "severity_text",
+      service_name      = "resource.\"service.name\"",
+      environment       = "resource.\"deployment.environment.name\"",
+      event_name        = "event_name",
+      scope             = "scope_name",
+      dagster_run_id    = "attributes.\"dagster.run_id\"",
+      dagster_step_key  = "attributes.\"dagster.step_key\"",
+      dlt_pipeline_name = "attributes.\"dlt.pipeline_name\"",
+      dlt_load_id       = "attributes.\"dlt.load_id\"",
+      exception_type    = "attributes.\"exception.type\"",
+    }
+  }
+  stage.timestamp {
+    source            = "timestamp"
+    format            = "RFC3339"
+    action_on_failure = "skip"
+  }
+  stage.labels {
+    values = {level = "", service_name = "", environment = "", event_name = ""}
+  }
+  stage.structured_metadata {
+    values = {
+      scope             = "",
+      dagster_run_id    = "",
+      dagster_step_key  = "",
+      dlt_pipeline_name = "",
+      dlt_load_id       = "",
+      exception_type    = "",
+    }
+  }
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki.observability.svc:3100/loki/api/v1/push"
+  }
+}

@@ -95,11 +95,13 @@ def source_columns(catalogue: Catalogue, table_name: str, table: dict[str, Any])
 def duplication_guards(name: str, table: dict[str, Any]) -> list[dict[str, Any]]:
     """Key-scoped uniqueness on the natural key and on the row version, with readable failure table names.
 
-    Snapshot (scd2) rows are versions: `_dlt_id` is a content hash, so a version is (`_dlt_id`, valid-from).
+    Snapshot (scd2) rows are versions: `_dlt_id` is a content hash, so a version is (`_dlt_id`, valid-from),
+    and a natural key is unique per valid-to: one current version, closed versions retired one at a time.
     """
     primary_key, valid_from = columns_with(table, "primary_key"), columns_with(table, "x-valid-from")
+    natural_key = [*primary_key, *columns_with(table, "x-valid-to")]
     guards = (
-        [{"dlt_unique": {"name": f"{name}_unique_natural_key", "arguments": {"columns": primary_key}}}]
+        [{"dlt_unique": {"name": f"{name}_unique_natural_key", "arguments": {"columns": natural_key}}}]
         if primary_key
         else []
     )

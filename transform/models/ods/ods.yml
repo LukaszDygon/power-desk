@@ -1,4 +1,5 @@
-# Entities: every source providing the entity at its published interval. Columns: keys (time,
+# Entities: every source providing the entity at its published interval, every resolution published
+# (overlaps are resolved by the hourly marts, most recently published first). Columns: keys (time,
 # interval, area, technology, horizon), measures, provenance; GB settlement columns are null elsewhere.
 models:
   - name: ods_generation_actual
@@ -16,7 +17,7 @@ models:
       - dlt_unique:
           name: ods_generation_actual_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, source_dataset, source_code]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, source_dataset, source_code]
       - expression_is_true:
           name: ods_generation_actual_interconnector_has_border
           config:
@@ -96,7 +97,7 @@ models:
       - dlt_unique:
           name: ods_generation_forecast_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, source_dataset, source_code, forecast_horizon]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, source_dataset, source_code, time_horizon]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -127,14 +128,15 @@ models:
               arguments:
                 to: ref('dim_technology')
                 field: technology_code
-      - name: forecast_horizon
-        description: "{{ doc('col_forecast_horizon') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
         data_tests:
           - not_null
-          - accepted_values:
+          - relationships:
               name: ods_generation_forecast_known_horizon
               arguments:
-                values: [day_ahead, intraday, current]
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: generation_mw
         description: "{{ doc('col_generation_forecast_mw') }}"
       - name: source_dataset
@@ -158,7 +160,7 @@ models:
       - dlt_unique:
           name: ods_demand_actual_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, source_dataset]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, source_dataset]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -202,7 +204,7 @@ models:
       - dlt_unique:
           name: ods_demand_forecast_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, source_dataset, forecast_horizon]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, source_dataset, time_horizon]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -221,14 +223,15 @@ models:
               arguments:
                 to: ref('dim_area')
                 field: area_eic_code
-      - name: forecast_horizon
-        description: "{{ doc('col_forecast_horizon') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
         data_tests:
           - not_null
-          - accepted_values:
+          - relationships:
               name: ods_demand_forecast_known_horizon
               arguments:
-                values: [day_ahead, intraday, current]
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: demand_mw
         description: "{{ doc('col_forecast_demand_mw') }}"
       - name: source_dataset
@@ -298,7 +301,7 @@ models:
       - dlt_unique:
           name: ods_energy_price_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, time_horizon, classification_sequence, source_dataset, source_code]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, time_horizon, classification_sequence, source_dataset, source_code]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -320,10 +323,11 @@ models:
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
         data_tests:
-          - accepted_values:
+          - relationships:
               name: ods_energy_price_known_horizon
               arguments:
-                values: [day_ahead, intraday]
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: classification_sequence
         description: "{{ doc('col_classification_sequence') }}"
       - name: price_per_mwh
@@ -346,6 +350,88 @@ models:
         description: "{{ doc('col_settlement_date') }}"
       - name: settlement_period
         description: "{{ doc('col_settlement_period') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_transfer_capacity
+    description: |
+      Transfer capacity per oriented couple of areas, time horizon and interval, across sources: ENTSO-E
+      forecasted transfer capacities (year-, month-, week- and day-ahead, every area level published) and
+      NESO's restrictions per GB interconnector and auction, one row per direction. NESO's values are its
+      input to the capacity calculation, not the final capacity offered.
+
+      {{ doc('dataset_entsoe__forecasted_transfer_capacities') }}
+
+      {{ doc('dataset_neso__ifa_ntc') }}
+    data_tests:
+      - dlt_unique:
+          name: ods_transfer_capacity_unique_key
+          arguments:
+            columns: [timestamp_utc, interval_minutes, out_area_eic_code, in_area_eic_code, source_dataset, source_code]
+      - expression_is_true:
+          name: ods_transfer_capacity_neso_has_border
+          arguments:
+            expression: source_dataset not like 'NESO_%' or border_area_eic_code is not null
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - not_null
+      - name: out_area_eic_code
+        description: "{{ doc('col_out_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_transfer_capacity_known_out_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: in_area_eic_code
+        description: "{{ doc('col_in_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_transfer_capacity_known_in_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: border_area_eic_code
+        description: "{{ doc('col_border_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: ods_transfer_capacity_known_border_area
+              arguments:
+                to: ref('dim_border')
+                field: border_area_eic_code
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_transfer_capacity_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
+      - name: transfer_capacity_mw
+        description: "{{ doc('col_transfer_capacity_mw') }}"
+        data_tests:
+          - not_null
+      - name: restriction_reason
+        description: "{{ doc('col_restriction_reason') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
       - name: publish_time_utc
         description: "{{ doc('col_publish_time_utc') }}"
       - name: _dlt_load_id

@@ -1,7 +1,8 @@
-"""Synthetic Elexon BMRS and PVLive payloads for a seed week, shaped like the API records.
+"""Synthetic Elexon BMRS, PVLive and NESO payloads for a seed week, shaped like the API records.
 
 Deterministic (fixed random seed): FUELINST every 5 minutes per fuel type, INDO / ITSDO / NDF / MID
-per settlement period, WINDFOR hourly, PVLive per half hour (half-hour ending).
+per settlement period, WINDFOR hourly, PVLive per half hour (half-hour ending); NESO net transfer
+capacity restrictions per interconnector, the day-ahead submission and an evening intraday one per day.
 """
 
 from __future__ import annotations
@@ -133,8 +134,46 @@ def period_records(day: date, period: int, period_start: datetime, wind_base: fl
     return records
 
 
+# NESO datasets (raw table) -> interconnector capability in MW, both directions
+NESO_CAPACITY_MW = {
+    "neso__ifa_ntc": 2000,
+    "neso__ifa2_ntc": 1014,
+    "neso__eleclink_ntc": 1014,
+    "neso__nemolink_ntc": 1032,
+    "neso__nsl_ntc": 1400,
+    "neso__viking_ntc": 1457,
+}
+
+
+def neso_restriction(auction: str, period_start: datetime, uploaded: datetime, capacity: int) -> dict[str, Any]:
+    """One NESO row; exports from GB are restricted in the evening peak, more so intraday."""
+    restricted = 17 <= period_start.hour <= 19
+    from_gb = round(capacity * (0.3 if auction != "Day Ahead" else 0.6)) if restricted else capacity
+    return {
+        "Data Upload Time GMT": uploaded.strftime("%Y-%m-%dT%H:%M:%S"),
+        "Auction Type": auction,
+        "Operational Period Start Date and Time GMT": period_start.strftime("%Y-%m-%dT%H:%M:%S"),
+        "Flow in MW To GB": capacity,
+        "Reason For Restriction To GB": "No Restriction",
+        "Flow in MW From GB": from_gb,
+        "Reason For Restriction From GB": "Network Constraints" if restricted else "No Restriction",
+    }
+
+
+def neso_records(day: date) -> Records:
+    """Uploaded on `day`: the next day's day-ahead hours (09:30) and its evening intraday hours (18:30)."""
+    following = datetime(day.year, day.month, day.day, tzinfo=UTC) + timedelta(days=1)
+    hours = [following + timedelta(hours=h) for h in range(24)]
+    day_ahead, intraday = following - timedelta(hours=14, minutes=30), following - timedelta(hours=5, minutes=30)
+    return {
+        resource: [neso_restriction("Day Ahead", hour, day_ahead, capacity) for hour in hours]
+        + [neso_restriction("Intraday 1", hour, intraday, capacity) for hour in hours if 17 <= hour.hour <= 20]
+        for resource, capacity in NESO_CAPACITY_MW.items()
+    }
+
+
 def generate(start_date: str, num_days: int) -> Records:
-    """Records per dataset code (`FUELINST`, ..., `PVLIVE`) for `num_days` from `start_date`."""
+    """Records per dataset code (`FUELINST`, ..., `PVLIVE`, NESO raw table) for `num_days` from `start_date`."""
     random.seed(42)
     records: Records = defaultdict(list)
     for day_index in range(num_days):
@@ -143,4 +182,6 @@ def generate(start_date: str, num_days: int) -> Records:
         for period, period_start in settlement_periods(day):
             for code, rows in period_records(day, period, period_start, wind_base).items():
                 records[code] += rows
+        for resource, rows in neso_records(day).items():
+            records[resource] += rows
     return dict(records)

@@ -8,3 +8,11 @@ concurrency:
     default_limit: 1
 telemetry:
   enabled: false
+# Every record of a run, ours and dlt's included, joins its event log and the run log in the log
+# standard (`power_desk/orchestration/logs.py`, docs/logging.md).
+python_logs:
+  managed_python_loggers: [power_desk, power_desk_logging, dlt]
+  dagster_handler_config:
+    handlers:
+      standard:
+        "()": power_desk.orchestration.logs.run_log_handler

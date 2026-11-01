@@ -1,0 +1,97 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pds.serviceName" $ctx }}
+  labels:
+    {{- include "pds.serviceLabels" $ctx | nindent 4 }}
+spec:
+  # never two at once: IRIS allows one queue connection, and each landing folder has one dlt pipeline
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "pds.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pds.serviceLabels" $ctx | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        {{- with $.Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      # time to land the batch in hand after SIGTERM
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: [{{ $name | quote }}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ include "pds.fullname" $ }}
+            {{- with $.Values.existingSecret }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 15
+            failureThreshold: 4
+          {{- if $svc.servicePort }}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          {{- end }}
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            - {name: work, mountPath: /var/lib/power-desk}
+            {{- if $.Values.landing.volume.enabled }}
+            - {name: landing, mountPath: {{ $.Values.landing.url }}}
+            {{- end }}
+      volumes:
+        - {name: tmp, emptyDir: {}}
+        - {name: work, emptyDir: {}}  # dlt working directory: disposable, state lives in the landing zone
+        {{- with $.Values.landing.volume }}
+        {{- if .enabled }}
+        - name: landing
+          {{- if .hostPath }}
+          hostPath: {path: {{ .hostPath }}, type: DirectoryOrCreate}
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ include "pds.serviceName" $ctx }}-landing
+          {{- end }}
+        {{- end }}
+        {{- end }}
+{{- end }}
+{{- end }}

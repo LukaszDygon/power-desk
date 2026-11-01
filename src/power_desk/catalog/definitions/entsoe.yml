@@ -34,6 +34,9 @@ links:
   entsoe_extract_energy_prices:
     title: File Library extract specification, EnergyPrices_12.1.D_r3.1
     url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+  entsoe_extract_forecasted_transfer_capacities:
+    title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+    url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
 
 sources:
   entsoe:
@@ -111,6 +114,23 @@ tables:
     - {link: entsoe_file_library, path: TP_export/EnergyPrices_12.1.D_r3.1}
     freshness: daily_exports
     columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, price_currency_m_whx: entsoe_energy_price}
+  entsoe__forecasted_transfer_capacities:
+    title: Forecasted transfer capacities
+    description: >-
+      The forecasted capacity (MW) per direction between areas, under coordinated net transmission
+      capacity based allocation, calculated by TSOs or transmission capacity allocators ahead of the
+      allocation process: year-ahead (a value per month), month-ahead and week-ahead (a value per day) and
+      day-ahead (per market time unit). Where several data providers submit for the same oriented couple
+      of areas, the platform publishes the minimum value; a new version replaces the previous one. Not
+      published for regions and time horizons where flow-based allocation is conducted.
+    links:
+    - {link: entsoe_ddd, section: Estimated and offered cross-zonal capacity, page: 37}
+    - {link: entsoe_brs, section: "7.4-7.7 Forecasted year-, month-, week- and day-ahead transfer capacities [11.1]", page: 66}
+    - {link: transparency_regulation, section: Article 11(1)(a)}
+    - {link: entsoe_file_library, path: TP_export/ForecastedTransferCapacities_11.1_r3.1}
+    freshness: daily_exports
+    columns: {date_time_utcx: date_time_utc, update_time_utcx: update_time_utc, resolution_code: ftc_resolution_code,
+              contract_type: ftc_contract_type, forecast_transfer_capacity_mwx: entsoe_forecast_transfer_capacity_mw}
 
 columns:
   date_time_utc:
@@ -157,7 +177,8 @@ columns:
       specifications, which publish no further definition. Used as the row's publication time
       (`publish_time_utc`, the ingest cursor).
     links: [entsoe_extract_actual_total_load, entsoe_extract_day_ahead_total_load_forecast,
-            entsoe_extract_generation_per_type, entsoe_extract_wind_solar_forecast, entsoe_extract_energy_prices]
+            entsoe_extract_generation_per_type, entsoe_extract_wind_solar_forecast, entsoe_extract_energy_prices,
+            entsoe_extract_forecasted_transfer_capacities]
   entsoe_actual_total_load_mw:
     description: Actual total load for the market time unit, in MW.
     links: [entsoe_ddd]
@@ -202,3 +223,51 @@ columns:
   entsoe_energy_price:
     description: Energy price for the market time unit, in `currency` per MWh.
     links: [entsoe_extract_energy_prices, entsoe_ddd]
+  out_area_code:
+    description: EIC (object type Y) of the out area, the area flows come out from.
+    links: [entsoe_extract_forecasted_transfer_capacities, {link: entsoe_brs, section: 7.4.1 Data description, page: 66}]
+  out_area_display_name:
+    description: Transparency Platform display name of the out area, e.g. `France (FR)`.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  out_area_type_code:
+    description: >-
+      Roles in which the out area publishes the value, `/`-separated: `BZN` bidding zone, `CTA` control
+      area, `CTY` country.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  out_area_map_code:
+    description: Short code of the out area used by the Transparency Platform maps, e.g. `GB`, `NO2`.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  in_area_code:
+    description: EIC (object type Y) of the in area, the area flows come into.
+    links: [entsoe_extract_forecasted_transfer_capacities, {link: entsoe_brs, section: 7.4.1 Data description, page: 66}]
+  in_area_display_name:
+    description: Transparency Platform display name of the in area, e.g. `France (FR)`.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  in_area_type_code:
+    description: >-
+      Roles in which the in area publishes the value, `/`-separated: `BZN` bidding zone, `CTA` control
+      area, `CTY` country.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  in_area_map_code:
+    description: Short code of the in area used by the Transparency Platform maps, e.g. `GB`, `NO2`.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  ftc_resolution_code:
+    description: >-
+      Period a capacity value covers, as an ISO 8601 duration: `P1M` (year-ahead, a value per month),
+      `P1D` (month- and week-ahead, a value per day), or a market time unit (`PT15M`, `PT30M`, `PT60M`).
+      Where a provider submits at a finer resolution, the platform publishes the lowest value per month
+      (year-ahead) or day (month- and week-ahead); periods start at the area's local midnight.
+    links:
+    - entsoe_extract_forecasted_transfer_capacities
+    - {link: entsoe_brs, section: 7.4.6 and 7.5.6 Processing, page: 67}
+  ftc_contract_type:
+    description: Time horizon of the forecast, `Day-ahead`, `Week-ahead`, `Month-ahead` or `Year-ahead`.
+    links: [entsoe_extract_forecasted_transfer_capacities]
+  entsoe_forecast_transfer_capacity_mw:
+    description: >-
+      Forecasted transfer capacity from the out area to the in area, in MW: the minimum of the values the
+      data providers submitted for the oriented couple of areas and period. Week-, month- and year-ahead
+      values are the expected minimum to be offered to the market in that time frame.
+    links:
+    - {link: entsoe_brs, section: 7.4.6 Processing, page: 67}
+    - {link: entsoe_ddd, section: Estimated and offered cross-zonal capacity, page: 38}

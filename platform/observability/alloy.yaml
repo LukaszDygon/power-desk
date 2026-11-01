@@ -1,0 +1,16 @@
+# Alloy on a local cluster: one per node (a DaemonSet), its pipeline in config.alloy (set by the Makefile).
+# The node's /power-desk-data (the repository's data/, mounted by minikube) holds the local Dagster run logs.
+alloy:
+  mounts:
+    extra:
+      - name: power-desk-data
+        mountPath: /power-desk-data
+        readOnly: true
+  resources:
+    requests: {cpu: 50m, memory: 96Mi}
+    limits: {memory: 256Mi}
+controller:
+  volumes:
+    extra:
+      - name: power-desk-data
+        hostPath: {path: /power-desk-data, type: Directory}

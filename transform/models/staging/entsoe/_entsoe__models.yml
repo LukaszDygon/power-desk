@@ -226,3 +226,56 @@ models:
         description: "{{ doc('col_update_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_entsoe__forecasted_transfer_capacities
+    description: |
+      Forecasted transfer capacities typed, one row per oriented couple of areas, contract type and period
+      (a month year-ahead, a day month- and week-ahead, a market time unit day-ahead).
+
+      {{ doc('dataset_entsoe__forecasted_transfer_capacities') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_entsoe__forecasted_transfer_capacities_unique_key
+          arguments:
+            columns: [timestamp_utc, interval_minutes, out_area_eic_code, out_area_type_code, in_area_eic_code, in_area_type_code, contract_type]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_entsoe__forecasted_transfer_capacities_no_missing_days
+              arguments:
+                interval: 1 day
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests: [not_null]
+      - name: out_area_eic_code
+        description: "{{ doc('col_out_area_code') }}"
+        data_tests: [not_null]
+      - name: out_area_type_code
+        description: "{{ doc('col_out_area_type_code') }}"
+      - name: out_area_map_code
+        description: "{{ doc('col_out_area_map_code') }}"
+      - name: in_area_eic_code
+        description: "{{ doc('col_in_area_code') }}"
+        data_tests: [not_null]
+      - name: in_area_type_code
+        description: "{{ doc('col_in_area_type_code') }}"
+      - name: in_area_map_code
+        description: "{{ doc('col_in_area_map_code') }}"
+      - name: contract_type
+        description: "{{ doc('col_ftc_contract_type') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: stg_entsoe__forecasted_transfer_capacities_known_contract_type
+              arguments:
+                values: [Day-ahead, Week-ahead, Month-ahead, Year-ahead]
+      - name: transfer_capacity_mw
+        description: "{{ doc('col_entsoe_forecast_transfer_capacity_mw') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_update_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

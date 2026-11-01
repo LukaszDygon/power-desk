@@ -83,7 +83,10 @@ def add_model_edges(graph: Graph, manifest: dict[str, Any], ids: dict[str, str])
 def add_widgets(graph: Graph, widgets: list[Widget], models: set[str]) -> None:
     for widget in widgets:
         queried = {
-            name for name in re.findall(r"\b(?:from|join)\s+(?:\w+\.)?(\w+)", widget.sql, re.I) if name in models
+            name
+            for sql in widget.queries
+            for name in re.findall(r"\b(?:from|join)\s+(?:\w+\.)?(\w+)", sql, re.I)
+            if name in models
         }
         if queried:
             widget_id = f"widget_{widget.id}"

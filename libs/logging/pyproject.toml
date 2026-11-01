@@ -1,0 +1,10 @@
+[project]
+name = "power-desk-logging"
+version = "0.1.0"
+description = "The Power Desk log standard (docs/logging.md), shared by the orchestrator and the services"
+requires-python = ">=3.13"
+dependencies = ["dlt>=1.30.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -21,6 +21,7 @@ existing source, extend that source's table of datasets and skip what already ex
 |---|---|---|---|---|
 | Stream (API by publish time) | Elexon, PVLive | `dlt.sources.incremental` + `incremental_window` | `merge` + `delete-insert` | `primary_key` = natural key |
 | Snapshot (whole reference file) | EIC | ETag / hash in resource state | `merge` + `scd2`, no `merge_key` | `primary_key` = natural key (documents it) |
+| Revised stream (rows revised in place, read by upload time) | NESO | `dlt.sources.incremental` on the upload time + `incremental_window` | `merge` + `scd2` | `merge_key` = natural key; the upload time joins `primary_key` where the publisher may append resubmissions |
 | File partitions (re-exported periodic files) | ENTSO-E | files + `lastUpdated` in resource state; cursor = latest publication time | `merge` + `scd2` | `merge_key` = `primary_key` = natural key (a document id joins `primary_key` where an export repeats keys) |
 
 - **Natural key and definitions** come from the publisher's documentation, never invented; cite it.
@@ -93,11 +94,16 @@ authoritative definition).
 
 ## 8. Entity
 
-Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, plus a view in
-`marts/combined/`).
-- Conform grain, units and dimension keys; keep `source_dataset`, the source code and `_dlt_load_id`, in
-  the column order of `docs/architecture.md` (Naming).
-- Decide precedence where sources overlap; keep the finest resolution with `keep_finest_resolution`.
+Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, plus its hourly mart in
+`marts/combined/` built with `hourly_series`).
+- Conform units and dimension keys (horizons from `dim_time_horizon`); keep the published interval,
+  `publish_time_utc`, `source_dataset`, the source code and `_dlt_load_id`, in the column order of
+  `docs/architecture.md` (Naming). Keep every resolution published: the hourly mart resolves overlaps
+  (most recently published wins) and records `coverage`.
+- Name each measure in `seeds/dims/metrics.csv` with its hourly aggregation (`mean` for MW, prices and
+  capacities; `sum` for volumes), and pass it to `hourly_series` the same way.
+- Read each staging model through `pending_partitions(ref(...), [area key])`, so an incremental build
+  transforms only the (area, hour) partitions pending loads touch.
 - Check: `dbt build` and `uv run pytest`, including the warehouse column-coverage test.
 
 ## 9. Marts and dashboard

@@ -6,6 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from power_desk.dashboard.app import app
+from power_desk.dashboard.widgets import DEFAULTS, load_widgets
 
 
 @pytest.fixture
@@ -18,7 +19,16 @@ def test_page_and_filters_describe_the_loaded_week(client):
     assert client.get("/").status_code == 200
     filters = client.get("/api/filters").json()
     assert (filters["min_date"], filters["max_date"]) == ("2024-03-01", "2024-03-07")
-    assert {"WIND", "CCGT", "SOLAR"} <= set(filters["fuel_types"])
+    assert {"GB", "FR", "DE_LU"} <= {area["display_name"] for area in filters["areas"]}
+
+
+@pytest.mark.parametrize("widget", load_widgets(DEFAULTS), ids=lambda widget: widget.id)
+def test_default_widgets_query_the_seeded_week(client, widget):
+    for sql in widget.queries:
+        payload = {"sql": sql, "start_date": "2024-03-01", "end_date": "2024-03-07"}
+        every_zone = client.post("/api/query", json=payload)
+        gb = client.post("/api/query", json={**payload, "areas": ["10YGB----------A"]})
+        assert every_zone.status_code == gb.status_code == 200, every_zone.text + gb.text
 
 
 def test_query_binds_dates_and_can_only_read_the_warehouse(client, tmp_path):
@@ -39,7 +49,7 @@ def test_lineage_runs_from_publisher_to_widget(client):
         ("stg_bmrs__fuelinst", "ods_generation_actual"),
         ("ods_generation_actual", "mart_gb_generation_mix"),
         ("ods_generation_actual", "mart_generation_actual"),
-        ("mart_gb_generation_mix", "widget_generation_mix_timeseries"),
+        ("mart_generation_actual", "widget_market"),
     } <= edges
 
 

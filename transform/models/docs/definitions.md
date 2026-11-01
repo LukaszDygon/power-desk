@@ -113,6 +113,12 @@ Forecasts of wind and solar net generation per bidding zone per market time unit
 For every market time unit the energy prices in each bidding zone, in currency per MWh, for bidding zones covered by an implicit allocation of cross-border transmission capacity. Day-ahead prices are mandatory, published no later than one hour after gate closure (the output time of the matching algorithms); intraday prices are published voluntarily. Prices are given per bidding zone, contract type (time horizon) and delivery period.
 {% enddocs %}
 
+{% docs dataset_entsoe__forecasted_transfer_capacities %}
+**Forecasted transfer capacities**
+
+The forecasted capacity (MW) per direction between areas, under coordinated net transmission capacity based allocation, calculated by TSOs or transmission capacity allocators ahead of the allocation process: year-ahead (a value per month), month-ahead and week-ahead (a value per day) and day-ahead (per market time unit). Where several data providers submit for the same oriented couple of areas, the platform publishes the minimum value; a new version replaces the previous one. Not published for regions and time horizons where flow-based allocation is conducted.
+{% enddocs %}
+
 {% docs dataset_entsoe_eic__codes %}
 **EIC approved codes (central registry)**
 
@@ -129,6 +135,42 @@ The permitted functions (roles) of EIC codes. Only a restricted list of function
 **EIC Local Issuing Offices**
 
 Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique two-character code that begins every EIC it issues. Parsed from the Local Issuing Offices table on the EIC page.
+{% enddocs %}
+
+{% docs dataset_neso__ifa_ntc %}
+**IFA, NESO's intraday transfer limit**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
+{% enddocs %}
+
+{% docs dataset_neso__ifa2_ntc %}
+**IFA2, NESO's intraday transfer limit**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
+{% enddocs %}
+
+{% docs dataset_neso__eleclink_ntc %}
+**ElecLink, NESO's net transfer capacity**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
+{% enddocs %}
+
+{% docs dataset_neso__nemolink_ntc %}
+**NemoLink, NESO's net transfer capacity**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
+{% enddocs %}
+
+{% docs dataset_neso__nsl_ntc %}
+**North Sea Link, NESO's net transfer capacity**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
+{% enddocs %}
+
+{% docs dataset_neso__viking_ntc %}
+**Viking Link, NESO's net transfer capacity**
+
+The values NESO submits to the interconnector capacity calculation processes, restricting the maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The final capacity is calculated from these values, those of the connected system operator and the interconnector's capability, so it may be lower than NESO's. Values are published only where NESO applied a restriction.
 {% enddocs %}
 
 {% docs dataset_pvlive__solar %}
@@ -369,6 +411,22 @@ Curator's note on the mapping.
 Name of the row's subject.
 {% enddocs %}
 
+{% docs col_entsoe_process_type %}
+ENTSO-E ProcessType code of the time horizon (e.g. `A01` day ahead); empty for the current forecast, which has none.
+{% enddocs %}
+
+{% docs col_metric %}
+Name of a measure column in the hourly marts (e.g. `generation_mw`).
+{% enddocs %}
+
+{% docs col_unit %}
+Unit of the measure (`MW`, `MWh`, `currency/MWh` in the row's `currency`).
+{% enddocs %}
+
+{% docs col_hourly_aggregation %}
+How `hourly_series` aggregates the measure into an hour: `mean`, the time-weighted mean over the minutes holding data (power, prices, capacities); `sum`, the published volume pro-rated by its minutes in the hour (energy volumes).
+{% enddocs %}
+
 {% docs col_description %}
 Description of the row's subject.
 {% enddocs %}
@@ -459,6 +517,50 @@ Currency of the price, as an ISO 4217 code (e.g. `EUR`).
 
 {% docs col_entsoe_energy_price %}
 Energy price for the market time unit, in `currency` per MWh.
+{% enddocs %}
+
+{% docs col_out_area_code %}
+EIC (object type Y) of the out area, the area flows come out from.
+{% enddocs %}
+
+{% docs col_out_area_display_name %}
+Transparency Platform display name of the out area, e.g. `France (FR)`.
+{% enddocs %}
+
+{% docs col_out_area_type_code %}
+Roles in which the out area publishes the value, `/`-separated: `BZN` bidding zone, `CTA` control area, `CTY` country.
+{% enddocs %}
+
+{% docs col_out_area_map_code %}
+Short code of the out area used by the Transparency Platform maps, e.g. `GB`, `NO2`.
+{% enddocs %}
+
+{% docs col_in_area_code %}
+EIC (object type Y) of the in area, the area flows come into.
+{% enddocs %}
+
+{% docs col_in_area_display_name %}
+Transparency Platform display name of the in area, e.g. `France (FR)`.
+{% enddocs %}
+
+{% docs col_in_area_type_code %}
+Roles in which the in area publishes the value, `/`-separated: `BZN` bidding zone, `CTA` control area, `CTY` country.
+{% enddocs %}
+
+{% docs col_in_area_map_code %}
+Short code of the in area used by the Transparency Platform maps, e.g. `GB`, `NO2`.
+{% enddocs %}
+
+{% docs col_ftc_resolution_code %}
+Period a capacity value covers, as an ISO 8601 duration: `P1M` (year-ahead, a value per month), `P1D` (month- and week-ahead, a value per day), or a market time unit (`PT15M`, `PT30M`, `PT60M`). Where a provider submits at a finer resolution, the platform publishes the lowest value per month (year-ahead) or day (month- and week-ahead); periods start at the area's local midnight.
+{% enddocs %}
+
+{% docs col_ftc_contract_type %}
+Time horizon of the forecast, `Day-ahead`, `Week-ahead`, `Month-ahead` or `Year-ahead`.
+{% enddocs %}
+
+{% docs col_entsoe_forecast_transfer_capacity_mw %}
+Forecasted transfer capacity from the out area to the in area, in MW: the minimum of the values the data providers submitted for the oriented couple of areas and period. Week-, month- and year-ahead values are the expected minimum to be offered to the market in that time frame.
 {% enddocs %}
 
 {% docs col_eic_code %}
@@ -593,12 +695,8 @@ Initial Transmission System Demand Outturn for the settlement period, in MW (nat
 Latest day-ahead demand forecast for the interval, in MW. GB, National Demand Forecast (same scope as Initial National Demand Outturn); ENTSO-E areas, day-ahead total load forecast (updated on changes of at least 10%).
 {% enddocs %}
 
-{% docs col_forecast_horizon %}
-Which forecast the value is: `day_ahead` (made the day before delivery: ENTSO-E fixed at 18:00 Brussels time for wind and solar, latest day-ahead update for load; Elexon NDF), `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision: ENTSO-E current forecast, Elexon WINDFOR).
-{% enddocs %}
-
 {% docs col_time_horizon %}
-Time horizon (ENTSO-E contract type) of the price: `day_ahead` or `intraday`. Null for Elexon MID, which reflects the GB short-term markets for delivery in the settlement period.
+Time horizon of the value (`dim_time_horizon`), one vocabulary for forecasts, prices and capacities. Forecasts: `day_ahead` (made the day before delivery: ENTSO-E fixed at 18:00 Brussels time for wind and solar, latest day-ahead update for load; Elexon NDF), `intraday` (ENTSO-E, fixed at 08:00 on the day) or `current` (the latest published revision: ENTSO-E current forecast, Elexon WINDFOR). Prices: the ENTSO-E contract type, `day_ahead` or `intraday`; null for Elexon MID, which reflects the GB short-term markets for delivery in the settlement period. Capacities: `day_ahead`, `week_ahead`, `month_ahead`, `year_ahead` (ENTSO-E contract type) or the NESO auction, `day_ahead` or `intraday` (the auction round is the `source_code`).
 {% enddocs %}
 
 {% docs col_classification_sequence %}
@@ -735,6 +833,58 @@ Highest settlement-period national demand within the hour, in MW.
 
 {% docs col_min_demand_mw %}
 Lowest settlement-period national demand within the hour, in MW.
+{% enddocs %}
+
+{% docs col_out_area_eic_code %}
+EIC of the area flows come out from (the out area of an oriented couple of areas).
+{% enddocs %}
+
+{% docs col_in_area_eic_code %}
+EIC of the area flows come into (the in area of an oriented couple of areas).
+{% enddocs %}
+
+{% docs col_transfer_capacity_mw %}
+Capacity for flows from the out area to the in area over the interval, in MW. ENTSO-E, the forecasted transfer capacity (the minimum submitted for the couple of areas; may be negative where the market algorithm restricts the exchange to one direction); NESO, the maximum flow NESO submits to the interconnector's capacity calculation, which the final capacity may undercut. Compare within one source.
+{% enddocs %}
+
+{% docs col_restriction_reason %}
+NESO's reason for the restriction in this direction (e.g. `Network Constraints`, `No Restriction`); null for ENTSO-E.
+{% enddocs %}
+
+{% docs col_coverage %}
+Fraction of the hour (0.0-1.0) holding data from the series' source. Means are over those minutes; multiply by `coverage` for the mean over the whole hour with missing minutes as zero.
+{% enddocs %}
+
+{% docs col__series_key %}
+Hash of the columns identifying the series (all but time, measures and provenance); with `timestamp_utc`, the row's key.
+{% enddocs %}
+
+{% docs col_data_upload_time_gmt %}
+Date and time the data was published (GMT). A resubmission is uploaded again with a later time; the ingest cursor.
+{% enddocs %}
+
+{% docs col_auction_type %}
+Day-ahead (`Day Ahead`) or intraday (`Intraday 1` .. `Intraday 4`) auction the restriction was submitted to.
+{% enddocs %}
+
+{% docs col_operational_period_start_date_and_time_gmt %}
+Start of the hourly operational period the restriction applies to (GMT); the period lasts one hour.
+{% enddocs %}
+
+{% docs col_flow_in_mw_to_gb %}
+Maximum flow towards GB (import), in MW.
+{% enddocs %}
+
+{% docs col_reason_for_restriction_to_gb %}
+Reason for the restriction towards GB, e.g. `Network Constraints`; `No Restriction` where none applies.
+{% enddocs %}
+
+{% docs col_flow_in_mw_from_gb %}
+Maximum flow from GB (export), in MW.
+{% enddocs %}
+
+{% docs col_reason_for_restriction_from_gb %}
+Reason for the restriction from GB, e.g. `Margin Extremes`; `No Restriction` where none applies.
 {% enddocs %}
 
 {% docs col__dlt_load_id %}

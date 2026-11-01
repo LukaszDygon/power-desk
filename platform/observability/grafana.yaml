@@ -1,0 +1,40 @@
+# Grafana on a local cluster: Loki as its data source and the Power Desk logs dashboard (logs-dashboard.json,
+# set by the Makefile). Anonymous admin, no login: local cluster only.
+grafana.ini:
+  auth:
+    disable_login_form: true
+  auth.anonymous:
+    enabled: true
+    org_role: Admin
+  analytics:
+    reporting_enabled: false
+    check_for_updates: false
+    check_for_plugin_updates: false
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        uid: loki
+        type: loki
+        url: http://loki.observability.svc:3100
+        isDefault: true
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: power-desk
+        folder: Power Desk
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards/power-desk
+
+persistence:
+  enabled: false  # provisioned from these files; nothing to keep
+testFramework:
+  enabled: false
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {memory: 256Mi}

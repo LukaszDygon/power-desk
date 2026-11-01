@@ -1,0 +1,25 @@
+[project]
+name = "power-desk-services"
+version = "0.1.0"
+description = "Long-running services that land publisher push feeds (Elexon IRIS, ENTSO-E subscriptions) with dlt"
+requires-python = ">=3.13"
+dependencies = [
+    "azure-identity>=1.19.0",
+    "azure-servicebus>=7.14.0",
+    "defusedxml>=0.7.1",
+    "dlt[filesystem]>=1.30.0",
+    "fastapi>=0.115.0",
+    "power-desk-logging",
+    "python-dotenv>=1.2.3",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[tool.uv.sources]
+power-desk-logging = { workspace = true }
+
+[project.scripts]
+power-desk-service = "power_desk_services.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

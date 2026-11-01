@@ -41,6 +41,10 @@ def test_combined_marts_hold_every_source_and_area(seeded_warehouse):
     assert query(seeded_warehouse, sources.format("mart_demand_actual"))[0][0] == "ENTSOE_6.1.A,INDO"
     assert query(seeded_warehouse, sources.format("mart_demand_forecast"))[0][0] == "ENTSOE_6.1.B,NDF"
     assert query(seeded_warehouse, sources.format("mart_generation_forecast"))[0][0] == "ENTSOE_14.1.D,WINDFOR"
+    capacities = "select string_agg(distinct source_dataset, ',' order by source_dataset) from marts.{}"
+    assert query(seeded_warehouse, capacities.format("mart_transfer_capacity")) == [
+        ("ENTSOE_11.1.A,NESO_ELECLINK,NESO_IFA,NESO_IFA2,NESO_NEMOLINK,NESO_NSL,NESO_VIKING",)
+    ]
     assert query(
         seeded_warehouse, "select count(*) from marts.mart_generation_actual where technology_code is null"
     ) == [(0,)]
@@ -82,6 +86,157 @@ def test_a_revised_load_rebuilds_only_the_grains_it_touches(warehouse_copy, tmp_
         "where settlement_date = '2024-03-03' and settlement_period = 10",
     ) == [(99_999,)]
     assert pending_load_ids(warehouse_copy) == []
+
+
+def test_a_neso_resubmission_replaces_the_restriction_in_the_entity(warehouse_copy, tmp_path):
+    publishers = SeedPublishers.from_seed()
+    [original] = [
+        r
+        for r in publishers.records["neso__nsl_ntc"]
+        if r["Auction Type"] == "Day Ahead" and r["Operational Period Start Date and Time GMT"] == "2024-03-04T18:00:00"
+    ]
+    publishers.records["neso__nsl_ntc"] = [
+        {**original, "Data Upload Time GMT": "2024-03-08T12:00:00", "Flow in MW From GB": 1}
+    ]
+    with replay(publishers):
+        run(
+            make_pipeline("neso", warehouse_copy),
+            make_source("neso", SOURCES["neso"].window("2024-03-08", "2024-03-08"), ["neso__nsl_ntc"]),
+        )
+    assert build(warehouse_copy, tmp_path) == 0
+    assert query(
+        warehouse_copy,
+        "select out_area_map_code, transfer_capacity_mw from ods.ods_transfer_capacity o "
+        "join (select area_eic_code, display_name as out_area_map_code from dims.dim_area where is_current) a "
+        "on a.area_eic_code = o.out_area_eic_code "
+        "where source_dataset = 'NESO_NSL' and source_code = 'Day Ahead' and timestamp_utc = '2024-03-04 18:00' "
+        "order by all",
+    ) == [("GB", 1.0), ("NO2", float(original["Flow in MW To GB"]))]
+
+
+def test_overlapping_periods_resolve_to_the_most_recently_published_in_the_hourly_mart(warehouse_copy, tmp_path):
+    # a pending load republishes FR (60-minute in the seed) at 15 minutes for one hour, published later, and NL
+    # (15-minute) at 60 minutes for another, published earlier: the entity keeps every row, the hourly mart
+    # takes the most recent publication, and incremental builds match full ones
+    with warehouse.connect(warehouse_copy, read_only=False) as con:
+        con.execute(
+            "insert into raw._dlt_loads (load_id, schema_name, status, inserted_at) "
+            "values ('1999999999.2', 'manual', 0, now())"
+        )
+        con.execute("""insert into raw.entsoe__actual_total_load
+                       select r.* replace (r.date_time_utcx + to_minutes(t.m * 15) as date_time_utcx,
+                                           'PT15M' as resolution_code, 1000.0 + t.m as total_load_mwx,
+                                           r.update_time_utcx + interval 1 day as update_time_utcx,
+                                           '1999999999.2' as _dlt_load_id, 'fr15-' || t.m as _dlt_id)
+                       from raw.entsoe__actual_total_load r, range(4) t(m)
+                       where area_code = '10YFR-RTE------C' and _dlt_valid_to is null
+                         and date_time_utcx = timestamptz '2024-03-04 10:00:00+00'""")
+        con.execute("""insert into raw.entsoe__actual_total_load
+                       select * replace ('PT60M' as resolution_code, 99999.0 as total_load_mwx,
+                                         update_time_utcx - interval 1 day as update_time_utcx,
+                                         '1999999999.2' as _dlt_load_id, 'nl60' as _dlt_id)
+                       from raw.entsoe__actual_total_load
+                       where area_code = '10YNL----------L' and _dlt_valid_to is null
+                         and date_time_utcx = timestamptz '2024-03-04 12:00:00+00'""")
+    assert build(warehouse_copy, tmp_path) == 0
+
+    published = (
+        "select interval_minutes, count(*), avg(demand_mw) from ods.ods_demand_actual where area_eic_code = '{0}' "
+        "and timestamp_utc >= timestamp '{1}' and timestamp_utc < timestamp '{1}' + interval 1 hour group by all "
+        "order by all"
+    )
+    assert query(warehouse_copy, published.format("10YFR-RTE------C", "2024-03-04 10:00"))[0] == (15, 4, 1001.5)
+    [nl_15, nl_60] = query(warehouse_copy, published.format("10YNL----------L", "2024-03-04 12:00"))
+    assert nl_15[:2] == (15, 4) and nl_60 == (60, 1, 99999.0)
+
+    hourly = (
+        "select demand_mw, coverage from marts.mart_demand_actual where area_eic_code = '{0}' "
+        "and timestamp_utc = timestamp '{1}'"
+    )
+    assert query(warehouse_copy, hourly.format("10YFR-RTE------C", "2024-03-04 10:00")) == [(1001.5, 1.0)]
+    assert query(warehouse_copy, hourly.format("10YNL----------L", "2024-03-04 12:00")) == [(round(nl_15[2], 3), 1.0)]
+
+    for relation in ("ods.ods_demand_actual", "marts.mart_demand_actual"):
+        rows = f"select * from {relation} order by all"
+        incremental = query(warehouse_copy, rows)
+        full_refresh = ["run", "--select", relation.split(".")[1], "--full-refresh"]
+        assert run_dbt(full_refresh, warehouse_copy, target_path=tmp_path / "target") == 0
+        assert query(warehouse_copy, rows) == incremental
+
+
+def test_a_calendar_day_ends_where_the_next_begins_across_a_clock_change(warehouse_copy, tmp_path):
+    # Brussels-midnight days around the clock changes of 31 March 2024 (a 23-hour day in UTC) and 27 October
+    # 2024 (25 hours), arriving one load at a time, each published after the next: every hour holds exactly
+    # one day's value, and the incremental builds match a full build
+    days = [
+        ("2024-03-29 23:00", 101.0),
+        ("2024-03-30 23:00", 102.0),
+        ("2024-03-31 22:00", 103.0),
+        ("2024-10-25 22:00", 201.0),
+        ("2024-10-26 22:00", 202.0),
+        ("2024-10-27 23:00", 203.0),
+    ]
+    for i, (start, mw) in enumerate(days):
+        load_id = f"199999999{i}.5"
+        with warehouse.connect(warehouse_copy, read_only=False) as con:
+            con.execute(
+                "insert into raw._dlt_loads (load_id, schema_name, status, inserted_at) "
+                f"values ('{load_id}', 'manual', 0, now())"
+            )
+            con.execute(f"""insert into raw.entsoe__forecasted_transfer_capacities
+                            select * replace (timestamptz '{start}:00+00' as date_time_utcx,
+                                              {mw} as forecast_transfer_capacity_mwx,
+                                              timestamptz '2024-11-30 00:00:00+00' - to_days({i}) as update_time_utcx,
+                                              '{load_id}' as _dlt_load_id, 'dst-{i}' as _dlt_id)
+                            from raw.entsoe__forecasted_transfer_capacities
+                            where contract_type = 'Month-ahead' and out_area_map_code = 'GB'
+                              and in_area_map_code = 'FR' and _dlt_valid_to is null
+                            limit 1""")
+        assert build(warehouse_copy, tmp_path) == 0
+
+    hours = (
+        "select transfer_capacity_mw, count(*), min(coverage), max(coverage) from marts.mart_transfer_capacity "
+        "where source_code = 'Month-ahead' and out_area_eic_code = '10YGB----------A' "
+        "and in_area_eic_code = '10YFR-RTE------C' and timestamp_utc >= timestamp '2024-03-29 23:00' "
+        "group by all order by all"
+    )
+    assert query(warehouse_copy, hours) == [
+        (101.0, 24, 1.0, 1.0),
+        (102.0, 23, 1.0, 1.0),
+        (103.0, 24, 1.0, 1.0),
+        (201.0, 24, 1.0, 1.0),
+        (202.0, 25, 1.0, 1.0),
+        (203.0, 24, 1.0, 1.0),
+    ]
+
+    rows = "select * from marts.mart_transfer_capacity order by all"
+    incremental = query(warehouse_copy, rows)
+    full_refresh = ["run", "--select", "mart_transfer_capacity", "--full-refresh"]
+    assert run_dbt(full_refresh, warehouse_copy, target_path=tmp_path / "target") == 0
+    assert query(warehouse_copy, rows) == incremental
+
+
+def test_hourly_marts_weight_by_minutes_and_record_coverage(seeded_warehouse):
+    # FUELINST is published every 5 minutes: an hour of it is the mean of its twelve values
+    [(expected, slots)] = query(
+        seeded_warehouse,
+        "select round(avg(generation_mw), 3), count(*) from ods.ods_generation_actual "
+        "where source_dataset = 'FUELINST' and source_code = 'CCGT' "
+        "and timestamp_utc >= timestamp '2024-03-04 10:00' and timestamp_utc < timestamp '2024-03-04 11:00'",
+    )
+    assert slots == 12
+    assert query(
+        seeded_warehouse,
+        "select generation_mw, coverage from marts.mart_generation_actual where source_dataset = 'FUELINST' "
+        "and source_code = 'CCGT' and timestamp_utc = timestamp '2024-03-04 10:00'",
+    ) == [(expected, 1.0)]
+    # a year-ahead capacity (a month-long period) holds in every hour of its month
+    assert query(
+        seeded_warehouse,
+        "select count(*), min(coverage), count(distinct transfer_capacity_mw) from marts.mart_transfer_capacity "
+        "where time_horizon = 'year_ahead' and source_dataset = 'ENTSOE_11.1.A' "
+        "and out_area_eic_code = '10YGB----------A' and in_area_eic_code = '10YFR-RTE------C'",
+    ) == [(30 * 24, 1.0, 1)]
 
 
 def test_a_duplicated_raw_row_fails_its_guard_and_keeps_the_load_pending(warehouse_copy, tmp_path):

@@ -1,5 +1,5 @@
-version: 2
-version_hash: 3YLw3orByF9dipumEIsCjYPtWyJplyMkO9WLjItobqU=
+version: 4
+version_hash: xh41RDww6AdufRAGyYAyTUO1ZJEa16KuNsftvXVOQ0Q=
 engine_version: 11
 name: entsoe
 tables:
@@ -407,6 +407,85 @@ tables:
     resource: _dlt_pipeline_state
     x-normalizer:
       seen-data: true
+  entsoe__forecasted_transfer_capacities:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      date_time_utcx:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      resolution_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      out_area_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      out_area_display_name:
+        data_type: text
+        nullable: true
+      out_area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      out_area_map_code:
+        data_type: text
+        nullable: true
+      in_area_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      in_area_display_name:
+        data_type: text
+        nullable: true
+      in_area_type_code:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      in_area_map_code:
+        data_type: text
+        nullable: true
+      contract_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      forecast_transfer_capacity_mwx:
+        data_type: double
+        nullable: true
+      update_time_utcx:
+        data_type: timestamp
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: entsoe__forecasted_transfer_capacities
+    x-normalizer:
+      seen-data: true
 settings:
   detections:
   - iso_timestamp
@@ -430,5 +509,7 @@ normalizers:
   json:
     module: dlt.common.normalizers.json.relational
 previous_hashes:
+- 4XRdzdLWkYOHlGqSLXZ9OlLueKzrlM5wxsEZgrCMcnQ=
+- 3YLw3orByF9dipumEIsCjYPtWyJplyMkO9WLjItobqU=
 - 7bQjCh9GomtLwcQHv6aBprDCInwoh/ggpu/0Stw8Z7Q=
 - sPiZAsJG0+/bpF0At/shXzrW1OkNGJz57EJIvgwmbE0=

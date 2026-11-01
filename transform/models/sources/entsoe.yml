@@ -53,6 +53,7 @@ sources:
           - resolution_code
           - area_code
           - area_type_code
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe__actual_total_load_unique_row_version
         arguments:
@@ -167,6 +168,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
           - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -227,6 +230,7 @@ sources:
           - resolution_code
           - area_code
           - area_type_code
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe__day_ahead_total_load_forecast_unique_row_version
         arguments:
@@ -341,6 +345,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
           - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -403,6 +409,7 @@ sources:
           - area_code
           - area_type_code
           - production_type
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe__generation_per_type_unique_row_version
         arguments:
@@ -537,6 +544,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
           - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -599,6 +608,7 @@ sources:
           - area_code
           - area_type_code
           - production_type
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe__wind_solar_forecast_unique_row_version
         arguments:
@@ -741,6 +751,8 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
           - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -811,6 +823,7 @@ sources:
           - area_type_code
           - contract_type
           - sequence
+          - _dlt_valid_to
     - dlt_unique:
         name: entsoe__energy_prices_unique_row_version
         arguments:
@@ -977,6 +990,242 @@ sources:
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
           - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+    - name: _dlt_load_id
+      description: '{{ doc(''col__dlt_load_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+      data_tests:
+      - not_null
+    - name: _dlt_id
+      description: '{{ doc(''col__dlt_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+  - name: entsoe__forecasted_transfer_capacities
+    description: '{{ doc(''dataset_entsoe__forecasted_transfer_capacities'') }}'
+    config:
+      meta:
+        dagster:
+          asset_key:
+          - raw
+          - entsoe__forecasted_transfer_capacities
+        dlt:
+          pipeline: entsoe
+          resource: entsoe__forecasted_transfer_capacities
+          write_disposition: merge
+          merge_strategy: scd2
+          primary_key:
+          - date_time_utcx
+          - resolution_code
+          - out_area_code
+          - out_area_type_code
+          - in_area_code
+          - in_area_type_code
+          - contract_type
+          cursor_column: null
+        dlt_recent_column: _dlt_load_id
+        references:
+        - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
+          url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+          section: Estimated and offered cross-zonal capacity
+          page: 37
+        - title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+          url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+          section: 7.4-7.7 Forecasted year-, month-, week- and day-ahead transfer capacities [11.1]
+          page: 66
+        - title: Commission Regulation (EU) No 543/2013 on submission and publication of data in electricity markets
+          url: https://eur-lex.europa.eu/eli/reg/2013/543/oj
+          section: Article 11(1)(a)
+        - title: Transparency Platform File Library guide
+          url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+          path: TP_export/ForecastedTransferCapacities_11.1_r3.1
+      loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
+      freshness:
+        warn_after:
+          count: 30
+          period: hour
+        error_after:
+          count: 54
+          period: hour
+    data_tests:
+    - dlt_unique:
+        name: entsoe__forecasted_transfer_capacities_unique_natural_key
+        arguments:
+          columns:
+          - date_time_utcx
+          - resolution_code
+          - out_area_code
+          - out_area_type_code
+          - in_area_code
+          - in_area_type_code
+          - contract_type
+          - _dlt_valid_to
+    - dlt_unique:
+        name: entsoe__forecasted_transfer_capacities_unique_row_version
+        arguments:
+          columns:
+          - _dlt_id
+          - _dlt_valid_from
+    columns:
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: date_time_utcx
+      description: '{{ doc(''col_date_time_utc'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: Transparency Platform File Library guide
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
+      data_tests:
+      - not_null
+    - name: resolution_code
+      description: '{{ doc(''col_ftc_resolution_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+          - title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+            section: 7.4.6 and 7.5.6 Processing
+            page: 67
+      data_tests:
+      - not_null
+    - name: out_area_code
+      description: '{{ doc(''col_out_area_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+          - title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+            section: 7.4.1 Data description
+            page: 66
+      data_tests:
+      - not_null
+    - name: out_area_display_name
+      description: '{{ doc(''col_out_area_display_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+    - name: out_area_type_code
+      description: '{{ doc(''col_out_area_type_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+      data_tests:
+      - not_null
+    - name: out_area_map_code
+      description: '{{ doc(''col_out_area_map_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+    - name: in_area_code
+      description: '{{ doc(''col_in_area_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+          - title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+            section: 7.4.1 Data description
+            page: 66
+      data_tests:
+      - not_null
+    - name: in_area_display_name
+      description: '{{ doc(''col_in_area_display_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+    - name: in_area_type_code
+      description: '{{ doc(''col_in_area_type_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+      data_tests:
+      - not_null
+    - name: in_area_map_code
+      description: '{{ doc(''col_in_area_map_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+    - name: contract_type
+      description: '{{ doc(''col_ftc_contract_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
+      data_tests:
+      - not_null
+    - name: forecast_transfer_capacity_mwx
+      description: '{{ doc(''col_entsoe_forecast_transfer_capacity_mw'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: Manual of Procedures v3.5, Ref. 12 Business Requirements Specification v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+            section: 7.4.6 Processing
+            page: 67
+          - title: Manual of Procedures v3.5, Ref. 2 Detailed Data Descriptions v3r5 (zip package)
+            url: https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/mc-documents/transparency-platform/MOP/MoP_v3r5_final.zip
+            section: Estimated and offered cross-zonal capacity
+            page: 38
+    - name: update_time_utcx
+      description: '{{ doc(''col_update_time_utc'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: File Library extract specification, ActualTotalLoad_6.1.A_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492490842513-ActualTotalLoad-6-1-A-r3
+          - title: File Library extract specification, DayAheadTotalLoadForecast_6.1.B_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36492900251281-DayAheadTotalLoadForecast-6-1-B-r3
+          - title: File Library extract specification, AggregatedGenerationPerType_16.1.B_C_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36493702227729
+          - title: File Library extract specification, GenerationForecastsForWindAndSolar_14.1.D_r3
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/36495298181649
+          - title: File Library extract specification, EnergyPrices_12.1.D_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47308268140689-EnergyPrices-12-1-D-r3-1
+          - title: File Library extract specification, ForecastedTransferCapacities_11.1_r3.1
+            url: https://transparencyplatform.zendesk.com/hc/en-us/articles/47873087545489-ForecastedTransferCapacities-11-1-r3-1
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:

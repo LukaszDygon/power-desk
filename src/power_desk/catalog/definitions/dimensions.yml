@@ -128,5 +128,16 @@ columns:
     description: Curator's note on the mapping.
   name:
     description: Name of the row's subject.
+  entsoe_process_type:
+    description: ENTSO-E ProcessType code of the time horizon (e.g. `A01` day ahead); empty for the current forecast, which has none.
+    links: [{link: entsoe_codelist, section: 2.26 ProcessType enumeration, page: 45}]
+  metric:
+    description: Name of a measure column in the hourly marts (e.g. `generation_mw`).
+  unit:
+    description: Unit of the measure (`MW`, `MWh`, `currency/MWh` in the row's `currency`).
+  hourly_aggregation:
+    description: "How `hourly_series` aggregates the measure into an hour: `mean`, the time-weighted mean over
+      the minutes holding data (power, prices, capacities); `sum`, the published volume pro-rated by its
+      minutes in the hour (energy volumes)."
   description:
     description: Description of the row's subject.

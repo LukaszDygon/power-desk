@@ -11,6 +11,7 @@
   
   <!-- Open-Source Libraries: GridStack.js -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   
   <!-- Custom Minimalist Analyst Stylesheet -->
   <link rel="stylesheet" href="/static/css/dashboard.css">
@@ -18,6 +19,7 @@
   <!-- Core Open-Source CDNs -->
   <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
@@ -33,7 +35,7 @@
       </div>
       <div class="status-indicator">
         <span class="status-dot"></span>
-        <span>DUCKDB 1.5.5 // BMRS</span>
+        <span>DUCKDB 1.5.5 // BMRS · ENTSO-E</span>
       </div>
       <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#64748b;">
         Partition: <span id="warehouse-stats" style="color:#94a3b8;">--</span>
@@ -56,22 +58,21 @@
   <section class="filter-bar">
     <div class="filter-group">
       <span class="filter-label">Settlement Window:</span>
-      <input type="date" id="filter-start-date" class="input-terminal" value="{{ filters.min_date or "" }}">
+      <input type="date" id="filter-start-date" class="input-terminal" value="{{ filters.default_start_date or "" }}"
+             min="{{ filters.min_date or "" }}" max="{{ filters.max_date or "" }}">
       <span style="color:#475569;">&rarr;</span>
-      <input type="date" id="filter-end-date" class="input-terminal" value="{{ filters.max_date or "" }}">
+      <input type="date" id="filter-end-date" class="input-terminal" value="{{ filters.max_date or "" }}"
+             min="{{ filters.min_date or "" }}" max="{{ filters.max_date or "" }}">
       <button class="btn-terminal btn-primary" id="btn-apply-filters">
         Run Filter
       </button>
+      <span class="refresh-status" id="refresh-status" role="status" aria-live="polite"></span>
     </div>
 
-    <div class="filter-group" style="gap:6px;">
-      <span class="filter-label">Fuels:</span>
-      <span class="fuel-pill active" style="color: var(--energy-wind)"><span class="fuel-dot"></span>Wind</span>
-      <span class="fuel-pill active" style="color: var(--energy-solar)"><span class="fuel-dot"></span>Solar</span>
-      <span class="fuel-pill active" style="color: var(--energy-nuclear)"><span class="fuel-dot"></span>Nuclear</span>
-      <span class="fuel-pill active" style="color: var(--energy-gas)"><span class="fuel-dot"></span>CCGT</span>
-      <span class="fuel-pill active" style="color: var(--energy-biomass)"><span class="fuel-dot"></span>Biomass</span>
-      <span class="fuel-pill active" style="color: var(--energy-hydro)"><span class="fuel-dot"></span>Hydro</span>
+    <div class="filter-group area-filter">
+      <span class="filter-label">Zones:</span>
+      <div class="area-chips" id="area-chips"></div>
+      <button class="btn-terminal" id="btn-clear-areas" title="Clear the selection: every bidding zone">All zones</button>
     </div>
   </section>
 

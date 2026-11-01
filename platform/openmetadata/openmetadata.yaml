@@ -1,0 +1,16 @@
+# The OpenMetadata server on a local cluster, against `dependencies.yaml`. Basic auth with the default admin
+# (admin@open-metadata.org / admin); ingestion from the CLI, so no pipeline service (Airflow).
+image:
+  pullPolicy: IfNotPresent
+openmetadata:
+  config:
+    pipelineServiceClientConfig:
+      enabled: false
+    deployPipelinesConfig:
+      enabled: false
+extraEnvs:
+  - name: OPENMETADATA_HEAP_OPTS
+    value: "-Xmx640m -Xms256m"
+resources:
+  requests: {cpu: 250m, memory: 768Mi}
+  limits: {memory: 1200Mi}

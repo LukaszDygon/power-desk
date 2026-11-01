@@ -7,7 +7,6 @@ backfill that leaves the cursor untouched; `--chunk-days` loads a long range chu
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 
 from power_desk.ingest.pipeline import make_pipeline, make_source, run
@@ -16,6 +15,7 @@ from power_desk.ingest.spec import RunWindow, SourceSpec
 from power_desk.ingest.windows import DateRange, to_date
 from power_desk.settings import warehouse_path
 from power_desk.transform.dbt import DbtRun
+import power_desk_logging
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,7 +49,7 @@ def run_windows(args: argparse.Namespace, spec: SourceSpec) -> list[RunWindow]:
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    power_desk_logging.configure("backfill")
     args = parse_args()
     db_path = args.db_path or str(warehouse_path())
     for name in args.sources:
@@ -58,7 +58,7 @@ def main() -> int:
             continue
         pipeline = make_pipeline(name, db_path)
         for window in run_windows(args, SOURCES[name]):
-            print(run(pipeline, make_source(name, window, resources), refresh=args.refresh))
+            run(pipeline, make_source(name, window, resources), refresh=args.refresh)
     if args.skip_dbt:
         return 0
     scope = args.scope or ("all" if args.end_date else "recent")

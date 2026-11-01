@@ -1,0 +1,6 @@
+apiVersion: v2
+name: power-desk-services
+description: Power Desk long-running services (Elexon IRIS, ENTSO-E subscriptions), landing publisher feeds with dlt
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

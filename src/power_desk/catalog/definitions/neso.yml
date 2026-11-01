@@ -1,0 +1,91 @@
+# Source `neso` (NESO Data Portal): dbt source, raw tables and NESO-specific fields.
+# Wording follows the NESO dataset pages and the field descriptions of their datastore resources.
+links:
+  neso_ifa:
+    title: NESO Data Portal, IFA - NESO's Intraday Transfer Limit
+    url: https://www.neso.energy/data-portal/ifa
+  neso_ifa2:
+    title: NESO Data Portal, IFA2 - NESO's Intraday Transfer Limit
+    url: https://www.neso.energy/data-portal/ifa2
+  neso_eleclink:
+    title: NESO Data Portal, ElecLink - NESO's Net Transfer Capacity
+    url: https://www.neso.energy/data-portal/eleclink
+  neso_nemolink:
+    title: NESO Data Portal, NemoLink - NESO's Net Transfer Capacity
+    url: https://www.neso.energy/data-portal/nemolink
+  neso_nsl:
+    title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
+    url: https://www.neso.energy/data-portal/nsl
+  neso_viking:
+    title: NESO Data Portal, Viking Link - NESO's Net Transfer Capacity
+    url: https://www.neso.energy/data-portal/viking
+  neso_datastore_api:
+    title: NESO Data Portal API guidance (CKAN datastore)
+    url: https://www.neso.energy/data-portal/api-guidance
+
+sources:
+  neso:
+    description: >-
+      NESO Data Portal datasets, loaded by the `neso` dlt pipeline from the portal's datastore by upload
+      time, as published; each table keeps the versions of its rows (scd2) merged on the natural key
+      (auction type and operational period).
+tables:
+  neso__ifa_ntc:
+    title: IFA, NESO's intraday transfer limit
+    description: &ntc >-
+      The values NESO submits to the interconnector capacity calculation processes, restricting the
+      maximum GB import and export flows, in MW per hourly period, per day-ahead or intraday auction. The
+      final capacity is calculated from these values, those of the connected system operator and the
+      interconnector's capability, so it may be lower than NESO's. Values are published only where NESO
+      applied a restriction.
+    links: [neso_ifa]
+    freshness: capacity_restrictions
+  neso__ifa2_ntc:
+    title: IFA2, NESO's intraday transfer limit
+    description: *ntc
+    links: [neso_ifa2]
+    freshness: capacity_restrictions
+  neso__eleclink_ntc:
+    title: ElecLink, NESO's net transfer capacity
+    description: *ntc
+    links: [neso_eleclink]
+    freshness: capacity_restrictions
+  neso__nemolink_ntc:
+    title: NemoLink, NESO's net transfer capacity
+    description: *ntc
+    links: [neso_nemolink]
+    freshness: capacity_restrictions
+  neso__nsl_ntc:
+    title: North Sea Link, NESO's net transfer capacity
+    description: *ntc
+    links: [neso_nsl]
+    freshness: capacity_restrictions
+  neso__viking_ntc:
+    title: Viking Link, NESO's net transfer capacity
+    description: *ntc
+    links: [neso_viking]
+    freshness: capacity_restrictions
+columns:
+  data_upload_time_gmt:
+    description: >-
+      Date and time the data was published (GMT). A resubmission is uploaded again with a later time; the
+      ingest cursor.
+    links: [neso_nsl]
+  auction_type:
+    description: Day-ahead (`Day Ahead`) or intraday (`Intraday 1` .. `Intraday 4`) auction the restriction was submitted to.
+    links: [neso_nsl]
+  operational_period_start_date_and_time_gmt:
+    description: Start of the hourly operational period the restriction applies to (GMT); the period lasts one hour.
+    links: [neso_nsl]
+  flow_in_mw_to_gb:
+    description: Maximum flow towards GB (import), in MW.
+    links: [neso_nsl]
+  reason_for_restriction_to_gb:
+    description: Reason for the restriction towards GB, e.g. `Network Constraints`; `No Restriction` where none applies.
+    links: [neso_nsl]
+  flow_in_mw_from_gb:
+    description: Maximum flow from GB (export), in MW.
+    links: [neso_nsl]
+  reason_for_restriction_from_gb:
+    description: Reason for the restriction from GB, e.g. `Margin Extremes`; `No Restriction` where none applies.
+    links: [neso_nsl]

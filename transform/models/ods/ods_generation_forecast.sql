@@ -4,13 +4,13 @@ with windfor as (
         ds.native_interval_minutes as interval_minutes,
         ds.default_area_eic_code as area_eic_code,
         '*' as source_code,
-        'current' as forecast_horizon,
+        'current' as time_horizon,
         s.generation_mw,
         s.publish_time_utc,
         ds.source_dataset,
         ds.source_dataset as code_list,
         s._dlt_load_id
-    from {{ ref('stg_bmrs__windfor') }} s
+    from {{ pending_partitions(ref('stg_bmrs__windfor')) }} s
     join {{ ref('source_datasets') }} ds on ds.source_dataset = 'WINDFOR'
 ),
 
@@ -23,15 +23,14 @@ entsoe as (
         interval_minutes,
         area_eic_code,
         psr_type as source_code,
-        '{{ horizon }}' as forecast_horizon,
+        '{{ horizon }}' as time_horizon,
         {{ horizon }}_forecast_mw as generation_mw,
         publish_time_utc,
         'ENTSOE_14.1.D' as source_dataset,
         'ENTSOE_PSR' as code_list,
         _dlt_load_id
-    from {{ ref('stg_entsoe__wind_solar_forecast') }}
+    from {{ pending_partitions(ref('stg_entsoe__wind_solar_forecast'), ['area_eic_code']) }}
     where {{ horizon }}_forecast_mw is not null
-    {{ keep_finest_resolution(['area_eic_code', 'production_type']) }}
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 ),
@@ -47,7 +46,7 @@ select
     u.interval_minutes,
     u.area_eic_code,
     mt.technology_code,
-    u.forecast_horizon,
+    u.time_horizon,
     u.generation_mw,
     u.source_dataset,
     u.source_code,

@@ -1,9 +1,7 @@
-select
-    timestamp_utc,
-    interval_minutes,
-    area_eic_code,
-    forecast_horizon,
-    demand_mw,
-    source_dataset,
-    _dlt_load_id
-from {{ ref('ods_demand_forecast') }}
+{{ config(unique_key=['timestamp_utc', '_series_key']) }}
+
+{{ hourly_series(
+    ref('ods_demand_forecast'),
+    series=['area_eic_code', 'time_horizon', 'source_dataset'],
+    means=['demand_mw'],
+) }}

@@ -1,0 +1,427 @@
+version: 2
+version_hash: H7gsSdiGdx9MXUttGzeDDBYsD+ITlQtHxpH2FjHF3Gw=
+engine_version: 11
+name: neso
+tables:
+  _dlt_version:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_name:
+        data_type: text
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: false
+      schema:
+        data_type: text
+        nullable: false
+    write_disposition: skip
+    resource: _dlt_version
+    description: Created by DLT. Tracks schema updates
+  _dlt_loads:
+    columns:
+      load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      schema_name:
+        data_type: text
+        nullable: true
+      status:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_version_hash:
+        data_type: text
+        nullable: true
+    write_disposition: skip
+    resource: _dlt_loads
+    description: Created by DLT. Tracks completed loads
+  neso__ifa_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__ifa_ntc
+    x-normalizer:
+      seen-data: true
+  neso__ifa2_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__ifa2_ntc
+    x-normalizer:
+      seen-data: true
+  neso__eleclink_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__eleclink_ntc
+    x-normalizer:
+      seen-data: true
+  neso__nemolink_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__nemolink_ntc
+    x-normalizer:
+      seen-data: true
+  neso__nsl_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__nsl_ntc
+    x-normalizer:
+      seen-data: true
+  neso__viking_ntc:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      flow_in_mw_to_gb:
+        data_type: bigint
+        nullable: true
+      operational_period_start_date_and_time_gmt:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: timestamp
+      data_upload_time_gmt:
+        nullable: false
+        primary_key: true
+        incremental: true
+        data_type: timestamp
+      reason_for_restriction_to_gb:
+        data_type: text
+        nullable: true
+      flow_in_mw_from_gb:
+        data_type: bigint
+        nullable: true
+      auction_type:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      reason_for_restriction_from_gb:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: neso__viking_ntc
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+settings:
+  detections:
+  - iso_timestamp
+  default_hints:
+    not_null:
+    - _dlt_id
+    - _dlt_root_id
+    - _dlt_parent_id
+    - _dlt_list_idx
+    - _dlt_load_id
+    parent_key:
+    - _dlt_parent_id
+    root_key:
+    - _dlt_root_id
+    unique:
+    - _dlt_id
+    row_key:
+    - _dlt_id
+normalizers:
+  names: snake_case
+  json:
+    module: dlt.common.normalizers.json.relational
+previous_hashes:
+- XNhNOyQoIiOR4Et/Pq8ofB1TJoayktALVa3TWAZ3Qlk=
+- HfYKLciKPiCfG6SVAG8qxBS8ORI3ihB86ye/yEo7FVo=
+- H7gsSdiGdx9MXUttGzeDDBYsD+ITlQtHxpH2FjHF3Gw=

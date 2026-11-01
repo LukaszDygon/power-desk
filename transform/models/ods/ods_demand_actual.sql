@@ -8,7 +8,7 @@ select
     s.settlement_period,
     s.publish_time_utc,
     s._dlt_load_id
-from {{ ref('stg_bmrs__indo') }} s
+from {{ pending_partitions(ref('stg_bmrs__indo')) }} s
 join {{ ref('source_datasets') }} ds on ds.source_dataset = 'INDO'
 
 union all
@@ -23,6 +23,4 @@ select
     cast(null as integer) as settlement_period,
     publish_time_utc,
     _dlt_load_id
-from {{ ref('stg_entsoe__actual_total_load') }}
--- an area changing its market time unit publishes the overlap at both resolutions: keep the finest
-{{ keep_finest_resolution(['area_eic_code']) }}
+from {{ pending_partitions(ref('stg_entsoe__actual_total_load'), ['area_eic_code']) }}

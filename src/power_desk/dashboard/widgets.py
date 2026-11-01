@@ -1,4 +1,5 @@
-"""Widget registry: dashboard cards, each a SQL query that may use the parameters `$start_date` / `$end_date`.
+"""Widget registry: dashboard cards, each a SQL query that may use the shared filter parameters (see `queries`);
+a `panels` card stacks several queries' time series on one time axis, each panel toggled by the analyst.
 
 The registry is `data/widgets.json`; without it, the dashboard starts from `default_widgets.json`.
 """
@@ -15,7 +16,7 @@ from power_desk.settings import DATA_DIR
 
 REGISTRY = DATA_DIR / "widgets.json"
 DEFAULTS = Path(__file__).with_name("default_widgets.json")
-WidgetType = Literal["stacked_area", "line", "bar", "donut", "kpi_cards", "table"]
+WidgetType = Literal["area_map", "panels", "stacked_area", "line", "bar", "donut", "kpi_cards", "table"]
 
 
 class GridPosition(BaseModel):
@@ -27,14 +28,31 @@ class GridPosition(BaseModel):
     minH: int = 2
 
 
+class Panel(BaseModel):
+    """A time series of a `panels` card, on the card's shared time axis."""
+
+    id: str
+    title: str
+    type: Literal["line", "stacked_area"] = "line"
+    sql: str
+    description: str = ""
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
 class Widget(BaseModel):
     id: str
     title: str
     type: WidgetType = "line"
-    sql: str
+    sql: str = ""  # empty for a `panels` card, whose panels hold the queries
+    panels: list[Panel] = Field(default_factory=list)
     grid: GridPosition = Field(default_factory=GridPosition)
     description: str = ""
     config: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def queries(self) -> list[str]:
+        """Every query the card runs."""
+        return [sql for sql in [self.sql, *(panel.sql for panel in self.panels)] if sql]
 
 
 def load_widgets(path: Path = REGISTRY) -> list[Widget]:

@@ -39,6 +39,8 @@ MAX_DAYS_PER_RUN = 186  # about six monthly files per data item and run
 BATCH_ROWS = 50_000
 UPDATE_TIME = "UpdateTime(UTC)"
 AREA_KEY = ("DateTime(UTC)", "ResolutionCode", "AreaCode", "AreaTypeCode")
+# capacities are published per oriented couple of areas (out area -> in area) and time horizon
+AREA_COUPLE_KEY = ("DateTime(UTC)", "ResolutionCode", "OutAreaCode", "OutAreaTypeCode", "InAreaCode", "InAreaTypeCode")
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,11 @@ DATA_ITEMS = (
         "EnergyPrices_12.1.D_r3.1",
         (*AREA_KEY, "ContractType", "Sequence"),
         document_key=("InstanceCode",),
+    ),
+    DataItem(
+        "entsoe__forecasted_transfer_capacities",
+        "ForecastedTransferCapacities_11.1_r3.1",
+        (*AREA_COUPLE_KEY, "ContractType"),
     ),
 )
 

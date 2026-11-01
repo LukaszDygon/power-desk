@@ -1,13 +1,15 @@
 """One Dagster asset per dbt node (`<schema>/<model>`), built in one dbt invocation.
 
 The invocation processes the pending dlt loads. Models read never-loaded raw tables as empty
-(`dlt_source`); tests downstream of them are skipped until their first load. dbt reads the
+(`dlt_source`); tests downstream of them are skipped until their first load. dbt stamps the Dagster run id
+into its artifacts and log lines. dbt reads the
 warehouse location from the environment (`transform/profiles.yml`) and dagster-dbt finds `dbt` on
 PATH; `power-desk-dagster` sets both for the whole Dagster process.
 """
 
 from collections.abc import Iterator, Mapping
 import json
+import os
 from typing import Any, Literal
 
 from dagster import AssetExecutionContext, AssetKey, Config
@@ -17,7 +19,7 @@ from power_desk import warehouse
 from power_desk.ingest.pipeline import DATASET_NAME
 from power_desk.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_run_if_locked
 from power_desk.settings import DBT_PROJECT_DIR, warehouse_path
-from power_desk.transform.dbt import DbtRun, run_dbt
+from power_desk.transform.dbt import DAGSTER_RUN_ID_ENV, DbtRun, run_dbt
 from power_desk.transform.loads import pending_load_ids
 
 dbt_project = DbtProject(project_dir=DBT_PROJECT_DIR, profiles_dir=DBT_PROJECT_DIR)
@@ -79,6 +81,7 @@ def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource, config: Tran
     if unloaded:
         context.log.warning(f"Skipping tests downstream of unloaded raw tables: {[table for _, table in unloaded]}")
         args += ["--exclude", tests_downstream_of(unloaded)]
+    os.environ[DAGSTER_RUN_ID_ENV] = context.run.run_id  # read by the dbt process; the run has its own process
     invocation = dbt.cli(args, context=context, raise_on_error=False)
     yield from invocation.stream()
     if config.docs:

@@ -1,11 +1,7 @@
-select
-    timestamp_utc,
-    interval_minutes,
-    area_eic_code,
-    technology_code,
-    forecast_horizon,
-    generation_mw,
-    source_dataset,
-    source_code,
-    _dlt_load_id
-from {{ ref('ods_generation_forecast') }}
+{{ config(unique_key=['timestamp_utc', '_series_key']) }}
+
+{{ hourly_series(
+    ref('ods_generation_forecast'),
+    series=['area_eic_code', 'technology_code', 'time_horizon', 'source_dataset', 'source_code'],
+    means=['generation_mw'],
+) }}

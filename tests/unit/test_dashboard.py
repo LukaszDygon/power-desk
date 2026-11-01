@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 import re
 
@@ -6,7 +6,7 @@ import duckdb
 import pytest
 
 from power_desk.dashboard.lineage import lineage_from_manifest
-from power_desk.dashboard.queries import run_query
+from power_desk.dashboard.queries import run_query, time_bucket
 from power_desk.dashboard.widgets import DEFAULTS, Widget, load_widgets
 
 STATIC = Path(__file__).parents[2] / "src" / "power_desk" / "dashboard" / "static"
@@ -48,6 +48,13 @@ def warehouse_file(tmp_path: Path) -> Path:
         con.execute(
             "create table marts.days as select date '2024-03-01' + cast(i as integer) as day from range(3) t(i)"
         )
+        con.execute(
+            "create table dims.dim_area as select * from (values "
+            "('10YFR-RTE------C', 'FR', 'France', true, true), "
+            "('10YGB----------A', 'GB', 'Great Britain', true, true), "
+            "('10YDE-VE-------2', 'DE-50HERTZ', 'Germany 50Hertz', true, false)"
+            ") t(area_eic_code, display_name, long_name, is_current, is_bidding_zone)"
+        )
     return db
 
 
@@ -57,6 +64,22 @@ def test_run_query_binds_only_the_dates_the_query_uses(warehouse_file):
         [2]
     ]
     assert run_query("select 1", start_date=date(2024, 3, 2), db_path=warehouse_file)["rows"] == [[1]]
+
+
+def test_run_query_binds_the_selected_areas_or_every_bidding_zone(warehouse_file):
+    sql = "select unnest($areas) as area"
+    assert run_query(sql, areas=["10YGB----------A"], db_path=warehouse_file)["rows"] == [["10YGB----------A"]]
+    assert sorted(run_query(sql, db_path=warehouse_file)["rows"]) == [["10YFR-RTE------C"], ["10YGB----------A"]]
+
+
+def test_time_bucket_coarsens_with_the_date_range(warehouse_file):
+    day = date(2024, 3, 1)
+    assert time_bucket(day, day + timedelta(days=6)) == timedelta(hours=1)
+    assert time_bucket(day, day + timedelta(days=90)) == timedelta(hours=6)
+    assert time_bucket(day, day + timedelta(days=365)) == timedelta(days=1)
+    assert time_bucket(day, day + timedelta(days=1000)) == timedelta(weeks=1)
+    sql = "select time_bucket($bucket, timestamp '2024-03-01 10:40')"
+    assert run_query(sql, start_date=day, end_date=day, db_path=warehouse_file)["rows"] == [["2024-03-01T10:00:00"]]
 
 
 def test_run_query_can_only_read_the_warehouse(warehouse_file, tmp_path):
@@ -81,7 +104,7 @@ def test_lineage_links_publisher_raw_models_and_widgets():
 def palette() -> dict[str, str]:
     """chart-theme.js palette keys -> the dashboard.css variables they read."""
     theme = (STATIC / "js" / "chart-theme.js").read_text(encoding="utf-8")
-    return dict(re.findall(r'^\s+([A-Z_]+): cssVar\("(--[\w-]+)"\)', theme, re.MULTILINE))
+    return dict(re.findall(r'^\s+([A-Z0-9_]+): cssVar\("(--[\w-]+)"\)', theme, re.MULTILINE))
 
 
 def test_palette_keys_read_css_variables_that_exist():
@@ -90,13 +113,14 @@ def test_palette_keys_read_css_variables_that_exist():
 
 
 def test_default_widgets_are_valid_and_name_palette_colours():
+    configs = [config for w in load_widgets(DEFAULTS) for config in [w.config, *(p.config for p in w.panels)]]
     colours = [
         colour
-        for widget in load_widgets(DEFAULTS)
+        for config in configs
         for colour in [
-            *(series.get("color") for series in widget.config.get("series", [])),
-            widget.config.get("color_positive"),
-            widget.config.get("color_negative"),
+            *(series.get("color") for series in config.get("series", [])),
+            config.get("color_positive"),
+            config.get("color_negative"),
         ]
         if colour
     ]

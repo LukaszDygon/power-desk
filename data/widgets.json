@@ -1,275 +1,382 @@
 [
   {
-    "id": "kpi_grid_overview",
-    "title": "Grid Operational Overview",
+    "id": "selection_kpis",
+    "title": "Selected zones",
     "type": "kpi_cards",
-    "sql": "\n            SELECT \n                ROUND(AVG(avg_zero_carbon_share_pct), 1) as avg_zero_carbon_share,\n                ROUND(MAX(peak_demand_mw)) as max_peak_demand,\n                ROUND(AVG(avg_wind_mw)) as avg_wind_mw,\n                ROUND(AVG(avg_solar_mw)) as avg_solar_mw,\n                ROUND(AVG(avg_demand_mw)) as avg_demand_mw\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= $start_date AND date_utc <= $end_date\n        ",
+    "sql": "WITH demand AS (\n    SELECT time_bucket(INTERVAL 1 HOUR, timestamp_utc) AS hour, area_eic_code, avg(demand_mw) AS mw\n    FROM mart_demand_actual WHERE list_contains($areas, area_eic_code) AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY GROUP BY ALL\n),\ndemand_zone AS (SELECT area_eic_code, avg(mw) AS mw FROM demand GROUP BY ALL),\nerrors AS (\n    SELECT time_bucket(INTERVAL 1 HOUR, a.timestamp_utc) AS hour, a.area_eic_code, avg(a.demand_mw - f.demand_mw) AS mw\n    FROM mart_demand_actual a\n    JOIN mart_demand_forecast f\n        ON f.timestamp_utc = a.timestamp_utc AND f.area_eic_code = a.area_eic_code AND f.time_horizon = 'day_ahead'\n    WHERE list_contains($areas, a.area_eic_code) AND a.timestamp_utc >= $start_date AND a.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\n-- error of the selection's total, over the hours every paired zone reports\nhourly_errors AS (\n    SELECT hour, sum(mw) AS mw FROM errors GROUP BY hour\n    HAVING count(*) = (SELECT count(DISTINCT area_eic_code) FROM errors)\n),\ngeneration AS (\n    SELECT sum(greatest(g.generation_mw, 0) * g.coverage) AS mwh,\n        sum(CASE WHEN t.is_zero_carbon THEN greatest(g.generation_mw, 0) * g.coverage END)\n            AS zero_carbon_mwh\n    FROM mart_generation_actual g\n    LEFT JOIN dim_technology t USING (technology_code)\n    WHERE list_contains($areas, g.area_eic_code) AND g.timestamp_utc >= $start_date AND g.timestamp_utc < $end_date + INTERVAL 1 DAY\n),\nprice AS (\n    SELECT sum(price_per_mwh * coverage) / sum(coverage) AS eur\n    FROM mart_energy_price WHERE list_contains($areas, area_eic_code) AND source_dataset = 'ENTSOE_12.1.D' AND time_horizon = 'day_ahead' AND coalesce(classification_sequence, 1) = 1 AND currency = 'EUR' AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY\n)\nSELECT\n    (SELECT round(sum(mw)) FROM demand_zone) AS avg_demand_mw,\n    (SELECT round(max(mw)) FROM (SELECT hour, sum(mw) AS mw FROM demand GROUP BY hour)) AS peak_demand_mw,\n    (SELECT round(avg(abs(mw))) FROM hourly_errors) AS demand_forecast_mae_mw,\n    (SELECT round(mwh / 1000) FROM generation) AS generation_gwh,\n    (SELECT round(zero_carbon_mwh / nullif(mwh, 0) * 100, 1) FROM generation) AS zero_carbon_share_pct,\n    (SELECT round(eur, 2) FROM price) AS day_ahead_price_eur",
+    "panels": [],
     "grid": {
       "x": 0,
       "y": 0,
       "w": 12,
       "h": 2,
-      "minW": 6,
+      "minW": 3,
       "minH": 2
     },
-    "description": "High-level real-time and aggregate power KPIs",
+    "description": "Headline demand, forecast error, generation, zero-carbon share and day-ahead price of the selected zones over the date range.",
     "config": {
       "metrics": [
         {
-          "key": "avg_zero_carbon_share",
-          "label": "Zero-Carbon Share",
-          "unit": "%",
-          "trend": "positive",
-          "badge": "ESG"
-        },
-        {
-          "key": "max_peak_demand",
-          "label": "Peak Demand",
-          "unit": "MW",
-          "trend": "neutral",
-          "badge": "LOAD"
-        },
-        {
-          "key": "avg_wind_mw",
-          "label": "Avg Wind Output",
-          "unit": "MW",
-          "trend": "positive",
-          "badge": "RENEWABLE"
-        },
-        {
-          "key": "avg_solar_mw",
-          "label": "Avg Solar Output",
-          "unit": "MW",
-          "trend": "neutral",
-          "badge": "SOLAR"
-        },
-        {
           "key": "avg_demand_mw",
-          "label": "System Baseload",
-          "unit": "MW",
-          "trend": "neutral",
-          "badge": "INDO"
+          "label": "Average demand",
+          "unit": "MW"
+        },
+        {
+          "key": "peak_demand_mw",
+          "label": "Peak hourly demand",
+          "unit": "MW"
+        },
+        {
+          "key": "demand_forecast_mae_mw",
+          "label": "Demand forecast MAE",
+          "unit": "MW"
+        },
+        {
+          "key": "generation_gwh",
+          "label": "Generation",
+          "unit": "GWh"
+        },
+        {
+          "key": "zero_carbon_share_pct",
+          "label": "Zero-carbon share",
+          "unit": "%"
+        },
+        {
+          "key": "day_ahead_price_eur",
+          "label": "Day-ahead price, EUR zones",
+          "unit": "EUR/MWh"
         }
       ]
     }
   },
   {
-    "id": "generation_mix_timeseries",
-    "title": "Power Generation Mix by Fuel (MW)",
-    "type": "stacked_area",
-    "sql": "\n            SELECT \n                timestamp_utc,\n                wind_mw,\n                solar_mw,\n                nuclear_mw,\n                ccgt_gas_mw,\n                biomass_mw,\n                hydro_mw,\n                pumped_storage_mw,\n                imports_mw\n            FROM mart_gb_generation_mix\n            WHERE settlement_date >= $start_date AND settlement_date <= $end_date\n            ORDER BY timestamp_utc ASC\n        ",
+    "id": "zone_map",
+    "title": "Bidding zones (click to filter)",
+    "type": "area_map",
+    "sql": "WITH zones AS (\n    SELECT area_eic_code, display_name AS zone, long_name AS name\n    FROM dim_area WHERE is_current AND is_bidding_zone\n),\ngeneration_series AS (\n    SELECT g.area_eic_code,\n        avg(greatest(g.generation_mw, 0)) AS mw,\n        avg(CASE WHEN t.is_zero_carbon THEN greatest(g.generation_mw, 0) ELSE 0 END) AS zero_carbon_mw\n    FROM mart_generation_actual g\n    LEFT JOIN dim_technology t USING (technology_code)\n    WHERE g.timestamp_utc >= $start_date AND g.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY g.area_eic_code, g.source_dataset, g.source_code, g.border_area_eic_code\n),\ngeneration AS (\n    SELECT area_eic_code, sum(mw) AS avg_generation_mw, sum(zero_carbon_mw) AS zero_carbon_mw\n    FROM generation_series GROUP BY area_eic_code\n),\ndemand AS (\n    SELECT area_eic_code, sum(demand_mw * coverage) / sum(coverage) AS avg_demand_mw\n    FROM mart_demand_actual WHERE timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY GROUP BY area_eic_code\n),\nprice AS (\n    SELECT area_eic_code, sum(price_per_mwh * coverage) / sum(coverage) AS day_ahead_price_eur\n    FROM mart_energy_price WHERE source_dataset = 'ENTSOE_12.1.D' AND time_horizon = 'day_ahead' AND coalesce(classification_sequence, 1) = 1 AND currency = 'EUR' AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY GROUP BY area_eic_code\n)\nSELECT z.area_eic_code, z.zone, z.name,\n    round(g.zero_carbon_mw / nullif(g.avg_generation_mw, 0) * 100, 1) AS zero_carbon_share_pct,\n    round(d.avg_demand_mw) AS avg_demand_mw,\n    round(g.avg_generation_mw) AS avg_generation_mw,\n    round(p.day_ahead_price_eur, 2) AS day_ahead_price_eur\nFROM zones z\nLEFT JOIN generation g USING (area_eic_code)\nLEFT JOIN demand d USING (area_eic_code)\nLEFT JOIN price p USING (area_eic_code)\nWHERE coalesce(g.avg_generation_mw, d.avg_demand_mw, p.day_ahead_price_eur) IS NOT NULL\nORDER BY z.zone",
+    "panels": [],
     "grid": {
       "x": 0,
       "y": 2,
-      "w": 8,
-      "h": 5,
-      "minW": 4,
-      "minH": 3
-    },
-    "description": "Half-hourly generation stacked by primary fuel sources",
-    "config": {
-      "time_column": "timestamp_utc",
-      "series": [
-        {
-          "column": "wind_mw",
-          "label": "Wind",
-          "color": "WIND"
-        },
-        {
-          "column": "solar_mw",
-          "label": "Solar",
-          "color": "SOLAR"
-        },
-        {
-          "column": "nuclear_mw",
-          "label": "Nuclear",
-          "color": "NUCLEAR"
-        },
-        {
-          "column": "biomass_mw",
-          "label": "Biomass",
-          "color": "BIOMASS"
-        },
-        {
-          "column": "hydro_mw",
-          "label": "Hydro",
-          "color": "HYDRO"
-        },
-        {
-          "column": "pumped_storage_mw",
-          "label": "Pumped storage",
-          "color": "STORAGE"
-        },
-        {
-          "column": "ccgt_gas_mw",
-          "label": "CCGT Gas",
-          "color": "CCGT"
-        },
-        {
-          "column": "imports_mw",
-          "label": "Interconnectors",
-          "color": "IMPORTS"
-        }
-      ]
-    }
-  },
-  {
-    "id": "fuel_share_donut",
-    "title": "Total Generation Share",
-    "type": "donut",
-    "sql": "\n            SELECT \n                source_code AS fuel_type,\n                ROUND(SUM(generation_mw), 1) as total_mwh\n            FROM ods_generation_actual\n            WHERE source_dataset IN ('FUELINST', 'PVLIVE')\n              AND settlement_date >= $start_date AND settlement_date <= $end_date\n            GROUP BY source_code\n            ORDER BY total_mwh DESC\n        ",
-    "grid": {
-      "x": 8,
-      "y": 2,
       "w": 4,
-      "h": 5,
+      "h": 6,
       "minW": 3,
-      "minH": 3
+      "minH": 2
     },
-    "description": "Total energy contribution by fuel type for the selected window",
+    "description": "Every bidding zone over the date range, coloured by the chosen metric; click zones to select them as the page's area filter.",
     "config": {
-      "label_column": "fuel_type",
-      "value_column": "total_mwh"
-    }
-  },
-  {
-    "id": "demand_vs_forecast_line",
-    "title": "National Demand: Outturn vs Day-Ahead Forecast",
-    "type": "line",
-    "sql": "\n            SELECT \n                timestamp_utc,\n                actual_demand_mw,\n                forecast_demand_mw,\n                delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= $start_date AND settlement_date <= $end_date\n            ORDER BY timestamp_utc ASC\n        ",
-    "grid": {
-      "x": 0,
-      "y": 7,
-      "w": 8,
-      "h": 5,
-      "minW": 4,
-      "minH": 3
-    },
-    "description": "Actual transmission system demand (INDO) compared against forecast",
-    "config": {
-      "time_column": "timestamp_utc",
-      "series": [
+      "area_column": "area_eic_code",
+      "label_column": "zone",
+      "metrics": [
         {
-          "column": "actual_demand_mw",
-          "label": "Actual Demand (MW)",
-          "color": "DEMAND_ACTUAL",
-          "borderWidth": 2
-        },
-        {
-          "column": "forecast_demand_mw",
-          "label": "Day-Ahead Forecast (MW)",
-          "color": "DEMAND_FORECAST",
-          "borderWidth": 2,
-          "borderDash": [
-            4,
-            4
-          ]
-        }
-      ]
-    }
-  },
-  {
-    "id": "forecast_variance_bar",
-    "title": "Forecast Imbalance Variance (Delta MW)",
-    "type": "bar",
-    "sql": "\n            SELECT \n                settlement_period,\n                ROUND(AVG(delta_mw), 1) as avg_delta_mw\n            FROM mart_gb_demand_vs_forecast\n            WHERE settlement_date >= $start_date AND settlement_date <= $end_date\n            GROUP BY settlement_period\n            ORDER BY settlement_period ASC\n        ",
-    "grid": {
-      "x": 8,
-      "y": 7,
-      "w": 4,
-      "h": 5,
-      "minW": 3,
-      "minH": 3
-    },
-    "description": "Over/under forecasting delta across settlement periods",
-    "config": {
-      "x_column": "settlement_period",
-      "y_column": "avg_delta_mw",
-      "x_label_prefix": "P",
-      "y_title": "Delta MW",
-      "color_positive": "DELTA_POSITIVE",
-      "color_negative": "DELTA_NEGATIVE"
-    }
-  },
-  {
-    "id": "hourly_analyst_table",
-    "title": "Hourly Power Desk Settlement Rollup",
-    "type": "table",
-    "sql": "\n            SELECT \n                hour_utc,\n                avg_demand_mw,\n                avg_forecast_demand_mw,\n                avg_generation_mw,\n                avg_wind_mw,\n                avg_solar_mw,\n                avg_gas_mw,\n                avg_zero_carbon_share_pct\n            FROM mart_gb_hourly_summary\n            WHERE date_utc >= $start_date AND date_utc <= $end_date\n            ORDER BY hour_utc DESC\n            LIMIT 48\n        ",
-    "grid": {
-      "x": 0,
-      "y": 12,
-      "w": 12,
-      "h": 4,
-      "minW": 6,
-      "minH": 3
-    },
-    "description": "High-density tabular ledger of hourly system dispatch and zero-carbon shares",
-    "config": {
-      "columns": [
-        {
-          "key": "hour_utc",
-          "label": "Hour (UTC)"
+          "key": "zero_carbon_share_pct",
+          "label": "Zero-carbon share",
+          "unit": "%"
         },
         {
           "key": "avg_demand_mw",
-          "label": "Demand (MW)"
-        },
-        {
-          "key": "avg_forecast_demand_mw",
-          "label": "Forecast (MW)"
+          "label": "Average demand",
+          "unit": "MW"
         },
         {
           "key": "avg_generation_mw",
-          "label": "Gen Total (MW)"
+          "label": "Average generation",
+          "unit": "MW"
         },
         {
-          "key": "avg_wind_mw",
-          "label": "Wind (MW)"
-        },
-        {
-          "key": "avg_solar_mw",
-          "label": "Solar (MW)"
-        },
-        {
-          "key": "avg_gas_mw",
-          "label": "CCGT (MW)"
-        },
-        {
-          "key": "avg_zero_carbon_share_pct",
-          "label": "Zero carbon %"
+          "key": "day_ahead_price_eur",
+          "label": "Day-ahead price",
+          "unit": "EUR/MWh"
         }
       ]
     }
   },
   {
-    "id": "baseload_thermal",
-    "title": "Nuclear & Biomass Baseload (MW)",
-    "type": "line",
-    "sql": "SELECT timestamp_utc, nuclear_mw, biomass_mw FROM mart_gb_generation_mix WHERE settlement_date >= $start_date AND settlement_date <= $end_date ORDER BY timestamp_utc",
+    "id": "market",
+    "title": "Market",
+    "type": "panels",
+    "sql": "",
+    "panels": [
+      {
+        "id": "price",
+        "title": "Day-ahead price",
+        "type": "line",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\nprices AS (\n    SELECT time_bucket($bucket, p.timestamp_utc) AS bucket, p.area_eic_code, z.display_name AS series, 'EUR' AS currency,\n        sum(p.price_per_mwh * p.coverage) / sum(p.coverage) AS price\n    FROM mart_energy_price p\n    JOIN dim_area z ON z.area_eic_code = p.area_eic_code AND z.is_current\n    WHERE list_contains($areas, p.area_eic_code) AND p.source_dataset = 'ENTSOE_12.1.D' AND p.time_horizon = 'day_ahead' AND coalesce(p.classification_sequence, 1) = 1 AND p.currency = 'EUR' AND p.timestamp_utc >= $start_date AND p.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n    UNION ALL\n    SELECT time_bucket($bucket, timestamp_utc) AS bucket, area_eic_code, 'GB MID (GBP)' AS series, 'GBP' AS currency,\n        sum(price_per_mwh * volume_mwh) / nullif(sum(volume_mwh), 0) AS price\n    FROM mart_energy_price\n    WHERE source_dataset = 'MID' AND list_contains($areas, area_eic_code) AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nexpected AS (SELECT DISTINCT area_eic_code FROM prices),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM prices) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n),\n-- up to eight zones: one line each, in selection order; beyond: the EUR zones' mean within their P10-P90 band\nmany AS (SELECT count(*) > 8 AS many FROM expected),\nseries AS (\n    SELECT bucket, series, round(price, 2) AS price, list_position($areas, area_eic_code) AS series_order\n    FROM prices WHERE NOT (SELECT many FROM many)\n    UNION ALL\n    SELECT bucket, 'Mean of EUR zones', round(avg(price), 2), 1 FROM prices\n    WHERE currency = 'EUR' AND (SELECT many FROM many) GROUP BY bucket\n    UNION ALL\n    SELECT bucket, 'P10', round(quantile_cont(price, 0.1), 2), 2 FROM prices\n    WHERE currency = 'EUR' AND (SELECT many FROM many) GROUP BY bucket\n    UNION ALL\n    SELECT bucket, 'P90', round(quantile_cont(price, 0.9), 2), 3 FROM prices\n    WHERE currency = 'EUR' AND (SELECT many FROM many) GROUP BY bucket\n)\nSELECT c.bucket, s.series, s.price, c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN series s USING (bucket)\nORDER BY s.series_order NULLS LAST, s.series, c.bucket",
+        "description": "ENTSO-E day-ahead price (first allocation round, EUR) per zone, and GB's Market Index Price (GBP); over eight zones, the EUR zones' mean within their 10th-90th percentile band.",
+        "config": {
+          "time_column": "bucket",
+          "series_column": "series",
+          "value_column": "price",
+          "band": {
+            "lower": "P10",
+            "upper": "P90"
+          },
+          "y_title": "per MWh"
+        }
+      },
+      {
+        "id": "spread",
+        "title": "Day-ahead - intraday",
+        "type": "line",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\nprices AS (\n    SELECT time_bucket($bucket, p.timestamp_utc) AS bucket, p.area_eic_code, z.display_name AS zone,\n        sum(p.price_per_mwh * p.coverage) FILTER (WHERE p.time_horizon = 'day_ahead')\n            / sum(p.coverage) FILTER (WHERE p.time_horizon = 'day_ahead') AS day_ahead,\n        sum(p.price_per_mwh * p.coverage) FILTER (WHERE p.time_horizon = 'intraday')\n            / sum(p.coverage) FILTER (WHERE p.time_horizon = 'intraday') AS intraday\n    FROM mart_energy_price p\n    JOIN dim_area z ON z.area_eic_code = p.area_eic_code AND z.is_current\n    WHERE list_contains($areas, p.area_eic_code) AND p.source_dataset = 'ENTSOE_12.1.D' AND coalesce(p.classification_sequence, 1) = 1\n      AND p.currency = 'EUR' AND p.timestamp_utc >= $start_date AND p.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nspreads AS (SELECT * FROM prices WHERE day_ahead IS NOT NULL AND intraday IS NOT NULL),\nexpected AS (SELECT DISTINCT area_eic_code FROM spreads),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM spreads) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n)\nSELECT c.bucket, s.zone AS series, round(s.day_ahead - s.intraday, 2) AS spread_eur, c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN spreads s USING (bucket)\nORDER BY list_position($areas, s.area_eic_code) NULLS LAST, c.bucket",
+        "description": "Day-ahead minus intraday (first auction) price per zone, where both are published.",
+        "config": {
+          "time_column": "bucket",
+          "series_column": "series",
+          "value_column": "spread_eur",
+          "max_series": 8,
+          "fill_origin": {
+            "above": "rgba(52, 211, 153, 0.22)",
+            "below": "rgba(244, 63, 94, 0.22)"
+          },
+          "y_title": "EUR/MWh",
+          "empty_message": "No intraday prices for the selected zones (ENTSO-E publishes them for ES)"
+        }
+      },
+      {
+        "id": "demand",
+        "title": "Demand vs day-ahead forecast",
+        "type": "line",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\nzone_buckets AS (\n    SELECT time_bucket($bucket, a.timestamp_utc) AS bucket, a.area_eic_code,\n        avg(a.demand_mw) AS actual_mw, avg(f.demand_mw) AS forecast_mw\n    FROM mart_demand_actual a\n    JOIN mart_demand_forecast f\n        ON f.timestamp_utc = a.timestamp_utc AND f.area_eic_code = a.area_eic_code AND f.time_horizon = 'day_ahead'\n    WHERE list_contains($areas, a.area_eic_code) AND a.timestamp_utc >= $start_date AND a.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nexpected AS (SELECT DISTINCT area_eic_code FROM zone_buckets),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM zone_buckets) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n)\nSELECT c.bucket, round(sum(z.actual_mw)) AS actual_mw, round(sum(z.forecast_mw)) AS forecast_mw, c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN zone_buckets z USING (bucket)\nGROUP BY ALL ORDER BY c.bucket",
+        "description": "Actual demand and its day-ahead forecast, summed over the selected zones publishing both; shaded between them by the sign of the error.",
+        "config": {
+          "time_column": "bucket",
+          "series": [
+            {
+              "column": "actual_mw",
+              "label": "Actual",
+              "color": "DEMAND_ACTUAL"
+            },
+            {
+              "column": "forecast_mw",
+              "label": "Day-ahead forecast",
+              "color": "DEMAND_FORECAST",
+              "borderDash": [
+                4,
+                3
+              ],
+              "fill_to": "actual_mw"
+            }
+          ],
+          "spread_fill": {
+            "above": "rgba(244, 63, 94, 0.22)",
+            "below": "rgba(52, 211, 153, 0.22)"
+          }
+        }
+      },
+      {
+        "id": "demand_error",
+        "title": "Demand forecast error",
+        "type": "line",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\nzone_buckets AS (\n    SELECT time_bucket($bucket, a.timestamp_utc) AS bucket, a.area_eic_code,\n        avg(a.demand_mw) AS actual_mw, avg(f.demand_mw) AS forecast_mw\n    FROM mart_demand_actual a\n    JOIN mart_demand_forecast f\n        ON f.timestamp_utc = a.timestamp_utc AND f.area_eic_code = a.area_eic_code AND f.time_horizon = 'day_ahead'\n    WHERE list_contains($areas, a.area_eic_code) AND a.timestamp_utc >= $start_date AND a.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nexpected AS (SELECT DISTINCT area_eic_code FROM zone_buckets),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM zone_buckets) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n)\nSELECT c.bucket, round(sum(z.actual_mw - z.forecast_mw)) AS error_mw, c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN zone_buckets z USING (bucket)\nGROUP BY ALL ORDER BY c.bucket",
+        "description": "Actual minus day-ahead forecast demand of the selected zones.",
+        "config": {
+          "time_column": "bucket",
+          "series": [
+            {
+              "column": "error_mw",
+              "label": "Actual - forecast",
+              "color": "IMPORTS"
+            }
+          ],
+          "fill_origin": {
+            "above": "rgba(52, 211, 153, 0.22)",
+            "below": "rgba(244, 63, 94, 0.22)"
+          }
+        }
+      },
+      {
+        "id": "wind_solar",
+        "title": "Wind and solar vs forecast",
+        "type": "line",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\ntech AS (\n    SELECT technology_code, ancestor_technology_code AS tech\n    FROM bridge_technology_hierarchy WHERE ancestor_technology_code IN ('wind', 'solar')\n),\nactual AS (\n    SELECT bucket, area_eic_code, technology_code, sum(mw) AS mw\n    FROM (\n        SELECT time_bucket($bucket, timestamp_utc) AS bucket, area_eic_code, technology_code,\n            avg(greatest(generation_mw, 0)) AS mw\n        FROM mart_generation_actual WHERE list_contains($areas, area_eic_code) AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY\n        GROUP BY bucket, area_eic_code, technology_code, source_dataset, source_code\n    ) GROUP BY ALL\n),\nforecast AS (\n    SELECT time_bucket($bucket, timestamp_utc) AS bucket, area_eic_code, technology_code, avg(generation_mw) AS mw\n    FROM mart_generation_forecast WHERE list_contains($areas, area_eic_code) AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY AND time_horizon = 'day_ahead'\n    GROUP BY ALL\n),\n-- actual and day-ahead forecast paired per zone and technology (onshore, offshore, solar)\nzone_buckets AS (\n    SELECT bucket, area_eic_code,\n        sum(a.mw) FILTER (WHERE t.tech = 'wind') AS wind_mw,\n        sum(f.mw) FILTER (WHERE t.tech = 'wind') AS wind_forecast_mw,\n        sum(a.mw) FILTER (WHERE t.tech = 'solar') AS solar_mw,\n        sum(f.mw) FILTER (WHERE t.tech = 'solar') AS solar_forecast_mw\n    FROM actual a JOIN forecast f USING (bucket, area_eic_code, technology_code) JOIN tech t USING (technology_code)\n    GROUP BY ALL\n),\nexpected AS (SELECT DISTINCT area_eic_code FROM zone_buckets),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM zone_buckets) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n)\nSELECT c.bucket,\n    round(sum(z.wind_mw)) AS wind_mw, round(sum(z.wind_forecast_mw)) AS wind_forecast_mw,\n    round(sum(z.solar_mw)) AS solar_mw, round(sum(z.solar_forecast_mw)) AS solar_forecast_mw,\n    c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN zone_buckets z USING (bucket)\nGROUP BY ALL ORDER BY c.bucket",
+        "description": "Wind and solar generation against the ENTSO-E day-ahead forecast, summed over the zones and technologies publishing both.",
+        "config": {
+          "time_column": "bucket",
+          "series": [
+            {
+              "column": "wind_mw",
+              "label": "Wind",
+              "color": "WIND"
+            },
+            {
+              "column": "wind_forecast_mw",
+              "label": "Wind forecast",
+              "color": "WIND",
+              "borderDash": [
+                4,
+                3
+              ]
+            },
+            {
+              "column": "solar_mw",
+              "label": "Solar",
+              "color": "SOLAR"
+            },
+            {
+              "column": "solar_forecast_mw",
+              "label": "Solar forecast",
+              "color": "SOLAR",
+              "borderDash": [
+                4,
+                3
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "generation_mix",
+        "title": "Generation mix",
+        "type": "stacked_area",
+        "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\ntech_group AS (\n    SELECT b.technology_code, g.name AS technology_group\n    FROM bridge_technology_hierarchy b\n    JOIN dim_technology g ON g.technology_code = b.ancestor_technology_code\n    WHERE g.parent_technology_code IN ('renewable', 'fossil')\n       OR (g.parent_technology_code IS NULL AND g.technology_code NOT IN ('renewable', 'fossil'))\n),\nseries AS (\n    SELECT time_bucket($bucket, g.timestamp_utc) AS bucket, g.area_eic_code,\n        coalesce(tg.technology_group, 'Other') AS technology_group,\n        avg(greatest(g.generation_mw, 0)) AS mw\n    FROM mart_generation_actual g\n    LEFT JOIN tech_group tg USING (technology_code)\n    WHERE list_contains($areas, g.area_eic_code) AND g.timestamp_utc >= $start_date AND g.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY bucket, g.area_eic_code, technology_group, g.source_dataset, g.source_code, g.border_area_eic_code\n),\nexpected AS (SELECT DISTINCT area_eic_code FROM series),\ncoverage AS (\n    SELECT g.bucket,\n        count(p.area_eic_code) AS zones_reporting,\n        count(*) AS zones_expected,\n        string_agg(d.display_name, ', ' ORDER BY d.display_name) FILTER (WHERE p.area_eic_code IS NULL)\n            AS zones_missing\n    FROM grid g\n    CROSS JOIN expected e\n    LEFT JOIN (SELECT DISTINCT bucket, area_eic_code FROM series) p\n        ON p.bucket = g.bucket AND p.area_eic_code = e.area_eic_code\n    LEFT JOIN dim_area d ON d.area_eic_code = e.area_eic_code AND d.is_current\n    GROUP BY g.bucket\n),\n-- groups under 2% of the total fold into Other\nshares AS (\n    SELECT technology_group, sum(mw) >= 0.02 * sum(sum(mw)) OVER () AS shown FROM series GROUP BY technology_group\n),\nmix AS (\n    SELECT bucket, CASE WHEN shown THEN technology_group ELSE 'Other' END AS technology_group, round(sum(mw)) AS mw\n    FROM series JOIN shares USING (technology_group) GROUP BY ALL\n)\nSELECT c.bucket, m.technology_group, m.mw, c.zones_reporting, c.zones_expected, c.zones_missing\nFROM coverage c LEFT JOIN mix m USING (bucket)\nORDER BY sum(m.mw) OVER (PARTITION BY m.technology_group) DESC NULLS LAST, m.technology_group, c.bucket",
+        "description": "Average generation by technology group (under 2% of the total folds into Other).",
+        "config": {
+          "time_column": "bucket",
+          "series_column": "technology_group",
+          "value_column": "mw"
+        }
+      }
+    ],
+    "grid": {
+      "x": 4,
+      "y": 2,
+      "w": 8,
+      "h": 13,
+      "minW": 3,
+      "minH": 2
+    },
+    "description": "Price, demand, renewables and generation of the selected zones on one time axis; toggle panels in the header. Grey: some selected zones do not report (lighter) or none does (darker).",
+    "config": {
+      "default_panels": [
+        "price",
+        "demand",
+        "generation_mix"
+      ]
+    }
+  },
+  {
+    "id": "zone_summary",
+    "title": "Zone summary",
+    "type": "table",
+    "sql": "WITH zones AS (\n    SELECT area_eic_code, display_name AS zone, long_name AS name\n    FROM dim_area WHERE is_current AND is_bidding_zone\n),\ngeneration_series AS (\n    SELECT g.area_eic_code,\n        avg(greatest(g.generation_mw, 0)) AS mw,\n        avg(CASE WHEN t.is_zero_carbon THEN greatest(g.generation_mw, 0) ELSE 0 END) AS zero_carbon_mw\n    FROM mart_generation_actual g\n    LEFT JOIN dim_technology t USING (technology_code)\n    WHERE g.timestamp_utc >= $start_date AND g.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY g.area_eic_code, g.source_dataset, g.source_code, g.border_area_eic_code\n),\ngeneration AS (\n    SELECT area_eic_code, sum(mw) AS avg_generation_mw, sum(zero_carbon_mw) AS zero_carbon_mw\n    FROM generation_series GROUP BY area_eic_code\n),\ndemand AS (\n    SELECT area_eic_code, sum(demand_mw * coverage) / sum(coverage) AS avg_demand_mw\n    FROM mart_demand_actual WHERE timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY GROUP BY area_eic_code\n),\nprice AS (\n    SELECT area_eic_code, sum(price_per_mwh * coverage) / sum(coverage) AS day_ahead_price_eur\n    FROM mart_energy_price WHERE source_dataset = 'ENTSOE_12.1.D' AND time_horizon = 'day_ahead' AND coalesce(classification_sequence, 1) = 1 AND currency = 'EUR' AND timestamp_utc >= $start_date AND timestamp_utc < $end_date + INTERVAL 1 DAY GROUP BY area_eic_code\n)\nSELECT z.area_eic_code, z.zone, z.name,\n    round(g.zero_carbon_mw / nullif(g.avg_generation_mw, 0) * 100, 1) AS zero_carbon_share_pct,\n    round(d.avg_demand_mw) AS avg_demand_mw,\n    round(g.avg_generation_mw) AS avg_generation_mw,\n    round(p.day_ahead_price_eur, 2) AS day_ahead_price_eur\nFROM zones z\nLEFT JOIN generation g USING (area_eic_code)\nLEFT JOIN demand d USING (area_eic_code)\nLEFT JOIN price p USING (area_eic_code)\nWHERE coalesce(g.avg_generation_mw, d.avg_demand_mw, p.day_ahead_price_eur) IS NOT NULL\n  AND list_contains($areas, z.area_eic_code)\nORDER BY z.zone",
+    "panels": [],
     "grid": {
       "x": 0,
-      "y": 0,
-      "w": 6,
+      "y": 8,
+      "w": 4,
       "h": 4,
       "minW": 3,
       "minH": 2
     },
-    "description": "",
+    "description": "Demand, generation, zero-carbon share and day-ahead price of each selected zone.",
     "config": {
-      "time_column": "timestamp_utc",
-      "series": [
+      "columns": [
         {
-          "column": "nuclear_mw",
-          "label": "Nuclear",
-          "color": "NUCLEAR"
+          "key": "zone",
+          "label": "Zone"
         },
         {
-          "column": "biomass_mw",
-          "label": "Biomass",
-          "color": "BIOMASS"
+          "key": "avg_demand_mw",
+          "label": "Demand MW"
+        },
+        {
+          "key": "avg_generation_mw",
+          "label": "Gen. MW"
+        },
+        {
+          "key": "zero_carbon_share_pct",
+          "label": "Zero-C %"
+        },
+        {
+          "key": "day_ahead_price_eur",
+          "label": "DA EUR"
         }
       ]
+    }
+  },
+  {
+    "id": "demand_forecast_error_by_hour",
+    "title": "Demand forecast error by hour (UTC)",
+    "type": "bar",
+    "sql": "WITH paired AS (\n    SELECT time_bucket(INTERVAL 1 HOUR, a.timestamp_utc) AS hour, a.area_eic_code,\n        avg(a.demand_mw - f.demand_mw) AS error_mw\n    FROM mart_demand_actual a\n    JOIN mart_demand_forecast f\n        ON f.timestamp_utc = a.timestamp_utc AND f.area_eic_code = a.area_eic_code AND f.time_horizon = 'day_ahead'\n    WHERE list_contains($areas, a.area_eic_code) AND a.timestamp_utc >= $start_date AND a.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nhourly AS (\n    SELECT hour, sum(error_mw) AS error_mw FROM paired GROUP BY hour\n    HAVING count(*) = (SELECT count(DISTINCT area_eic_code) FROM paired)\n)\nSELECT hour(hour) AS hour_utc, round(avg(error_mw)) AS avg_error_mw\nFROM hourly GROUP BY hour_utc ORDER BY hour_utc",
+    "panels": [],
+    "grid": {
+      "x": 0,
+      "y": 12,
+      "w": 4,
+      "h": 3,
+      "minW": 3,
+      "minH": 2
+    },
+    "description": "Mean day-ahead demand forecast error of the selected zones by hour of day (UTC).",
+    "config": {
+      "x_column": "hour_utc",
+      "y_column": "avg_error_mw",
+      "x_label_prefix": "H"
+    }
+  },
+  {
+    "id": "border_capacity_now",
+    "title": "Border capacity now",
+    "type": "table",
+    "sql": "-- the current hour, or the last hour of the selected range when it ends before now\nWITH now_hour AS (\n    SELECT least(\n        date_trunc('hour', now() AT TIME ZONE 'UTC'),\n        $end_date::TIMESTAMP + INTERVAL 23 HOUR\n    ) AS hour_utc\n),\nzones AS (SELECT area_eic_code, display_name FROM dim_area WHERE is_current AND is_bidding_zone),\nhorizons AS (SELECT ['year_ahead', 'month_ahead', 'week_ahead', 'day_ahead'] AS by_recency),\nborders AS (\n    SELECT o.display_name || ' \u2192 ' || i.display_name AS border,\n        arg_max(c.transfer_capacity_mw, list_position(h.by_recency, c.time_horizon)) AS now_mw,\n        arg_max(c.time_horizon, list_position(h.by_recency, c.time_horizon)) AS now_horizon,\n        max(c.transfer_capacity_mw) FILTER (WHERE c.time_horizon = 'month_ahead') AS month_ahead_mw\n    FROM mart_transfer_capacity c\n    JOIN now_hour n ON c.timestamp_utc = n.hour_utc\n    JOIN zones o ON o.area_eic_code = c.out_area_eic_code\n    JOIN zones i ON i.area_eic_code = c.in_area_eic_code\n    CROSS JOIN horizons h\n    WHERE c.source_dataset = 'ENTSOE_11.1.A'\n        AND (list_contains($areas, c.out_area_eic_code) OR list_contains($areas, c.in_area_eic_code))\n    GROUP BY ALL\n)\nSELECT b.border,\n    round(b.now_mw) AS now_mw,\n    lower(t.name) AS now_from,\n    round(b.month_ahead_mw) AS month_ahead_mw,\n    round(100.0 * (b.now_mw - b.month_ahead_mw) / nullif(b.month_ahead_mw, 0), 1) AS change_pct\nFROM borders b\nJOIN dim_time_horizon t ON t.time_horizon = b.now_horizon\nORDER BY change_pct NULLS LAST, b.border\n",
+    "panels": [],
+    "grid": {
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 8,
+      "minW": 3,
+      "minH": 2
+    },
+    "description": "Cross-border transfer capacity of the selected zones' borders in the current hour (or the last hour of the selected range): the level from the most recent horizon published for that hour (ENTSO-E day-ahead, else week-ahead), the month-ahead forecast for the same hour, and the change from it. Bidding zone to bidding zone; most reduced borders first.",
+    "config": {
+      "columns": [
+        {
+          "key": "border",
+          "label": "Border"
+        },
+        {
+          "key": "now_mw",
+          "label": "Now (MW)"
+        },
+        {
+          "key": "now_from",
+          "label": "From"
+        },
+        {
+          "key": "month_ahead_mw",
+          "label": "Month-ahead (MW)"
+        },
+        {
+          "key": "change_pct",
+          "label": "vs month-ahead (%)"
+        }
+      ]
+    }
+  },
+  {
+    "id": "border_capacity_change",
+    "title": "Capacity vs month-ahead forecast",
+    "type": "line",
+    "sql": "WITH grid AS (\n    SELECT unnest(generate_series(\n        time_bucket($bucket, $start_date::TIMESTAMP),\n        $end_date::TIMESTAMP + INTERVAL 1 DAY - INTERVAL 1 MICROSECOND,\n        $bucket\n    )) AS bucket\n),\nzones AS (SELECT area_eic_code, display_name FROM dim_area WHERE is_current AND is_bidding_zone),\nhorizons AS (SELECT ['year_ahead', 'month_ahead', 'week_ahead', 'day_ahead'] AS by_recency),\n-- per border and hour: the most recent horizon published, and the month-ahead forecast\nhourly AS (\n    SELECT c.timestamp_utc, c.out_area_eic_code, c.in_area_eic_code,\n        o.display_name || ' \u2192 ' || i.display_name AS border,\n        arg_max(c.transfer_capacity_mw, list_position(h.by_recency, c.time_horizon)) AS latest_mw,\n        max(c.transfer_capacity_mw) FILTER (WHERE c.time_horizon = 'month_ahead') AS month_ahead_mw\n    FROM mart_transfer_capacity c\n    JOIN zones o ON o.area_eic_code = c.out_area_eic_code\n    JOIN zones i ON i.area_eic_code = c.in_area_eic_code\n    CROSS JOIN horizons h\n    WHERE c.source_dataset = 'ENTSOE_11.1.A'\n        AND (list_contains($areas, c.out_area_eic_code) OR list_contains($areas, c.in_area_eic_code))\n        AND c.timestamp_utc >= $start_date AND c.timestamp_utc < $end_date + INTERVAL 1 DAY\n    GROUP BY ALL\n),\nchange AS (\n    SELECT time_bucket($bucket, timestamp_utc) AS bucket, out_area_eic_code, in_area_eic_code, border,\n        avg(100.0 * (latest_mw - month_ahead_mw) / nullif(month_ahead_mw, 0)) AS change_pct\n    FROM hourly\n    GROUP BY ALL\n    HAVING count(month_ahead_mw) > 0\n),\n-- the borders between selected zones (up to six of them); otherwise the six most reduced against the\n-- month-ahead forecast (also with no selection, when every zone counts as selected)\nper_border AS (\n    SELECT border,\n        bool_or(list_contains($areas, out_area_eic_code) AND list_contains($areas, in_area_eic_code)) AS between_selected,\n        avg(change_pct) AS mean_change_pct\n    FROM change GROUP BY border\n),\nselection AS (SELECT count(*) FILTER (WHERE between_selected) BETWEEN 1 AND 6 AS few_between FROM per_border),\nranked AS (\n    SELECT border, row_number() OVER (ORDER BY mean_change_pct, border) AS border_rank\n    FROM per_border\n    WHERE between_selected OR NOT (SELECT few_between FROM selection)\n    QUALIFY border_rank <= 6\n)\nSELECT g.bucket, c.border, round(c.change_pct, 1) AS change_pct\nFROM grid g\nLEFT JOIN (SELECT c.*, r.border_rank FROM change c JOIN ranked r USING (border)) c USING (bucket)\nORDER BY c.border_rank NULLS LAST, g.bucket\n",
+    "panels": [],
+    "grid": {
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 8,
+      "minW": 3,
+      "minH": 2
+    },
+    "description": "Change of border capacity from its month-ahead forecast, in %: the most recent horizon published for each hour (ENTSO-E day-ahead, else week-ahead) against the month-ahead value for that hour; 0% = as forecast a month ahead. Month-ahead values are the expected minimum offered, so day-ahead often sits above them. Shows the borders between the selected zones (select two neighbours, e.g. GB and FR); otherwise, or when more than six, the six borders of the selection most reduced.",
+    "config": {
+      "time_column": "bucket",
+      "series_column": "border",
+      "value_column": "change_pct",
+      "y_title": "% vs month-ahead",
+      "empty_message": "No month-ahead capacity forecast for the borders of the selected zones."
     }
   }
 ]

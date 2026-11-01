@@ -1,0 +1,19 @@
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.servicePort }}
+{{- $ctx := dict "root" $ "name" $name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pds.serviceName" $ctx }}
+  labels:
+    {{- include "pds.serviceLabels" $ctx | nindent 4 }}
+spec:
+  selector:
+    {{- include "pds.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $svc.servicePort }}
+      targetPort: http
+{{- end }}
+{{- end }}

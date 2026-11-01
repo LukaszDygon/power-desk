@@ -1,0 +1,26 @@
+# Registers the warehouse's schemas, tables, views and columns: `metadata ingest -c configs/warehouse.yaml`.
+# Run it before the dbt workflow (dbt.yaml), which attaches descriptions, lineage and tests to these tables.
+source:
+  type: custom-database
+  serviceName: power_desk_warehouse
+  serviceConnection:
+    config:
+      type: CustomDatabase
+      sourcePythonClass: openmetadata_duckdb.source.DuckDBSource
+      connectionOptions:
+        databasePath: ${POWER_DESK_DUCKDB_PATH}
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+      schemaFilterPattern:
+        excludes: ["^test_failures$", "^raw_staging$"]  # dbt test failures; dlt's merge staging
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

@@ -12,7 +12,7 @@ from power_desk.ingest.pipeline import make_pipeline, make_source, resource_prog
 from power_desk.ingest.registry import SOURCES
 from power_desk.ingest.seed.load import seed_end_date
 from power_desk.ingest.seed.replay import SEED_START, SeedPublishers, replay
-from power_desk.ingest.sources import bmrs, entsoe, entsoe_eic
+from power_desk.ingest.sources import bmrs, entsoe, entsoe_eic, neso
 from tests.support import query
 
 
@@ -26,6 +26,7 @@ def published_rows(publishers: SeedPublishers) -> dict[str, int]:
             for item in entsoe.DATA_ITEMS
         },
         **{snapshot.resource: len(snapshot.parse(publishers.files[snapshot.url])) for snapshot in entsoe_eic.SNAPSHOTS},
+        **{dataset.resource: len(publishers.records[dataset.resource]) for dataset in neso.DATASETS},
     }
 
 
@@ -175,3 +176,20 @@ def test_a_record_the_publisher_repeats_within_a_load_is_stored_once(tmp_path):
     publishers.records["NDF"] += [dict(publishers.records["NDF"][0])] * 2
     load("bmrs", db, publishers, end=seed_end_date(), resources=["bmrs__ndf"])
     assert query(db, "select count(*) from raw.bmrs__ndf") == [(published,)]
+
+
+def test_a_resubmission_closes_its_previous_version_and_rows_not_uploaded_again_stay_current(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    dataset = neso.DATASETS[0]
+    rows = publishers.records[dataset.resource]
+    first = load("neso", db, publishers, max_days=10, resources=[dataset.resource])[dataset.resource]
+    assert first["cursor_last_value"] == max(row[neso.UPLOAD_TIME] for row in rows)
+
+    # NESO updates the row in place: same auction and period, later upload time
+    rows[0] = {**rows[0], neso.UPLOAD_TIME: "2024-03-12T09:30:05", "Flow in MW From GB": 1}
+    second = load("neso", db, publishers, max_days=10, resources=[dataset.resource])[dataset.resource]
+    assert second["cursor_last_value"] == "2024-03-12T09:30:05"
+    versions = f"select count(*), count(*) filter (where _dlt_valid_to is null) from raw.{dataset.resource}"
+    assert query(db, versions) == [(len(rows) + 1, len(rows))]
+    current = f"select flow_in_mw_from_gb from raw.{dataset.resource} where _dlt_valid_to is null"
+    assert (1,) in query(db, current)

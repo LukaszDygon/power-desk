@@ -10,6 +10,7 @@ from power_desk.ingest.seed.load import load_seed
 from power_desk.ingest.seed.replay import SEED_START
 from power_desk.settings import environment, warehouse_path
 from power_desk.transform.dbt import DbtRun
+import power_desk_logging
 
 
 def main() -> int:
@@ -18,13 +19,13 @@ def main() -> int:
     parser.add_argument("--skip-dbt", action="store_true", help="only load raw tables")
     parser.add_argument("--force", action="store_true", help="allow loading seed data into prod")
     args = parser.parse_args()
+    power_desk_logging.configure("load-seed")
     if environment() == "prod" and not (args.db_path or args.force):
         parser.error("refusing to load seed data into the prod warehouse; use POWER_DESK_ENV=dev or --force")
 
     db_path = args.db_path or str(warehouse_path())
     os.environ.setdefault("POWER_DESK_START_DATE", SEED_START)
-    for info in load_seed(db_path):
-        print(info)
+    load_seed(db_path)  # logs a `dlt.load` event per load
     return 0 if args.skip_dbt else DbtRun().run_pending(db_path)
 
 

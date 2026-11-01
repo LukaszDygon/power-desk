@@ -1,0 +1,24 @@
+# The dbt project's artifacts onto the tables warehouse.yaml registered: descriptions, model lineage and
+# test results. DBT_CATALOG_PATH: the target of `dbt compile --write-catalog` (manifest with compiled SQL,
+# catalog); DBT_RUN_RESULTS: a build's run_results.json (compiling rewrites the target's, without tests).
+source:
+  type: dbt
+  serviceName: power_desk_warehouse
+  sourceConfig:
+    config:
+      type: DBT
+      dbtConfigSource:
+        dbtConfigType: local
+        dbtManifestFilePath: ${DBT_CATALOG_PATH}/manifest.json
+        dbtCatalogFilePath: ${DBT_CATALOG_PATH}/catalog.json
+        dbtRunResultsFilePath: ${DBT_RUN_RESULTS}
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

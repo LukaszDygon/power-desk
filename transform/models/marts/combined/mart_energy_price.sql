@@ -1,13 +1,8 @@
-select
-    timestamp_utc,
-    interval_minutes,
-    area_eic_code,
-    time_horizon,
-    classification_sequence,
-    price_per_mwh,
-    currency,
-    volume_mwh,
-    source_dataset,
-    source_code,
-    _dlt_load_id
-from {{ ref('ods_energy_price') }}
+{{ config(unique_key=['timestamp_utc', '_series_key']) }}
+
+{{ hourly_series(
+    ref('ods_energy_price'),
+    series=['area_eic_code', 'time_horizon', 'classification_sequence', 'currency', 'source_dataset', 'source_code'],
+    means=['price_per_mwh'],
+    sums=['volume_mwh'],
+) }}

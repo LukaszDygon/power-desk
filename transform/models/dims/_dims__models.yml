@@ -257,6 +257,42 @@ models:
       - name: is_zero_carbon
         description: "{{ doc('col_is_zero_carbon') }}"
 
+  - name: dim_time_horizon
+    description: |
+      Time horizons shared by forecasts, prices and capacities: day-, week-, month- and year-ahead,
+      intraday (ENTSO-E process types) and the current forecast.
+    data_tests:
+      - dlt_unique:
+          name: dim_time_horizon_unique
+          arguments:
+            columns: [time_horizon]
+    columns:
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: entsoe_process_type
+        description: "{{ doc('col_entsoe_process_type') }}"
+      - name: description
+        description: "{{ doc('col_description') }}"
+
+  - name: dim_metric
+    description: |
+      Measures of the hourly marts: unit, and the hourly aggregation (`hourly_series`): `mean`, the
+      time-weighted mean over the minutes holding data; `sum`, the volume pro-rated into the hour.
+    data_tests:
+      - dlt_unique:
+          name: dim_metric_unique
+          arguments:
+            columns: [metric]
+    columns:
+      - name: metric
+        description: "{{ doc('col_metric') }}"
+      - name: unit
+        description: "{{ doc('col_unit') }}"
+      - name: hourly_aggregation
+        description: "{{ doc('col_hourly_aggregation') }}"
+
   - name: bridge_technology_hierarchy
     description: |
       Each technology with itself and every broader group.

@@ -20,6 +20,44 @@ seeds:
       - name: is_zero_carbon
         description: "{{ doc('col_is_zero_carbon') }}"
 
+  - name: time_horizons
+    description: |
+      Time horizons shared by forecasts, prices and capacities, with their ENTSO-E process type.
+    data_tests:
+      - dlt_unique:
+          name: time_horizons_unique
+          arguments:
+            columns: [time_horizon]
+    columns:
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+      - name: name
+        description: "{{ doc('col_name') }}"
+      - name: entsoe_process_type
+        description: "{{ doc('col_entsoe_process_type') }}"
+      - name: description
+        description: "{{ doc('col_description') }}"
+
+  - name: metrics
+    description: |
+      Measures of the hourly marts, with their unit and how an hour aggregates them.
+    data_tests:
+      - dlt_unique:
+          name: metrics_unique
+          arguments:
+            columns: [metric]
+    columns:
+      - name: metric
+        description: "{{ doc('col_metric') }}"
+      - name: unit
+        description: "{{ doc('col_unit') }}"
+      - name: hourly_aggregation
+        description: "{{ doc('col_hourly_aggregation') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [mean, sum]
+
   - name: eic_code_types
     description: |
       EIC object types.
