@@ -1,4 +1,4 @@
-"""The dbt catalogue: definitions, provider snapshots and the dbt sources and doc blocks generated from them."""
+"""The dbt catalogue: definitions, provider snapshots, and the dbt sources, docs and contracts made from them."""
 
 
 class CatalogError(ValueError):

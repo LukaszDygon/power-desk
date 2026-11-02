@@ -12,13 +12,18 @@ visual config. Unqualified names resolve against the `marts`, `ods`, `dims` and 
 
 ## 1. Find the data
 
-Never assume relation or column names; read them from the catalogue:
+Never assume relation or column names. Find a relation in the catalogue, then read its data contract:
 
 ```bash
 uv run python -m power_desk_elt.catalog.describe                # relations by layer, with descriptions
-uv run python -m power_desk_elt.catalog.describe <relation>     # columns, units and definitions
+cat elt/contracts/<schema>/<relation>.odcs.yaml                 # the contract: what a query may rely on
 ```
 
+- The contract gives the grain (`primaryKey`, `dataGranularityDescription`), types, units
+  (`customProperties`), joins (`relationships`) and the query rules (`context`). Follow its
+  `constraints`: they keep a sum or average correct (one area level, one source, one time horizon).
+- If the card needs a guarantee the contract lacks (a key, a non-null measure, a mapped code), add it
+  with the `verify-contract` skill rather than coding around it in the query.
 - Prefer `marts`: business marts (incremental, tested), or the `marts/combined` views for any area
   and source (one area level at a time); then `ods` entities.
 - Avoid `staging` and `raw`: they are source-specific and may change. Data not yet in a mart or entity is

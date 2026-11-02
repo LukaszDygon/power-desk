@@ -1945,6 +1945,7 @@ dependencies = [
 dev = [
     { name = "httpx" },
     { name = "import-linter" },
+    { name = "jsonschema" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -1961,6 +1962,7 @@ requires-dist = [
 dev = [
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "import-linter", specifier = ">=2.3" },
+    { name = "jsonschema", specifier = ">=4.23" },
     { name = "pyright", specifier = "==1.1.407" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "ruff", specifier = ">=0.12.0" },

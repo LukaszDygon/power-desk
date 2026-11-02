@@ -6,8 +6,9 @@ orchestrated by Dagster.
 - [Architecture](docs/architecture.md): layers, dimensions, load-id contract, data quality, catalogue
 - [Ingestion study](docs/ingestion-study.md): how to store versioned publisher data with dlt, measured
 - [ADR 0001](docs/adr/0001-keep-dlt-defaults-for-ingestion.md): keep dlt's default row handling; the measured avenues for later
+- [Data contracts](docs/data-contracts.md): an ODCS contract per mart, entity and dimension, exported from dbt and verified by its tests ([ADR 0002](docs/adr/0002-data-contracts-exported-from-dbt.md))
 - [Data sources](docs/data-sources.md): European power, gas, carbon and weather publishers, forecast services and main global sources: data, zones, delivery, access
-- [Agent skills](#agent-skills): onboard a source or dataset, add a dashboard widget
+- [Agent skills](#agent-skills): onboard a source or dataset, add a dashboard widget, verify a data contract
 - [Services](services/README.md): long-running receivers of push feeds (Elexon IRIS, ENTSO-E subscriptions), on Kubernetes
 - [Logging and provenance](docs/logging.md): the log standard, and tracing a row through logs, dlt metadata and dbt artifacts
 - [Infra](infra/README.md): the local cluster, the services' deployment, log aggregation (Grafana) and catalogue (OpenMetadata)
@@ -26,6 +27,7 @@ elt/                 publisher data into the warehouse (power_desk_elt)
   src/…/catalog/       definitions, provider snapshots, dbt sources and docs generator
   src/…/cli/           command-line entry points
   dbt/                 dbt project: staging, ods, dims, marts, dlt_meta; seeds (dims, mappings)
+  contracts/           data contracts of marts, entities and dimensions (generated, ODCS)
   seed/                recorded publisher payloads for the seed week
   tests/               unit/: logic in isolation; integration/: pipelines, dbt and jobs on the seed
   bench/               ingestion experiments (docs/ingestion-study.md)
@@ -41,6 +43,7 @@ libs/warehouse/      the warehouse contract: environment, file locations, connec
 infra/               local cluster, the services' Helm chart, Grafana, OpenMetadata and its DuckDB connector
 docs/                architecture, ADRs, studies, data sources
 data/                runtime: warehouses, landing zone, logs; widgets.json (the dashboard's registry)
+AGENTS.md            instructions for coding agents (CLAUDE.md imports it)
 .agents/skills/      agent skills; .claude/skills links here
 ```
 
@@ -74,6 +77,7 @@ uv run dbt build --project-dir elt/dbt --profiles-dir elt/dbt
 uv run python -m power_desk_elt.catalog.refresh  # refresh official definitions (network)
 uv run python -m power_desk_elt.catalog.generate # regenerate dbt sources and doc blocks
 uv run python -m power_desk_elt.catalog.describe [relation]
+uv run python -m power_desk_elt.catalog.contracts [--check]   # regenerate data contracts (after a dbt build)
 uv run dbt docs generate --project-dir elt/dbt --profiles-dir elt/dbt
 uv run dbt docs serve --project-dir elt/dbt --profiles-dir elt/dbt --target-path elt/dbt/target
 ```
@@ -104,14 +108,17 @@ The pre-push hook checks the working tree, so commit or stash unrelated changes 
 
 ## Agent skills
 
-Step-by-step procedures for coding agents, one `SKILL.md` each in `.agents/skills/`. `.claude/skills` is a
-link to that folder, so Claude Code loads the same files (`/onboard-source`, `/create-widget`, or picked by
-description). Edit them in `.agents/skills/` only.
+Coding agents start from [`AGENTS.md`](AGENTS.md) (Claude Code reads it through `CLAUDE.md`). Their
+step-by-step procedures are skills, one `SKILL.md` each in `.agents/skills/`. `.claude/skills` is a
+link to that folder, so Claude Code loads the same files (`/onboard-source`, `/create-widget`, `/verify-contract`,
+or picked by description). Edit them in `.agents/skills/` only.
 
 - [`onboard-source`](.agents/skills/onboard-source/SKILL.md): a new publisher or dataset through every
   stage, from the dlt source to marts, with a check per stage
 - [`create-widget`](.agents/skills/create-widget/SKILL.md): a dashboard card from a query over marts or
-  entities
+  entities, following their data contracts
+- [`verify-contract`](.agents/skills/verify-contract/SKILL.md): check a contract claim against the data,
+  then ship it as dbt tests or amend the contract
 
 ## Settings
 

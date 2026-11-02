@@ -186,6 +186,9 @@ Failing rows are stored in `test_failures.<test>`.
   Models reference the blocks with `{{ doc() }}`.
 - **Coverage:** generation fails on undocumented raw columns, and tests fail on undocumented
   warehouse columns.
+- **Data contracts:** `catalog.contracts` exports an ODCS contract per mart, entity and dimension
+  (`elt/contracts/`), from the descriptions, data tests and query guidance (`meta`) of the dbt project;
+  dbt tests verify them. Details: [data contracts](data-contracts.md).
 
 ## Environments
 

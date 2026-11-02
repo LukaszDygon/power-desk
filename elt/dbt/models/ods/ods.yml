@@ -297,6 +297,11 @@ models:
       {{ doc('dataset_bmrs__mid') }}
 
       {{ doc('dataset_entsoe__energy_prices') }}
+    config:
+      meta:
+        context:
+          constraints:
+            - Do not average or compare prices of different `currency` without converting them.
     data_tests:
       - dlt_unique:
           name: ods_energy_price_unique_key

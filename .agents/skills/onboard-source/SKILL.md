@@ -112,7 +112,15 @@ Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, 
   extend one only when the data answers a new question, with grain and business-rule tests.
 - Cards: the `create-widget` skill.
 
-## 10. Verify end to end
+## 10. Data contracts
+
+The changed entities and marts get their contracts from their dbt tests and `meta`
+([data contracts](../../../docs/data-contracts.md)).
+- Give every new dimension key a `relationships` test, and every new rule for querying the data (a new
+  area level, an overlapping source, a horizon to pick) a `context` constraint: the `verify-contract` skill.
+- Check: after the build, `uv run python -m power_desk_elt.catalog.contracts`; review `git diff elt/contracts`.
+
+## 11. Verify end to end
 
 Run the ingest job (Dagster, or `power-desk-backfill --sources <source>`), then confirm:
 `dlt_meta.dlt_pending_loads` is empty, the loads appear in `dlt_meta.dlt_load_audit`, the freshness checks

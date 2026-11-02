@@ -6,6 +6,16 @@ models:
   - name: mart_generation_actual
     description: |
       Actual generation per area, technology and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `technology_code`, `border_area_eic_code`, `source_dataset`, `source_code`).
+    config:
+      meta:
+        context:
+          instructions: >-
+            `consumption_mw` is power absorbed (pumped storage, energy storage), published separately from
+            `generation_mw`.
+          constraints:
+            - >-
+              Rows with `technology_code` `interconnector` are flows over the border in `border_area_eic_code`,
+              negative when the area exports: exclude them from domestic generation.
     data_tests:
       - dlt_unique:
           name: mart_generation_actual_unique_key
@@ -21,10 +31,28 @@ models:
         data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_actual_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: technology_code
         description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_actual_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
       - name: border_area_eic_code
         description: "{{ doc('col_border_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_actual_known_border_area
+              arguments:
+                to: ref('dim_border')
+                field: border_area_eic_code
       - name: source_dataset
         description: "{{ doc('col_source_dataset') }}"
       - name: source_code
@@ -45,6 +73,11 @@ models:
   - name: mart_generation_forecast
     description: |
       Generation forecasts per area, technology, horizon and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `technology_code`, `time_horizon`, `source_dataset`, `source_code`).
+    config:
+      meta:
+        context:
+          constraints:
+            - Do not mix `time_horizon`s, each a separate forecast of the same hour; pick one (e.g. `day_ahead`).
     data_tests:
       - dlt_unique:
           name: mart_generation_forecast_unique_key
@@ -60,8 +93,20 @@ models:
         data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_forecast_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: technology_code
         description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_generation_forecast_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
         data_tests:
@@ -103,6 +148,12 @@ models:
         data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_demand_actual_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: source_dataset
         description: "{{ doc('col_source_dataset') }}"
       - name: demand_mw
@@ -119,6 +170,11 @@ models:
   - name: mart_demand_forecast
     description: |
       Demand forecasts per area, horizon and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `time_horizon`, `source_dataset`).
+    config:
+      meta:
+        context:
+          constraints:
+            - Do not mix `time_horizon`s, each a separate forecast of the same hour; pick one (e.g. `day_ahead`).
     data_tests:
       - dlt_unique:
           name: mart_demand_forecast_unique_key
@@ -134,6 +190,12 @@ models:
         data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_demand_forecast_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
         data_tests:
@@ -158,6 +220,15 @@ models:
   - name: mart_energy_price
     description: |
       Electricity prices per area, horizon and hour, for every source and area; prices in `currency` per MWh. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `time_horizon`, `classification_sequence`, `currency`, `source_dataset`, `source_code`).
+    config:
+      meta:
+        context:
+          constraints:
+            - Do not average or compare prices of different `currency` without converting them.
+            - >-
+              Pick one `time_horizon` and `classification_sequence` per series. Elexon MID (`time_horizon` null)
+              has a price per data provider (`source_code`): pick one, or weight by `volume_mwh` as settlement
+              does for the Market Price.
     data_tests:
       - dlt_unique:
           name: mart_energy_price_unique_key
@@ -173,6 +244,12 @@ models:
         data_tests: [not_null]
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_energy_price_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
         data_tests:
@@ -205,6 +282,15 @@ models:
   - name: mart_transfer_capacity
     description: |
       Transfer capacities per oriented couple of areas, horizon and hour, for every source. NESO rows are per interconnector (`border_area_eic_code`). Grain: `timestamp_utc` (hour start) and the series (`out_area_eic_code`, `in_area_eic_code`, `border_area_eic_code`, `time_horizon`, `source_dataset`, `source_code`).
+    config:
+      meta:
+        context:
+          instructions: >-
+            Capacities are directional, from `out_area_eic_code` to `in_area_eic_code`. NESO rows are per
+            interconnector (`border_area_eic_code`) and give NESO's input to the capacity calculation, not the
+            final capacity offered.
+          constraints:
+            - Do not mix `time_horizon`s; pick one per series.
     data_tests:
       - dlt_unique:
           name: mart_transfer_capacity_unique_key
@@ -220,10 +306,32 @@ models:
         data_tests: [not_null]
       - name: out_area_eic_code
         description: "{{ doc('col_out_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_transfer_capacity_known_out_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: in_area_eic_code
         description: "{{ doc('col_in_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_transfer_capacity_known_in_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
       - name: border_area_eic_code
         description: "{{ doc('col_border_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_transfer_capacity_known_border_area
+              arguments:
+                to: ref('dim_border')
+                field: border_area_eic_code
       - name: time_horizon
         description: "{{ doc('col_time_horizon') }}"
         data_tests:

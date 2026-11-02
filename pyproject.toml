@@ -11,6 +11,7 @@ dependencies = ["power-desk-dashboard", "power-desk-elt", "power-desk-services"]
 dev = [
     "httpx>=0.27.0",
     "import-linter>=2.3",
+    "jsonschema>=4.23",
     "pyright==1.1.407",
     "pytest>=8.0.0",
     "ruff>=0.12.0",
