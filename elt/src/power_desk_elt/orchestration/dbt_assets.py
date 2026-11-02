@@ -8,19 +8,16 @@ PATH; `power-desk-dagster` sets both for the whole Dagster process.
 """
 
 from collections.abc import Iterator, Mapping
-import json
 import os
 from typing import Any, Literal
 
 from dagster import AssetExecutionContext, AssetKey, Config
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, DbtProject, dbt_assets
 
-from power_desk_elt.ingest.pipeline import DATASET_NAME
 from power_desk_elt.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_run_if_locked
-from power_desk_elt.settings import DBT_PROJECT_DIR, warehouse_path
-from power_desk_elt.transform.dbt import DAGSTER_RUN_ID_ENV, DbtRun, run_dbt
+from power_desk_elt.settings import DBT_PROJECT_DIR
+from power_desk_elt.transform.dbt import DAGSTER_RUN_ID_ENV, DbtRun, run_dbt, tests_downstream_of, unloaded_raw_tables
 from power_desk_elt.transform.loads import pending_load_ids
-import power_desk_warehouse as warehouse
 
 dbt_project = DbtProject(project_dir=DBT_PROJECT_DIR, profiles_dir=DBT_PROJECT_DIR)
 dbt_project.prepare_if_dev()
@@ -50,24 +47,6 @@ class TransformConfig(Config):
     docs: bool = False  # regenerate the dbt docs catalogue afterwards
 
 
-def unloaded_raw_tables() -> list[tuple[str, str]]:
-    """(dbt source, table) of every declared raw table without a warehouse table yet."""
-    manifest = json.loads(dbt_project.manifest_path.read_text(encoding="utf-8"))
-    declared = {
-        s["name"]: (s["source_name"], s["name"]) for s in manifest["sources"].values() if s["schema"] == DATASET_NAME
-    }
-    if not warehouse_path().exists():
-        return sorted(declared.values())
-    with warehouse.connect() as con:
-        loaded = warehouse.table_names(con, DATASET_NAME)
-    return sorted(ref for name, ref in declared.items() if name not in loaded)
-
-
-def tests_downstream_of(tables: list[tuple[str, str]]) -> str:
-    """dbt selector for the tests downstream of (dbt source, table) pairs."""
-    return " ".join(f"source:{source}.{table}+,resource_type:test" for source, table in tables)
-
-
 @dbt_assets(
     manifest=dbt_project.manifest_path,
     project=dbt_project,
@@ -75,7 +54,7 @@ def tests_downstream_of(tables: list[tuple[str, str]]) -> str:
     pool=WAREHOUSE_POOL,
 )
 def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource, config: TransformConfig) -> Iterator[Any]:
-    unloaded = unloaded_raw_tables()
+    unloaded = unloaded_raw_tables(dbt_project.manifest_path)
     if ("dlt", "_dlt_loads") in unloaded:
         context.log.info("No dlt load has completed yet; nothing to transform.")
         return

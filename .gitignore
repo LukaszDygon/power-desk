@@ -35,6 +35,7 @@ ENV/
 .dlt/
 data/landing/
 data/logs/
+data/onboarding/
 
 # Testing & Linting
 .pytest_cache/
@@ -60,3 +61,6 @@ elt/.dagster/*/*
 # Ingestion experiments (elt/bench/ingestion): downloaded data and run directories
 elt/bench/ingestion/data/
 elt/bench/ingestion/runs/
+
+# Claude Code worktrees (claude -w <name>), one per onboarding session
+.claude/worktrees/

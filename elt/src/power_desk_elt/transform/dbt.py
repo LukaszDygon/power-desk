@@ -15,8 +15,10 @@ import subprocess
 import sys
 from typing import Literal
 
+from power_desk_elt.ingest.pipeline import DATASET_NAME
 from power_desk_elt.settings import DBT_PROJECT_DIR, REPO_ROOT, backfill_start_date, environment, warehouse_path
 from power_desk_elt.transform.loads import pending_load_ids
+import power_desk_warehouse as warehouse
 
 DBT_EXECUTABLE = Path(sys.executable).with_name("dbt")
 # dbt stamps `DBT_ENV_CUSTOM_ENV_<NAME>` variables into its artifacts (`metadata.env`) and log lines
@@ -80,3 +82,21 @@ def run_dbt(args: list[str], db_path: Path | str | None = None, target_path: Pat
         *(["--target-path", str(target_path)] if target_path else []),
     ]
     return subprocess.run(command, env=dbt_env(db_path), cwd=REPO_ROOT).returncode
+
+
+def unloaded_raw_tables(manifest_path: Path, db_path: Path | str | None = None) -> list[tuple[str, str]]:
+    """(dbt source, table) of every declared raw table without a warehouse table yet."""
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    declared = {
+        s["name"]: (s["source_name"], s["name"]) for s in manifest["sources"].values() if s["schema"] == DATASET_NAME
+    }
+    if not Path(db_path or warehouse_path()).exists():
+        return sorted(declared.values())
+    with warehouse.connect(db_path) as con:
+        loaded = warehouse.table_names(con, DATASET_NAME)
+    return sorted(ref for name, ref in declared.items() if name not in loaded)
+
+
+def tests_downstream_of(tables: list[tuple[str, str]]) -> str:
+    """dbt selector for the tests downstream of (dbt source, table) pairs: skipped until their first load."""
+    return " ".join(f"source:{source}.{table}+,resource_type:test" for source, table in tables)

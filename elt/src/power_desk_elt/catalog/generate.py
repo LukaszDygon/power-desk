@@ -15,6 +15,8 @@ Outputs:
   for the dlt metadata tables. Descriptions are `{{ doc() }}` references; where each definition
   comes from is `meta.references` (title, url, and id, retrieved, section, page or path where known).
   Tables also carry `meta.dlt`, `meta.dagster.asset_key`, freshness and key-scoped duplication guards.
+  Child tables (dlt's normalization of nested lists) are sources too, under their root resource's asset; they
+  have no load id, so no freshness or test scoping of their own.
 
 Generation fails on a raw table or column without a definition, on unknown references and on
 raw table names shared by two sources. `--check` exits non-zero if any output is stale.
@@ -113,13 +115,23 @@ def duplication_guards(name: str, table: dict[str, Any]) -> list[dict[str, Any]]
     return [*guards, {"dlt_unique": row_version}]
 
 
-def source_table(schema_name: str, name: str, table: dict[str, Any], catalogue: Catalogue) -> dict[str, Any]:
+def root_table(tables: dict[str, Any], name: str) -> str:
+    """The resource's table a (child) table belongs to."""
+    while parent := tables[name].get("parent"):
+        name = parent
+    return name
+
+
+def source_table(schema: dict[str, Any], name: str, catalogue: Catalogue) -> dict[str, Any]:
     if name not in catalogue.tables:
         raise CatalogError(f"raw table {name}: no entry in catalog/definitions (tables:)")
-    definition = catalogue.tables[name]
+    definition, table = catalogue.tables[name], schema["tables"][name]
+    root = root_table(schema["tables"], name)
+    loaded = root == name  # child tables carry no `_dlt_load_id`
     dlt_meta = {
-        "pipeline": schema_name,
-        "resource": table.get("resource", name),
+        "pipeline": schema["name"],
+        "resource": schema["tables"][root].get("resource", root),
+        **({"parent": table["parent"]} if not loaded else {}),
         "write_disposition": table.get("write_disposition"),
         **({"merge_strategy": table["x-merge-strategy"]} if table.get("x-merge-strategy") else {}),
         "primary_key": columns_with(table, "primary_key"),
@@ -130,13 +142,13 @@ def source_table(schema_name: str, name: str, table: dict[str, Any], catalogue: 
         "description": doc_ref(dataset_doc(name)),
         "config": {
             "meta": {
-                "dagster": {"asset_key": [DATASET_NAME, name]},
+                "dagster": {"asset_key": [DATASET_NAME, root]},
                 "dlt": dlt_meta,
-                "dlt_recent_column": "_dlt_load_id",
+                **({"dlt_recent_column": "_dlt_load_id"} if loaded else {}),
                 "references": catalogue.references(definition),
             },
-            "loaded_at_field": LOADED_AT_FIELD,
-            **({"freshness": definition["freshness"]} if definition.get("freshness") else {}),
+            **({"loaded_at_field": LOADED_AT_FIELD} if loaded else {}),
+            **({"freshness": definition["freshness"]} if loaded and definition.get("freshness") else {}),
         },
         "data_tests": duplication_guards(name, table),
         "columns": source_columns(catalogue, name, table),
@@ -148,11 +160,7 @@ def source_for_schema(schema: dict[str, Any], catalogue: Catalogue) -> dict[str,
         "name": schema["name"],
         "description": catalogue.definitions.get("sources", {}).get(schema["name"], {}).get("description", ""),
         "schema": DATASET_NAME,
-        "tables": [
-            source_table(schema["name"], name, table, catalogue)
-            for name, table in schema["tables"].items()
-            if not name.startswith("_dlt") and not table.get("parent")
-        ],
+        "tables": [source_table(schema, name, catalogue) for name in schema["tables"] if not name.startswith("_dlt")],
     }
 
 

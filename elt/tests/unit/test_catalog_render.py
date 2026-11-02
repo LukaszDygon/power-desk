@@ -99,3 +99,38 @@ def test_dataset_definitions_drop_api_usage_notes():
         }
     }
     assert dataset_definitions(spec, ["INDO"])["INDO"]["summary"] == "Initial demand in MW."
+
+
+def test_child_tables_are_sources_under_their_root_resource():
+    from power_desk_elt.catalog.generate import source_for_schema
+
+    definitions = {
+        "links": {},
+        "sources": {},
+        "tables": {
+            "pub__units": {"description": "Units.", "freshness": {"warn_after": {"count": 1, "period": "day"}}},
+            "pub__units__points": {"description": "Points of a unit."},
+        },
+        "columns": {
+            k: {"description": k} for k in ("id", "i", "_dlt_id", "_dlt_load_id", "_dlt_parent_id", "_dlt_list_idx")
+        },
+    }
+    schema = {
+        "name": "pub",
+        "tables": {
+            "pub__units": {
+                "resource": "pub__units",
+                "columns": {"id": {"primary_key": True}, "_dlt_load_id": {}, "_dlt_id": {}},
+            },
+            "pub__units__points": {
+                "parent": "pub__units",
+                "columns": {"i": {}, "_dlt_parent_id": {}, "_dlt_list_idx": {}, "_dlt_id": {}},
+            },
+        },
+    }
+    root, child = source_for_schema(schema, Catalogue(definitions, {}))["tables"]
+    assert root["config"]["loaded_at_field"] and root["config"]["freshness"]
+    assert child["config"]["meta"]["dagster"] == {"asset_key": ["raw", "pub__units"]}
+    assert child["config"]["meta"]["dlt"]["parent"] == "pub__units"
+    assert "loaded_at_field" not in child["config"] and "dlt_recent_column" not in child["config"]["meta"]
+    assert [next(iter(t.values()))["name"] for t in child["data_tests"]] == ["pub__units__points_unique_dlt_id"]

@@ -895,6 +895,14 @@ dlt load package that last wrote the row; joins to `dlt_meta.dlt_loads.load_id`.
 dlt row key, unique per row.
 {% enddocs %}
 
+{% docs col__dlt_parent_id %}
+`_dlt_id` of the parent row (the version, under scd2) a child-table row was normalized from.
+{% enddocs %}
+
+{% docs col__dlt_list_idx %}
+Position of the row in its parent's list.
+{% enddocs %}
+
 {% docs col_load_id %}
 dlt load package id (epoch seconds as text), stamped on every row as `_dlt_load_id`.
 {% enddocs %}

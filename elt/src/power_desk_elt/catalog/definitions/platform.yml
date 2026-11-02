@@ -40,6 +40,10 @@ columns:
       processes and tests only rows from pending load ids.
   _dlt_id:
     description: dlt row key, unique per row.
+  _dlt_parent_id:
+    description: '`_dlt_id` of the parent row (the version, under scd2) a child-table row was normalized from.'
+  _dlt_list_idx:
+    description: Position of the row in its parent's list.
   load_id:
     description: dlt load package id (epoch seconds as text), stamped on every row as `_dlt_load_id`.
   schema_name:

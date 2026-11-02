@@ -3,26 +3,31 @@ name: onboard-source
 description: >-
   Onboards a publisher (a new dlt source) or a new dataset of an existing source into the
   warehouse, stage by stage: ingestion, seed, catalogue and freshness, schedule, staging,
-  dimensions, entity, marts and dashboard. Use when adding a source or a raw table, or when
-  combining a new feed with existing entities.
+  dimensions, entity, marts, contracts and an acceptance run. Use when adding a source or a raw
+  table, or when combining a new feed with existing entities; phase 4 of onboard-dataset.
 ---
 
 # Onboard a Source or Dataset
 
 Rules: `docs/architecture.md`. Ingestion design: [ADR 0001](../../../docs/adr/0001-keep-dlt-defaults-for-ingestion.md)
-(keep dlt's defaults). Go stage by stage; each check must pass before the next. For a new dataset of an
-existing source, extend that source's table of datasets and skip what already exists.
+(keep dlt's defaults); onboarding defaults: [ADR 0003](../../../docs/adr/0003-onboarding-defaults.md). Go stage by
+stage; each check must pass before the next. For a new dataset of an existing source, extend that source's
+table of datasets and skip what already exists. The design comes from the agreed `scope.md`
+(`onboard-dataset`); a change to it is a deviation to report.
 
 ## 0. Decide before coding
 
-- **Kind** (`docs/architecture.md`, Ingestion), which fixes the state, disposition and key:
+- **Kind** (`docs/architecture.md`, Ingestion), which fixes the state, disposition and key. Read the kind's
+  reference before coding; every kind loads with `scd2` (time travel) unless the user confirmed otherwise:
 
-| Kind | Example | Progress kept in | Disposition | Keys |
+| Kind | Reference | Model source | Progress kept in | Keys |
 |---|---|---|---|---|
-| Stream (API by publish time) | Elexon, PVLive | `dlt.sources.incremental` + `incremental_window` | `merge` + `delete-insert` | `primary_key` = natural key |
-| Snapshot (whole reference file) | EIC | ETag / hash in resource state | `merge` + `scd2`, no `merge_key` | `primary_key` = natural key (documents it) |
-| Revised stream (rows revised in place, read by upload time) | NESO | `dlt.sources.incremental` on the upload time + `incremental_window` | `merge` + `scd2` | `merge_key` = natural key; the upload time joins `primary_key` where the publisher may append resubmissions |
-| File partitions (re-exported periodic files) | ENTSO-E | files + `lastUpdated` in resource state; cursor = latest publication time | `merge` + `scd2` | `merge_key` = `primary_key` = natural key (a document id joins `primary_key` where an export repeats keys) |
+| Stream (API by publication or update time) | [kinds/stream.md](kinds/stream.md) | `neso.py` | `dlt.sources.incremental` + `incremental_window` | `merge_key` = natural key |
+| Snapshot (whole reference file) | [kinds/snapshot.md](kinds/snapshot.md) | `entsoe_eic.py` | ETag / hash in resource state | `primary_key` = natural key, no `merge_key` |
+| File partitions (re-exported periodic files) | [kinds/file-partitions.md](kinds/file-partitions.md) | `entsoe.py` | files + `lastUpdated` in resource state | `merge_key` = `primary_key` = natural key |
+
+  Nested payloads, whatever the kind: [kinds/nested.md](kinds/nested.md). Existing Elexon and PVLive streams
+  load with `delete-insert` (ADR 0001); a new stream does so only as a confirmed exception.
 
 - **Natural key and definitions** come from the publisher's documentation, never invented; cite it.
 - **Entity:** which `ods_<entity>` the data feeds, or whether it is a new one.
@@ -122,9 +127,12 @@ The changed entities and marts get their contracts from their dbt tests and `met
 
 ## 11. Verify end to end
 
-Run the ingest job (Dagster, or `power-desk-backfill --sources <source>`), then confirm:
-`dlt_meta.dlt_pending_loads` is empty, the loads appear in `dlt_meta.dlt_load_audit`, the freshness checks
-pass, and `make check` is green.
+`uv run power-desk-accept <source> --start-date <d> --end-date <d>` on the real publisher: a fresh warehouse
+(EIC seed for the dimensions plus the source), then loading, structure, idempotency (the window loaded
+twice), time travel, `dlt.load` events, dbt tests, `dim_source_dataset`, an hourly mart, the schedule budget
+and query time, with a profile and CSV samples of every relation holding the source's rows
+(`data/onboarding/<source>/acceptance/`). Every criterion passes or is a confirmed exception, and `make check`
+is green.
 
 ## Pitfalls (measured, see `docs/ingestion-study.md`)
 

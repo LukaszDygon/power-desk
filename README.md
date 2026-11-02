@@ -8,7 +8,8 @@ orchestrated by Dagster.
 - [ADR 0001](docs/adr/0001-keep-dlt-defaults-for-ingestion.md): keep dlt's default row handling; the measured avenues for later
 - [Data contracts](docs/data-contracts.md): an ODCS contract per mart, entity and dimension, exported from dbt and verified by its tests ([ADR 0002](docs/adr/0002-data-contracts-exported-from-dbt.md))
 - [Data sources](docs/data-sources.md): European power, gas, carbon and weather publishers, forecast services and main global sources: data, zones, delivery, access
-- [Agent skills](#agent-skills): onboard a source or dataset, add a dashboard widget, verify a data contract
+- [Onboarding a dataset](docs/onboarding.md): ask for a dataset; the agent profiles it, proposes a scope, delivers and reports an acceptance run ([ADR 0003](docs/adr/0003-onboarding-defaults.md))
+- [Agent skills](#agent-skills): onboard a dataset, add a dashboard widget, verify a data contract
 - [Services](services/README.md): long-running receivers of push feeds (Elexon IRIS, ENTSO-E subscriptions), on Kubernetes
 - [Logging and provenance](docs/logging.md): the log standard, and tracing a row through logs, dlt metadata and dbt artifacts
 - [Infra](infra/README.md): the local cluster, the services' deployment, log aggregation (Grafana) and catalogue (OpenMetadata)
@@ -26,6 +27,7 @@ elt/                 publisher data into the warehouse (power_desk_elt)
   src/…/orchestration/ Dagster assets, ingest jobs (jobs.py), schedules, sensors, checks
   src/…/catalog/       definitions, provider snapshots, dbt sources and docs generator
   src/…/cli/           command-line entry points
+  src/…/onboarding/    profiling samples and acceptance runs of a new source (docs/onboarding.md)
   dbt/                 dbt project: staging, ods, dims, marts, dlt_meta; seeds (dims, mappings)
   contracts/           data contracts of marts, entities and dimensions (generated, ODCS)
   seed/                recorded publisher payloads for the seed week
@@ -42,7 +44,7 @@ libs/logging/        the log standard (docs/logging.md), shared by the ELT and t
 libs/warehouse/      the warehouse contract: environment, file locations, connections (ELT and dashboard)
 infra/               local cluster, the services' Helm chart, Grafana, OpenMetadata and its DuckDB connector
 docs/                architecture, ADRs, studies, data sources
-data/                runtime: warehouses, landing zone, logs; widgets.json (the dashboard's registry)
+data/                runtime: warehouses, landing zone, logs, onboarding artefacts; widgets.json (the dashboard's registry)
 AGENTS.md            instructions for coding agents (CLAUDE.md imports it)
 .agents/skills/      agent skills; .claude/skills links here
 ```
@@ -70,6 +72,8 @@ uv run power-desk                                # dashboard, http://localhost:8
 uv run power-desk-load-seed                      # seed week -> every pipeline -> dbt (dev only)
 uv run power-desk-backfill [--sources <source>] [--start-date <d> --end-date <d> --chunk-days 31]
 uv run power-desk-service <iris|entsoe-subscription>   # a service in the foreground (services/README.md)
+uv run power-desk-profile <source>__<dataset> <files> [--key ...] [--time ...]   # profile publisher samples
+uv run power-desk-accept <source> --start-date <d> --end-date <d>               # acceptance run of a source
 make -C infra/services dev                       # services on a local minikube cluster
 make -C infra observability openmetadata         # Grafana (logs) and OpenMetadata on it (infra/README.md)
 
@@ -110,11 +114,16 @@ The pre-push hook checks the working tree, so commit or stash unrelated changes 
 
 Coding agents start from [`AGENTS.md`](AGENTS.md) (Claude Code reads it through `CLAUDE.md`). Their
 step-by-step procedures are skills, one `SKILL.md` each in `.agents/skills/`. `.claude/skills` is a
-link to that folder, so Claude Code loads the same files (`/onboard-source`, `/create-widget`, `/verify-contract`,
-or picked by description). Edit them in `.agents/skills/` only.
+link to that folder, so Claude Code loads the same files (`/onboard-dataset`, `/create-widget`, ..., or picked
+by description). Edit them in `.agents/skills/` only.
 
-- [`onboard-source`](.agents/skills/onboard-source/SKILL.md): a new publisher or dataset through every
-  stage, from the dlt source to marts, with a check per stage
+- [`onboard-dataset`](.agents/skills/onboard-dataset/SKILL.md): the onboarding workflow, from a request to an
+  accepted pipeline, with two stops for the user ([onboarding](docs/onboarding.md))
+- [`profile-dataset`](.agents/skills/profile-dataset/SKILL.md): documentation, real samples and their profile,
+  and the design they support
+- [`onboard-source`](.agents/skills/onboard-source/SKILL.md): the build, stage by stage from the dlt source to
+  marts, with a reference per pipeline kind
+- [`benchmark-pipeline`](.agents/skills/benchmark-pipeline/SKILL.md): stratified timing of design variants
 - [`create-widget`](.agents/skills/create-widget/SKILL.md): a dashboard card from a query over marts or
   entities, following their data contracts
 - [`verify-contract`](.agents/skills/verify-contract/SKILL.md): check a contract claim against the data,

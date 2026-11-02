@@ -84,6 +84,8 @@ dimensions; the dimension tables explain what each key means and how keys relate
   so the dev warehouse and the integration tests run the real pipelines.
 - **Streams** have one cursor per resource and fetch at most `max_days` new days from it.
   Bounded backfills leave the cursor untouched. Fetch errors fail the run, so no gap is skipped.
+- **New datasets** load versioned (`scd2`) whatever their kind, so raw keeps every version; the
+  `delete-insert` streams below predate that default ([ADR 0003](adr/0003-onboarding-defaults.md)).
 - **Revised streams** (NESO) are streams of rows the publisher revises in place: the cursor is the
   upload time, so a resubmission is new data, and they load as scd2 merged on the natural key, like
   file partitions. NESO at times appends a resubmission instead of replacing it, so the upload time

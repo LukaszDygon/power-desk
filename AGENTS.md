@@ -11,6 +11,14 @@ read the relation's data contract, `elt/contracts/<schema>/<relation>.odcs.yaml`
 types, units, joins and the rules (`context.constraints`) that keep an answer correct
 ([data contracts](docs/data-contracts.md)).
 
+## Onboarding data
+
+A request to add a dataset runs the `onboard-dataset` workflow ([onboarding](docs/onboarding.md)) in its own git
+worktree (`claude -w onboard-<source>`, or EnterWorktree). Defaults: versioned raw (`scd2`), dlt's child tables
+for nested data, a time series conformed to existing dimensions, a schedule from the publication cadence, and all
+history ([ADR 0003](docs/adr/0003-onboarding-defaults.md)). Anything else is an exception for the user to confirm.
+Stop for the user after the scope and after the acceptance run.
+
 ## Rules
 
 - **Definitions are authoritative:** every description, classification or metric definition is quoted
@@ -28,7 +36,10 @@ types, units, joins and the rules (`context.constraints`) that keep an answer co
 
 ## Skills (`.agents/skills/`)
 
-- `onboard-source`: a new publisher or dataset, stage by stage, into marts
+- `onboard-dataset`: the onboarding workflow; drives the next three and `verify-contract`
+- `profile-dataset`: documentation, real samples and their profile, the design they support
+- `onboard-source`: the build, stage by stage, with a reference per pipeline kind (`kinds/`)
+- `benchmark-pipeline`: stratified timing of design variants
 - `create-widget`: a dashboard card from a query that follows the contracts
 - `verify-contract`: check a contract claim on the data, then ship it as dbt tests or amend it
 
