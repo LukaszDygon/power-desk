@@ -6,6 +6,7 @@ orchestrated by Dagster.
 - [Architecture](docs/architecture.md): layers, dimensions, load-id contract, data quality, catalogue
 - [Ingestion study](docs/ingestion-study.md): how to store versioned publisher data with dlt, measured
 - [ADR 0001](docs/adr/0001-keep-dlt-defaults-for-ingestion.md): keep dlt's default row handling; the measured avenues for later
+- [Data sources](docs/data-sources.md): European power, gas, carbon and weather publishers, forecast services and main global sources: data, zones, delivery, access
 - [Agent skills](#agent-skills): onboard a source or dataset, add a dashboard widget
 - [Services](services/README.md): long-running receivers of push feeds (Elexon IRIS, ENTSO-E subscriptions), on Kubernetes
 - [Logging and provenance](docs/logging.md): the log standard, and tracing a row through logs, dlt metadata and dbt artifacts
