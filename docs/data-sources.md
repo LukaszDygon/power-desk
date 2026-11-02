@@ -8,7 +8,7 @@ Each row was checked against the publisher's own pages: Europe on **2026-11-01**
 services and global sections on **2026-11-02**. Terms change often, so re-check the Docs link before you
 build a source. **(unv.)** marks a point that could not be confirmed on a primary page, because the page
 rendered only with JavaScript, returned 403, or did not state it. **●** marks a source power-desk already
-ingests (`src/power_desk/ingest/sources/`).
+ingests (`elt/src/power_desk_elt/ingest/sources/`).
 
 **Contents**
 1. [Tags](#tags)

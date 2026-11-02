@@ -48,15 +48,15 @@ htmlcov/
 Thumbs.db
 
 # dbt
-transform/target/
-transform/logs/
-transform/dbt_packages/
+elt/dbt/target/
+elt/dbt/logs/
+elt/dbt/dbt_packages/
 
-# Dagster (DAGSTER_HOME=.dagster/<env>; only the instance config is tracked)
-.dagster/*/*
-!.dagster/*/dagster.yaml
+# Dagster (DAGSTER_HOME=elt/.dagster/<env>; only the instance config is tracked)
+elt/.dagster/*/*
+!elt/.dagster/*/dagster.yaml
 
 .env
-# Ingestion experiments (bench/ingestion): downloaded data and run directories
-bench/ingestion/data/
-bench/ingestion/runs/
+# Ingestion experiments (elt/bench/ingestion): downloaded data and run directories
+elt/bench/ingestion/data/
+elt/bench/ingestion/runs/

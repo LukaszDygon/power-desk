@@ -80,7 +80,7 @@ dimensions; the dimension tables explain what each key means and how keys relate
   `SourceSpec`, registered in `ingest/registry.py` (`ingest/spec.py`). The window carries the start,
   the inclusive end of a bounded backfill and the per-run cap (`max_days`, default
   `SourceSpec.max_days_per_run`). Raw payloads are yielded untouched.
-- **Seed:** recorded and synthetic payloads (`data/seed/`) replace the publishers (`ingest/seed/`),
+- **Seed:** recorded and synthetic payloads (`elt/seed/`) replace the publishers (`ingest/seed/`),
   so the dev warehouse and the integration tests run the real pipelines.
 - **Streams** have one cursor per resource and fetch at most `max_days` new days from it.
   Bounded backfills leave the cursor untouched. Fetch errors fail the run, so no gap is skipped.

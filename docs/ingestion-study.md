@@ -3,7 +3,7 @@
 How to load large, revised publisher files (ENTSO-E File Library exports) with dlt so that every
 version is kept, memory stays at streaming size, re-ingestion and failures stay correct, and the
 pattern carries over to other destinations and to small, frequent loads.
-Harness and raw results in `bench/ingestion/`: month loads (`prepare.py`, `case_body.py`,
+Harness and raw results in `elt/bench/ingestion/`: month loads (`prepare.py`, `case_body.py`,
 `epoch.py cases/<epoch>.json`, `results.jsonl`), small loads (`micro_body.py`, `cases/micro.json`),
 downstream marts (`downstream.py`, `downstream_results.jsonl`) and failure scenarios (`robustness.py`,
 `robustness_results.json`).

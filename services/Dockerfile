@@ -9,8 +9,12 @@ COPY --from=ghcr.io/astral-sh/uv:0.7.3 /uv /bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
 WORKDIR /app
 # dependencies first: a layer reused until the lock changes
+# every workspace member's pyproject.toml, so uv finds the workspace; only this package's are installed
 COPY pyproject.toml uv.lock ./
+COPY elt/pyproject.toml elt/
+COPY dashboard/pyproject.toml dashboard/
 COPY libs/logging/pyproject.toml libs/logging/
+COPY libs/warehouse/pyproject.toml libs/warehouse/
 COPY services/pyproject.toml services/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --package power-desk-services --no-install-workspace

@@ -15,8 +15,8 @@ visual config. Unqualified names resolve against the `marts`, `ods`, `dims` and 
 Never assume relation or column names; read them from the catalogue:
 
 ```bash
-uv run python -m power_desk.catalog.describe                # relations by layer, with descriptions
-uv run python -m power_desk.catalog.describe <relation>     # columns, units and definitions
+uv run python -m power_desk_elt.catalog.describe                # relations by layer, with descriptions
+uv run python -m power_desk_elt.catalog.describe <relation>     # columns, units and definitions
 ```
 
 - Prefer `marts`: business marts (incremental, tested), or the `marts/combined` views for any area
@@ -61,7 +61,7 @@ draws two series as a band; `empty_message` replaces the default "no data" text.
 
 Colours (`color`, `color_positive`, `color_negative`) name the energy palette (`WIND`, `SOLAR`, `NUCLEAR`,
 `CCGT`, `BIOMASS`, `HYDRO`, `STORAGE`, `COAL`, `IMPORTS`, `DEMAND_ACTUAL`, `DEMAND_FORECAST`, `DELTA_POSITIVE`,
-`DELTA_NEGATIVE`, and `SERIES_1`…`SERIES_8` for series that are not fuels; keys in `static/js/chart-theme.js`,
+`DELTA_NEGATIVE`, and `SERIES_1`…`SERIES_8` for series that are not fuels; keys in `dashboard/frontend/static/js/chart-theme.js`,
 values in `dashboard.css` `:root`) or give any CSS colour. Stacked series named by `series_column` take their
 fuel's colour; line series take `SERIES_*` in order.
 
@@ -89,5 +89,5 @@ uv run power-desk-register-widget --json-file <spec.json>
 ```
 
 The script runs the query over the loaded date range and every bidding zone, and saves the spec only if it
-succeeds. To ship a card to fresh checkouts, copy it into `src/power_desk/dashboard/default_widgets.json`. The card then
-appears on the dashboard, and in the lineage view as a consumer of the relations it queries.
+succeeds. To ship a card to fresh checkouts, copy it into
+`dashboard/src/power_desk_dashboard/default_widgets.json`. The card then appears on the dashboard, and in the lineage view as a consumer of the relations it queries.

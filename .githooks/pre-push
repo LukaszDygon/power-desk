@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Runs `make check` before a push to main (README.md, "Before pushing"); other branches push unchecked.
+# Installed by `make hooks`; skip once with `git push --no-verify`.
+set -euo pipefail
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+    if [[ $remote_ref == refs/heads/main ]]; then
+        exec make -j check
+    fi
+done

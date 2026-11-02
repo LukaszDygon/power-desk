@@ -1,0 +1,208 @@
+# Per-feed guards and completeness for the bmrs source. Descriptions reference doc blocks
+# generated from elt/src/power_desk_elt/catalog/definitions/.
+models:
+  - name: stg_bmrs__fuelinst
+    description: |
+      FUELINST typed, one row per fuel type per 5-minute interval.
+
+      {{ doc('dataset_bmrs__fuelinst') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__fuelinst_unique_key
+          arguments:
+            columns: [timestamp_utc, fuel_type]
+      - expression_is_true:
+          name: stg_bmrs__fuelinst_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__fuelinst_no_missing_periods
+          arguments:
+            partition_column: fuel_type
+            partitions_relation: ref('map_technology')
+            partitions_column: source_code
+            partitions_where: "source_dataset = 'FUELINST' and expected_every_period"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: fuel_type
+        description: "{{ doc('col_fuel_type') }}"
+        data_tests: [not_null]
+      - name: generation_mw
+        description: "{{ doc('col_fuelinst_generation') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__indo
+    description: |
+      INDO typed, one row per settlement period.
+
+      {{ doc('dataset_bmrs__indo') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__indo_unique_key
+          arguments:
+            columns: [settlement_date, settlement_period]
+      - expression_is_true:
+          name: stg_bmrs__indo_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__indo_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: demand_mw
+        description: "{{ doc('col_indo_demand') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__itsdo
+    description: |
+      ITSDO typed, one row per settlement period.
+
+      {{ doc('dataset_bmrs__itsdo') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__itsdo_unique_key
+          arguments:
+            columns: [settlement_date, settlement_period]
+      - expression_is_true:
+          name: stg_bmrs__itsdo_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__itsdo_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: demand_mw
+        description: "{{ doc('col_itsdo_demand') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__ndf
+    description: |
+      NDF reduced to the latest published revision per settlement period (national boundary).
+
+      {{ doc('dataset_bmrs__ndf') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__ndf_unique_key
+          arguments:
+            columns: [settlement_date, settlement_period]
+      - expression_is_true:
+          name: stg_bmrs__ndf_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__ndf_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: demand_mw
+        description: "{{ doc('col_ndf_demand') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__windfor
+    description: |
+      WINDFOR reduced to the latest published revision per forecast hour.
+
+      {{ doc('dataset_bmrs__windfor') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__windfor_unique_key
+          arguments:
+            columns: [timestamp_utc]
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_windfor_start_time') }}"
+        data_tests:
+          - not_null
+          - no_missing_intervals:
+              name: stg_bmrs__windfor_no_missing_intervals
+              arguments:
+                interval: 1 hour
+      - name: generation_mw
+        description: "{{ doc('col_windfor_generation') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__mid
+    description: |
+      MID typed, one row per settlement period per Market Index Data Provider.
+
+      {{ doc('dataset_bmrs__mid') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__mid_unique_key
+          arguments:
+            columns: [settlement_date, settlement_period, data_provider]
+      - expression_is_true:
+          name: stg_bmrs__mid_period_in_range
+          arguments:
+            expression: "settlement_period between 1 and 50"
+      - expression_is_true:
+          name: stg_bmrs__mid_volume_not_negative
+          arguments:
+            expression: "volume_mwh >= 0"
+      - no_missing_settlement_periods:
+          name: stg_bmrs__mid_no_missing_periods
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: settlement_date
+        description: "{{ doc('col_settlement_date') }}"
+      - name: settlement_period
+        description: "{{ doc('col_settlement_period') }}"
+      - name: data_provider
+        description: "{{ doc('col_data_provider') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: stg_bmrs__mid_known_provider
+              config: {severity: warn}
+              arguments:
+                values: [APXMIDP, N2EXMIDP]
+      - name: price_per_mwh
+        description: "{{ doc('col_mid_price') }}"
+        data_tests: [not_null]
+      - name: volume_mwh
+        description: "{{ doc('col_mid_volume') }}"
+        data_tests: [not_null]
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

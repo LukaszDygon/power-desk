@@ -1,0 +1,46 @@
+[project]
+name = "power-desk-elt"
+version = "0.1.0"
+description = "Publisher data into the DuckDB warehouse: dlt sources, the dbt project and their Dagster orchestration"
+requires-python = ">=3.13"
+dependencies = [
+    "dagster>=1.13.27",
+    "dagster-dbt>=0.29.27",
+    "dagster-dg-cli>=1.13.27",
+    "dagster-dlt>=0.29.27",
+    "dagster-webserver>=1.13.27",
+    "dbt-oss>=2.0.8",
+    "dlt[duckdb]>=1.0.0",
+    "duckdb>=1.1.0",
+    "power-desk-logging",
+    "power-desk-warehouse",
+    "pyarrow>=18",
+    "pyyaml>=6.0",
+    "tenacity>=9.1",
+]
+
+[project.scripts]
+power-desk-dagster = "power_desk_elt.cli.dagster:main"
+power-desk-backfill = "power_desk_elt.cli.backfill:main"
+power-desk-load-seed = "power_desk_elt.cli.load_seed:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "power_desk_elt"
+defs_module = "power_desk_elt.orchestration"
+code_location_target_module = "power_desk_elt.orchestration.definitions"
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+venvPath = ".."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

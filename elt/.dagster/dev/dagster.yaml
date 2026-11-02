@@ -1,0 +1,18 @@
+# Local Dagster instance for POWER_DESK_ENV=dev (DAGSTER_HOME=elt/.dagster/dev). Run history lives next to this file.
+concurrency:
+  runs:
+    # dlt and dbt both write to one DuckDB file: one run at a time.
+    max_concurrent_runs: 1
+  pools:
+    # `duckdb_warehouse` pool used by every dlt and dbt asset.
+    default_limit: 1
+telemetry:
+  enabled: false
+# Every record of a run, ours and dlt's included, joins its event log and the run log in the log
+# standard (`elt/src/power_desk_elt/orchestration/logs.py`, docs/logging.md).
+python_logs:
+  managed_python_loggers: [power_desk_elt, power_desk_logging, dlt]
+  dagster_handler_config:
+    handlers:
+      standard:
+        "()": power_desk_elt.orchestration.logs.run_log_handler

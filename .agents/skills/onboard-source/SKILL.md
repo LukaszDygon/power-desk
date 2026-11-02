@@ -29,7 +29,7 @@ existing source, extend that source's table of datasets and skip what already ex
 
 ## 1. Ingest
 
-`src/power_desk/ingest/sources/<source>.py`, shaped like the existing sources: a table of datasets, fetch
+`elt/src/power_desk_elt/ingest/sources/<source>.py`, shaped like the existing sources: a table of datasets, fetch
 functions, a `@dlt.source(window: RunWindow)` and a `SPEC`.
 - Name raw tables `<source>__<dataset>`. Yield rows (dicts) as published, in pages (e.g. 50,000 rows), never
   one row per `yield`: no renames, no added columns, no ingestion timestamps (dlt's `_dlt_load_id` is the
@@ -40,14 +40,14 @@ functions, a `@dlt.source(window: RunWindow)` and a `SPEC`.
 - Credentials are dlt secrets (`.env`, listed in `.env.example`), resolved at run time.
 - Register the `SPEC` in `ingest/registry.py`, with `max_days_per_run` (and `window_padding_days` if the
   publisher's local dates cross UTC days).
-- Check: unit tests for parsing and planning in `tests/unit/`; `uv run pyright`.
+- Check: unit tests for parsing and planning in `elt/tests/unit/`; `make check-elt`.
 
 ## 2. Seed
 
 Serve the publisher offline from `ingest/seed/replay.py` (`SeedPublishers`): recorded files in
-`data/seed/<source>/` for exports and reference files, synthetic records in `ingest/seed/synthetic.py` for
+`elt/seed/<source>/` for exports and reference files, synthetic records in `ingest/seed/synthetic.py` for
 API streams.
-- Check: `tests/integration/test_ingest.py` loads every published row (add a case for the new table);
+- Check: `elt/tests/integration/test_ingest.py` loads every published row (add a case for the new table);
   `uv run power-desk-load-seed` builds the dev warehouse.
 
 ## 3. Export the dlt schema
@@ -58,36 +58,36 @@ Commit it; it defines the dbt source.
 
 ## 4. Catalogue and freshness
 
-`src/power_desk/catalog/definitions/<source>.yml`: `sources`, `tables` (title, description, `url`,
+`elt/src/power_desk_elt/catalog/definitions/<source>.yml`: `sources`, `tables` (title, description, `url`,
 `freshness`) and source-specific `columns`; reuse shared column keys.
 - Cite official documentation with `refs` (a provider in `catalog/providers/`) or `links` (with
   `section` / `page`); descriptions hold the definition only.
 - `freshness` names a preset in `platform.yml` (`actuals`, `forecasts`, `daily_exports`, ...; add one for
   a new cadence). It drives dbt source freshness and the Dagster `recently_fetched` / `recent_data` checks.
-- Check: `uv run python -m power_desk.catalog.refresh` (network), then `... catalog.generate`; generation
+- Check: `uv run python -m power_desk_elt.catalog.refresh` (network), then `... catalog.generate`; generation
   fails on undocumented raw columns.
 
 ## 5. Schedule
 
 Add each raw table to exactly one `IngestJob` in `orchestration/jobs.py`, by publication cadence, or add a
 job (schedule and catch-up come with it).
-- Check: `tests/integration/test_orchestration.py`; loading the definitions fails while a raw table is
+- Check: `elt/tests/integration/test_orchestration.py`; loading the definitions fails while a raw table is
   unscheduled.
 
 ## 6. Staging
 
-`transform/models/staging/<source>/stg_<source>__<table>.sql` plus `_<source>__models.yml`.
+`elt/dbt/models/staging/<source>/stg_<source>__<table>.sql` plus `_<source>__models.yml`.
 - Read with `{{ dlt_source('<source>', '<table>') }}`; type columns, convert times to UTC at the native
   grain, rename dlt's names, keep `_dlt_load_id`.
 - File partitions: `incremental`, `delete+insert` on the natural key, `meta={'dlt_tracked': true}`, reading
   `where _dlt_valid_to is null and {{ dlt_incremental_filter('_dlt_load_id') }}`. Snapshots keep validity
   with `{{ scd2_validity() }}`. Streams: plain views.
 - Describe every column with `{{ doc('col_<key>') }}`; test key uniqueness, ranges and completeness.
-- Check: `uv run dbt build --project-dir transform --profiles-dir transform --select staging.<source>`.
+- Check: `uv run dbt build --project-dir elt/dbt --profiles-dir elt/dbt --select staging.<source>`.
 
 ## 7. Dimensions
 
-Map the publisher's codes onto dimension keys in `transform/seeds/mappings/`, register the dataset in
+Map the publisher's codes onto dimension keys in `elt/dbt/seeds/mappings/`, register the dataset in
 `seeds/dims/source_datasets.csv`, and extend a dimension only for a genuinely new concept (with an
 authoritative definition).
 - Check: the mapping integrity tests pass.
@@ -104,7 +104,7 @@ Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, 
   capacities; `sum` for volumes), and pass it to `hourly_series` the same way.
 - Read each staging model through `pending_partitions(ref(...), [area key])`, so an incremental build
   transforms only the (area, hour) partitions pending loads touch.
-- Check: `dbt build` and `uv run pytest`, including the warehouse column-coverage test.
+- Check: `dbt build` and `make check-elt`, including the warehouse column-coverage test.
 
 ## 9. Marts and dashboard
 
@@ -116,7 +116,7 @@ Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, 
 
 Run the ingest job (Dagster, or `power-desk-backfill --sources <source>`), then confirm:
 `dlt_meta.dlt_pending_loads` is empty, the loads appear in `dlt_meta.dlt_load_audit`, the freshness checks
-pass, and `uv run pytest` and `uv run pyright` are green.
+pass, and `make check` is green.
 
 ## Pitfalls (measured, see `docs/ingestion-study.md`)
 

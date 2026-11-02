@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# The projects whose checks a change needs: those changed since the merge base with $BASE (default
+# origin/main), committed or not, plus their dependents. Prints `make check-<project>` names, one per line.
+#
+#   libs/logging    -> logging, elt, services
+#   libs/warehouse  -> warehouse, elt, dashboard
+#   elt             -> elt, dashboard (its tests query the marts the ELT builds)
+#   workspace files -> every project
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+base=$(git merge-base HEAD "${BASE:-origin/main}")
+changed=$( { git diff --name-only "$base"; git ls-files --others --exclude-standard; } | sort -u)
+
+affected=()
+for path in $changed; do
+    case $path in
+        libs/logging/*) affected+=(logging elt services) ;;
+        libs/warehouse/*) affected+=(warehouse elt dashboard) ;;
+        elt/bench/*) ;;  # experiments: lint only
+        elt/*) affected+=(elt dashboard) ;;
+        dashboard/*) affected+=(dashboard) ;;
+        services/*) affected+=(services) ;;
+        infra/openmetadata-duckdb/*) affected+=(connector) ;;
+        pyproject.toml | uv.lock | Makefile | scripts/*) affected+=(logging warehouse elt dashboard services) ;;
+    esac
+done
+if ((${#affected[@]})); then printf '%s\n' "${affected[@]}" | sort -u; fi

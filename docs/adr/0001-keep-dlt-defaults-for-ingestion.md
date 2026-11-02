@@ -1,7 +1,7 @@
 # ADR 0001: Keep dlt's default row handling for ingestion
 
 - **Status:** accepted, 2026-10-28; amended 2026-10-28 (streams: `upsert` -> `delete-insert`)
-- **Evidence:** [ingestion study](../ingestion-study.md); harness and raw results in `bench/ingestion/`
+- **Evidence:** [ingestion study](../ingestion-study.md); harness and raw results in `elt/bench/ingestion/`
 
 ## Context
 

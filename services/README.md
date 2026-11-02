@@ -1,7 +1,8 @@
 # Services
 
 Long-running processes that receive what publishers push and land it with dlt, as it arrives. They
-run on Kubernetes (Helm chart) and locally (minikube, or plain `uv run`).
+run on Kubernetes (Helm chart in [infra/services](../infra/services)) and locally (minikube, or plain `uv run`).
+This directory holds the code, its tests and the image (`Dockerfile`); deployment lives in `infra/`.
 
 | Service | Publisher feed | Delivery | Lands into |
 |---|---|---|---|
@@ -43,24 +44,24 @@ Transparency Platform (after requesting subscription rights from transparency@en
 ```bash
 uv run power-desk-service entsoe-subscription     # http://localhost:8080/subscriptions
 uv run power-desk-service iris                    # needs the IRIS credentials in .env
-uv run pytest services/tests
+make check-services                               # type check and tests (README.md, "Before pushing")
 ```
 
 Local Kubernetes (minikube with the Docker driver, Helm); `data/landing` is mounted as the landing zone,
 so the local orchestrator sees what the services land:
 
 ```bash
-make -C services dev       # cluster, image (built in the cluster), Secret from .env, release
-make -C services forward   # then, in another terminal: make -C services push
-make -C services logs SERVICE=iris
-make -C platform down      # deletes the cluster; data/ stays
+make -C infra/services dev       # cluster, image (built in the cluster), Secret from .env, release
+make -C infra/services forward   # then, in another terminal: make -C infra/services push
+make -C infra/services logs SERVICE=iris
+make -C infra down               # deletes the cluster; data/ stays
 ```
 
 If Docker Hub refuses pulls, add `DOCKER_BUILD_ARGS="--build-arg PYTHON_IMAGE=mirror.gcr.io/library/python:3.13-slim"`.
 
 ## Deploy
 
-`helm/power-desk-services` deploys every enabled service as a single-pod Deployment (`Recreate`,
+[`infra/services/power-desk-services`](../infra/services/power-desk-services) deploys every enabled service as a single-pod Deployment (`Recreate`,
 non-root, read-only root filesystem, probes, one landing claim per service). For a real cluster:
 
 - push the image to a registry (`image.repository`, `image.tag`);

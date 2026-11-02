@@ -71,11 +71,11 @@ rows, from dlt's normalize metrics). dbt needs none: its log and artifacts carry
 |---|---|
 | Services (`services/`) | stderr, JSON in the image; the cluster collects it |
 | Dagster runs | the run's event log (UI), and JSON lines in `data/logs/<env>/dagster-runs.jsonl` (`orchestration/logs.py`, via `python_logs` in `dagster.yaml`); the console keeps Dagster's format |
-| dbt | `dbt.log` next to the invocation's artifacts: `transform/target/dbt_models-<run>-<hash>/` in Dagster, `transform/target/` from the CLIs |
+| dbt | `dbt.log` next to the invocation's artifacts: `elt/dbt/target/dbt_models-<run>-<hash>/` in Dagster, `elt/dbt/target/` from the CLIs |
 | CLIs (`power-desk-backfill`, `power-desk-load-seed`) | stderr |
 
 On the local cluster, Alloy ships the pods' records and the Dagster run log to Loki, viewed in Grafana and
-filtered by the identifiers above ([platform](../platform/README.md)).
+filtered by the identifiers above ([infra](../infra/README.md)).
 
 ## Tracing a row
 
@@ -90,7 +90,7 @@ filtered by the identifiers above ([platform](../platform/README.md)).
 
 | Metadata | OpenMetadata reads it from |
 |---|---|
-| Schemas, tables, views, columns | the warehouse: our [DuckDB connector](../integrations/openmetadata-duckdb/README.md) (OpenMetadata has none) |
+| Schemas, tables, views, columns | the warehouse: our [DuckDB connector](../infra/openmetadata-duckdb/README.md) (OpenMetadata has none) |
 | Descriptions, model lineage, test results | dbt artifacts: [dbt connector](https://docs.open-metadata.org/v2.0.x/connectors/database/dbt) |
 | Jobs, runs and their status | Dagster: [Dagster connector](https://docs.open-metadata.org/v2.0.x/connectors/pipeline/dagster) |
 | Publisher → raw and landing lineage | OpenLineage run events to its [OpenLineage API](https://docs.open-metadata.org/v2.0.x/how-to-guides/data-lineage/openlineage) |

@@ -1,0 +1,19 @@
+# Local cluster (`make -C infra/services dev`): the locally built image, the repository's data/landing as the
+# landing zone (so the local orchestrator reads what services land), credentials from the repository's .env.
+image:
+  repository: power-desk-services
+  tag: dev
+  pullPolicy: Never
+environment: dev
+landing:
+  url: /landing
+  volume:
+    hostPath: /power-desk-data/landing  # minikube mounts <repo>/data here (infra/Makefile)
+existingSecret: power-desk-services-env
+services:
+  iris:
+    resources:
+      requests: {cpu: 10m, memory: 128Mi}
+  entsoe-subscription:
+    resources:
+      requests: {cpu: 10m, memory: 128Mi}

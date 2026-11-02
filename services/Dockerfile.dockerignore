@@ -2,7 +2,10 @@
 *
 !pyproject.toml
 !uv.lock
+!elt/pyproject.toml
+!dashboard/pyproject.toml
 !libs/logging/pyproject.toml
+!libs/warehouse/pyproject.toml
 !libs/logging/src
 !services/pyproject.toml
 !services/src

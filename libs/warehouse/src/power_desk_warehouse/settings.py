@@ -1,0 +1,40 @@
+"""Where the warehouse and its dbt manifest live, read from environment variables (and `.env` at the repo root).
+
+The contract between the ELT, which writes both, and their readers (the dashboard, the catalogue).
+
+| Variable | Default | |
+|---|---|---|
+| `POWER_DESK_ENV` | `dev` | `dev` or `prod`: selects warehouse, dbt target, dlt state and Dagster instance |
+| `POWER_DESK_DUCKDB_PATH` | `data/warehouse_<env>.duckdb` | warehouse file |
+| `POWER_DESK_DBT_MANIFEST` | `elt/dbt/target/manifest.json` | dbt manifest read by the dashboard and catalogue |
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+DATA_DIR = REPO_ROOT / "data"
+ENVIRONMENTS = ("dev", "prod")
+
+load_dotenv(REPO_ROOT / ".env", override=False)
+
+
+def environment() -> str:
+    env = os.environ.get("POWER_DESK_ENV", "dev")
+    if env not in ENVIRONMENTS:
+        raise ValueError(f"POWER_DESK_ENV={env!r}; expected one of {ENVIRONMENTS}")
+    return env
+
+
+def warehouse_path() -> Path:
+    """The DuckDB warehouse; its file name is also the catalog name dbt bakes into views."""
+    path = Path(os.environ.get("POWER_DESK_DUCKDB_PATH") or f"data/warehouse_{environment()}.duckdb")
+    return path if path.is_absolute() else REPO_ROOT / path
+
+
+def dbt_manifest_path() -> Path:
+    return Path(os.environ.get("POWER_DESK_DBT_MANIFEST") or REPO_ROOT / "elt" / "dbt" / "target" / "manifest.json")

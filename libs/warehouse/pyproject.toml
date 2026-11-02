@@ -1,0 +1,19 @@
+[project]
+name = "power-desk-warehouse"
+version = "0.1.0"
+description = "The warehouse contract shared by the ELT and its readers: environment, file locations, connections"
+requires-python = ">=3.13"
+dependencies = ["duckdb>=1.1.0", "python-dotenv>=1.2.3", "tenacity>=9.1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+venvPath = "../.."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
