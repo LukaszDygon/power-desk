@@ -2,6 +2,10 @@
 
 Without dates each source resumes from its cursor; `--start-date`/`--end-date` run a bounded
 backfill that leaves the cursor untouched; `--chunk-days` loads a long range chunk by chunk.
+
+dbt then builds over the pending loads as a scheduled run does. A bounded backfill (or `--scope all`) then tests
+what it loaded over the whole warehouse (completeness from the start date fails, as nightly): only the
+nodes downstream of the raw tables it loaded, so gaps in other feeds neither fail it nor block their marts.
 """
 
 from __future__ import annotations
@@ -13,8 +17,8 @@ from power_desk_elt.ingest.pipeline import make_pipeline, make_source, run
 from power_desk_elt.ingest.registry import SOURCES
 from power_desk_elt.ingest.spec import RunWindow, SourceSpec
 from power_desk_elt.ingest.windows import DateRange, to_date
-from power_desk_elt.settings import warehouse_path
-from power_desk_elt.transform.dbt import DbtRun
+from power_desk_elt.settings import dbt_manifest_path, warehouse_path
+from power_desk_elt.transform.dbt import DbtRun, downstream_of, raw_tables_loaded_by
 import power_desk_logging
 
 
@@ -30,7 +34,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--refresh", choices=["drop_sources", "drop_resources", "drop_data"], help="dlt refresh mode")
     parser.add_argument("--db-path", default=None, help="warehouse file (default: POWER_DESK_DUCKDB_PATH)")
-    parser.add_argument("--scope", choices=["recent", "all"], help="dbt test scope (default: all when bounded)")
+    parser.add_argument(
+        "--scope",
+        choices=["recent", "all"],
+        help="test what the run loaded over the whole warehouse (all; default when bounded) or only its rows (recent)",
+    )
     parser.add_argument("--skip-dbt", action="store_true")
     args = parser.parse_args()
     if args.chunk_days and not (args.start_date and args.end_date):
@@ -61,8 +69,12 @@ def main() -> int:
             run(pipeline, make_source(name, window, resources), refresh=args.refresh)
     if args.skip_dbt:
         return 0
-    scope = args.scope or ("all" if args.end_date else "recent")
-    return DbtRun(scope=scope, full_refresh=bool(args.refresh)).run_pending(db_path)
+    built = DbtRun(full_refresh=bool(args.refresh)).run_pending(db_path)
+    if (args.scope or ("all" if args.end_date else "recent")) == "recent":
+        return built
+    loaded = raw_tables_loaded_by(dbt_manifest_path(), args.sources, args.resources)
+    tested = DbtRun(command="test", scope="all", select=downstream_of(loaded)).run_pending(db_path) if loaded else 0
+    return built or tested
 
 
 if __name__ == "__main__":

@@ -151,6 +151,8 @@ source. Details: [services](../services/README.md).
   entities build from the sources loaded so far; tests downstream of a never-loaded table are skipped.
 - **The catch-up sensor** re-runs a job while its last run was capped.
 - **Nightly** runs every test unscoped and refreshes dbt docs.
+- **A bounded backfill** (`power-desk-backfill`) builds as a scheduled run does, then runs unscoped only the
+  tests downstream of the raw tables it loaded, so gaps in other feeds neither fail it nor block their marts.
 - **One run at a time:** DuckDB allows a single writer.
 
 ## Logging and provenance

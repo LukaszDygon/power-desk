@@ -31,11 +31,13 @@ class DbtRun:
 
     `command`: `build` (models and tests) or `test` (tests only). `scope`: `recent` tests the rows of
     pending loads only, `all` the whole warehouse. `full_refresh` rebuilds incremental models (`build` only).
+    `select`: dbt selectors limiting the invocation (default: every node).
     """
 
     command: Literal["build", "test"] = "build"
     scope: Literal["recent", "all"] = "recent"
     full_refresh: bool = False
+    select: tuple[str, ...] = ()
 
     def args(self, load_ids: list[str], orchestrator_run_id: str | None = None) -> list[str]:
         variables = {
@@ -48,6 +50,7 @@ class DbtRun:
             "--vars",
             json.dumps(variables),
             *(["--full-refresh"] if self.full_refresh and self.command == "build" else []),
+            *(["--select", *self.select] if self.select else []),
         ]
 
     def run_pending(
@@ -95,6 +98,25 @@ def unloaded_raw_tables(manifest_path: Path, db_path: Path | str | None = None) 
     with warehouse.connect(db_path) as con:
         loaded = warehouse.table_names(con, DATASET_NAME)
     return sorted(ref for name, ref in declared.items() if name not in loaded)
+
+
+def raw_tables_loaded_by(
+    manifest_path: Path, pipelines: list[str], resources: list[str] | None = None
+) -> list[tuple[str, str]]:
+    """(dbt source, table) of the raw tables `pipelines` load: all of them, or those of `resources`, child tables
+    included (`meta.dlt` of each dbt source, `catalog.generate`)."""
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    tables = []
+    for source in manifest["sources"].values():
+        dlt = (source.get("config", {}).get("meta") or source.get("meta") or {}).get("dlt") or {}
+        if dlt.get("pipeline") in pipelines and (resources is None or dlt.get("resource") in resources):
+            tables.append((source["source_name"], source["name"]))
+    return sorted(tables)
+
+
+def downstream_of(tables: list[tuple[str, str]]) -> tuple[str, ...]:
+    """dbt selectors for (dbt source, table) pairs and every node downstream of them, tests included."""
+    return tuple(f"source:{source}.{table}+" for source, table in tables)
 
 
 def tests_downstream_of(tables: list[tuple[str, str]]) -> str:
