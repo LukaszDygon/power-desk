@@ -25,7 +25,8 @@ index files give each field's byte range, so single fields can be fetched (about
 
 ## Consequences
 
-- About 113k rows a day (00z and 12z), instead of billions; a run loads in about a minute.
+- About 113k rows a day (00z and 12z), instead of billions; a run loads in 1-6 minutes, depending on the
+  portal's response (acceptance run, 2026-11-02).
 - A site added to the REPD gets weather from its first run after the extract that lists it; earlier
   runs are not re-read (the portal keeps about 12 runs, and no backfill path exists).
 - Area means, other points or a full grid need a new decision: the GRIB files are not kept.

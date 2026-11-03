@@ -10,7 +10,7 @@ models:
       - dlt_unique:
           name: stg_ecmwf__ifs_oper_unique_key
           arguments:
-            columns: [publish_time_utc, step_hours, param_id, grid_latitude, grid_longitude]
+            columns: [publish_time_utc, step_hours, short_name, grid_latitude, grid_longitude]
       - expression_is_true:
           name: stg_ecmwf__ifs_oper_known_units
           arguments:

@@ -112,8 +112,11 @@ series_columns as (
         3
     ) as {{ measure }},
     {%- endfor %}
+    {#- a sum's shares in millionths, rounded to thousandths once: an hour of overlapping rows adds 5-minute
+        slots, and rounding each slot's share to thousandths skewed small volumes (e.g. 0.1 mm of rain) -#}
     {%- for measure in sums %}
-    sum(cast(round({{ measure }} * 1000 * _minutes / interval_minutes) as bigint)) / 1000 as {{ measure }},
+    round(sum(cast(round({{ measure }} * 1000000 * _minutes / interval_minutes) as bigint)) / 1000000, 3)
+        as {{ measure }},
     {%- endfor %}
     {%- for column in latest %}
     arg_max({{ column }}, publish_time_utc) as {{ column }},
