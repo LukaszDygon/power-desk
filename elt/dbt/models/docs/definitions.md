@@ -484,7 +484,7 @@ Containing area in a curated hierarchy link.
 {% enddocs %}
 
 {% docs col_relation %}
-Kind of hierarchy link: `part_of` (curated), `eic_parent` (published by EIC) or `registered_code` (a nonconforming code to the registered code it stands for, seed `nonconforming_eic_codes`).
+Kind of hierarchy link (`part_of`, curated) or `eic_parent` (published by EIC).
 {% enddocs %}
 
 {% docs col_registered_eic_code %}

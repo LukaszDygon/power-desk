@@ -18,8 +18,10 @@ fall out of any GB query that joins `dim_area` (about 3% of GB generation unavai
 - **Kept separate, unioned in the dimension:** ENTSO-E's registry is loaded as published. `dim_eic_code`
   adds each seeded code with the attributes and versions of its registered code, and no issuing office;
   `registered_eic_code` (`dim_area.registered_area_eic_code`) tells the two apart.
-- **Rolled up through the registered code:** `bridge_area_hierarchy` links a nonconforming area to its
-  registered area (`registered_code`), so roll-ups reach it.
+- **Rolled up through the registered code:** `bridge_area_hierarchy` gives a nonconforming area its
+  registered area and that area's ancestors, one level deeper, so roll-ups reach it. This is done after the
+  recursive closure, not as a link inside it: a link there made DuckDB 1.5.4 (dbt's engine) crash
+  intermittently in the recursive CTE's join filter.
 - **Facts keep the published code:** entities and marts carry the code as published; queries resolve it
   through the dimension.
 

@@ -23,9 +23,7 @@ columns:
   parent_area_eic_code:
     description: Containing area in a curated hierarchy link.
   relation:
-    description: >-
-      Kind of hierarchy link: `part_of` (curated), `eic_parent` (published by EIC) or `registered_code` (a
-      nonconforming code to the registered code it stands for, seed `nonconforming_eic_codes`).
+    description: Kind of hierarchy link (`part_of`, curated) or `eic_parent` (published by EIC).
   registered_eic_code:
     description: >-
       The code in ENTSO-E's central registry that the row's code stands for: the code itself when registered;
