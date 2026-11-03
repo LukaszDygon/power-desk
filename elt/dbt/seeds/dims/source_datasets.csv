@@ -19,3 +19,5 @@ NESO_ELECLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_NEMOLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_NSL,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_VIKING,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+REMIT,bmrs,dataset,Elexon,unavailability,,10YGB----------A
+BMUNITS,bmrs,code_list,Elexon,,,

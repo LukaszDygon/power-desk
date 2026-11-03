@@ -83,6 +83,26 @@ The Market Index Data which is received from each MIDP for each Settlement Perio
 The data to be provided by the Market Index Data Provider(s) in accordance with the Market Index Definition Statement or, in relation to a particular Market Index Data Provider, the data to be so provided by that Market Index Data Provider, in each case as set out within the BSC.
 {% enddocs %}
 
+{% docs dataset_bmrs__remit %}
+**REMIT messages (urgent market messages)**
+
+The Regulation on Wholesale Energy Markets Integrity and Transparency (REMIT) is an EU regulation aimed at preventing market abuse in wholesale energy markets.
+
+This endpoint returns information provided by market participants to comply with Article 4 of Regulation on Wholesale Energy Market Integrity and Transparency (REMIT) Regulation (EU) 1227/2011.
+{% enddocs %}
+
+{% docs dataset_bmrs__remit__outage_profile %}
+**REMIT outage profile intervals**
+
+The time intervals of a REMIT message over which its available capacity fluctuates, each with its capacity: "If the available/unavailable capacity fluctuates over time, information on the time interval (interval start and stop) and available/unavailable capacity should be reported via Data Field No (20) Interval Start and Data Field No (21) Interval Stop."
+{% enddocs %}
+
+{% docs dataset_bmrs__bmunits %}
+**BM units**
+
+A current list of BM units held by Elexon, with their registered identifiers, lead party, type, capacities, loss factor and credit assessment capabilities.
+{% enddocs %}
+
 {% docs dataset_entsoe__actual_total_load %}
 **Actual total load per bidding zone per market time unit**
 
@@ -231,6 +251,210 @@ Market Index Price for the settlement period, in GBP/MWh. Settlement derives the
 Market Index Volume for the settlement period, in MWh. Zero when the volume the provider would otherwise submit is below its Individual Liquidity Threshold.
 {% enddocs %}
 
+{% docs col_remit_message_id %}
+Elexon's identifier of a published REMIT message (one per message and unit listed); the key of `/remit/{messageId}`.
+{% enddocs %}
+
+{% docs col_remit_mrid %}
+Unique identification of the message (mRID), unique within a given sender market participant; it remains the same while the revision number increases to reflect changes made to the original message. ACER: the "UMM thread ID" uniquely identifying the event a series of UMMs reports on.
+{% enddocs %}
+
+{% docs col_remit_revision_number %}
+Unique identification of the message revision, used to follow up on a previous message with the same mRID. ACER: "The latest update of an event is represented by the UMM with the highest version number. The latest UMM published (latest UMM version) related to an event is the only applicable one."
+{% enddocs %}
+
+{% docs col_remit_created_time %}
+Date and time of the creation of the document (UTC).
+{% enddocs %}
+
+{% docs col_remit_message_type %}
+The UMM schema the message follows: `UnavailabilitiesOfElectricityFacilities` (UMMs reporting planned or unplanned electricity unavailability likely to significantly affect wholesale energy prices) or `OtherMarketInformation` (UMMs that do not fall under the unavailability of electricity or gas facilities).
+{% enddocs %}
+
+{% docs col_remit_message_heading %}
+Description of message; free text with a high-level description of the message.
+{% enddocs %}
+
+{% docs col_remit_event_type %}
+Type of Event: identifies the main characteristic of the event (`Production unavailability`, `Transmission unavailability`, `Consumption unavailability`, `Other unavailability`).
+{% enddocs %}
+
+{% docs col_remit_unavailability_type %}
+Type of Unavailability: whether the unavailability was planned or not. "Planned unavailability" means a programmed change in capacity (for example a maintenance, seasonal closing); "unplanned unavailability" means a not-programmed change in capacity (for example an outage, forced limitation).
+{% enddocs %}
+
+{% docs col_remit_participant_id %}
+Unique identification of the Market Participant associated with the event being reported upon, either a registered BSC participant ID or a non-BSC participant ID registered with Elexon.
+{% enddocs %}
+
+{% docs col_remit_registration_code %}
+Market Participant Code: the ACER registration code which the market participant received, or the unique market participant code which it provided.
+{% enddocs %}
+
+{% docs col_remit_asset_id %}
+Unique identification of an asset; `NO_ASSET` where the message does not relate to any particular asset.
+{% enddocs %}
+
+{% docs col_remit_asset_type %}
+Type of asset being reported upon (Production, Consumption, Transmission, Distribution).
+{% enddocs %}
+
+{% docs col_remit_affected_unit %}
+Affected Asset or Unit: the official name of the generation or production unit, consumption unit, transmission, or other asset, identified at the highest level of granularity.
+{% enddocs %}
+
+{% docs col_remit_affected_unit_eic %}
+Affected Asset or Unit EIC code: the EIC W, T, Z or A code of the resource object, tie-line, measurement point or substation, as the market participant published it.
+{% enddocs %}
+
+{% docs col_remit_affected_area %}
+BMRS Zone affected by the event; `N` denotes National, other identifiers (`B1`..`B17`) the individual BMRS Zones.
+{% enddocs %}
+
+{% docs col_remit_bidding_zone %}
+Bidding Zone: identification (EIC Y code) of the bidding zone(s) where the affected asset or unit is located or feeds into.
+{% enddocs %}
+
+{% docs col_remit_fuel_type %}
+Fuel Type: classification of electricity production types (ENTSO-E production type names, e.g. `Fossil Gas`, `Wind Offshore`); only for production unavailability.
+{% enddocs %}
+
+{% docs col_remit_installed_capacity %}
+Installed Capacity, in MW: the nominal generating/transmission/consumption capacity, the maximum electrical active power the facility can produce/transmit/consume continuously throughout a long period of operation in normal conditions.
+{% enddocs %}
+
+{% docs col_remit_available_capacity %}
+Available Capacity, in MW: remaining capacity of the facility concerned.
+{% enddocs %}
+
+{% docs col_remit_unavailable_capacity %}
+Unavailable Capacity, in MW: the capacity of the facility concerned that is affected by the event. Where more than one unavailability event affects the same asset at the same time, it represents only the capacity made unavailable by the event the message relates to.
+{% enddocs %}
+
+{% docs col_remit_event_status %}
+Event Status: `Active`, a UMM with the most recent update on an event that will occur in the future or is occurring; `Dismissed`, an event not to be taken into account anymore because it was cancelled or withdrawn; `Inactive`, the most recent update on an event that already occurred in the past.
+{% enddocs %}
+
+{% docs col_remit_event_start %}
+Event Start: estimated/actual starting time and date of the relevant event (UTC).
+{% enddocs %}
+
+{% docs col_remit_event_stop %}
+Event Stop: estimated/actual ending time and date of the relevant event (UTC); optional under Other market information.
+{% enddocs %}
+
+{% docs col_remit_duration_uncertainty %}
+Description of estimated uncertainty of event duration, e.g. `+- 1 day`.
+{% enddocs %}
+
+{% docs col_remit_reason %}
+Reason for the unavailability: explanation of the reason(s) behind the unavailability event.
+{% enddocs %}
+
+{% docs col_remit_remarks %}
+Remarks: any other information that facilitates the full understanding of the potential impact of the event on wholesale energy prices.
+{% enddocs %}
+
+{% docs col_remit_interval_start %}
+Interval Start: estimated/actual starting time and date of the interval of relevant event (UTC).
+{% enddocs %}
+
+{% docs col_remit_interval_stop %}
+Interval Stop: estimated/actual ending time and date of the interval of relevant event (UTC).
+{% enddocs %}
+
+{% docs col_remit_interval_capacity %}
+Available capacity of the facility over the interval, in MW, reported per interval where the available/unavailable capacity fluctuates over time.
+{% enddocs %}
+
+{% docs col_remit_is_latest_revision %}
+Whether the message is its event's latest revision (highest revision number, latest publication): "The latest UMM published (latest UMM version) related to an event is the only applicable one."
+{% enddocs %}
+
+{% docs col_bmunit_national_grid_id %}
+The BM Unit's identifier as registered with National Grid (NESO).
+{% enddocs %}
+
+{% docs col_bmunit_elexon_id %}
+The BM Unit Id registered with Elexon under the BSC.
+{% enddocs %}
+
+{% docs col_bmunit_name %}
+Name of the BM Unit.
+{% enddocs %}
+
+{% docs col_bmunit_lead_party_name %}
+Name of the BM Unit's Lead Party.
+{% enddocs %}
+
+{% docs col_bmunit_lead_party_id %}
+Participant id of the BM Unit's Lead Party.
+{% enddocs %}
+
+{% docs col_bmunit_type %}
+BM Unit type code as published by Elexon (e.g. `T`, `E`, `I`, `S`, `V`, `G`).
+{% enddocs %}
+
+{% docs col_bmunit_fpn_flag %}
+Whether the BM Unit submits Final Physical Notifications.
+{% enddocs %}
+
+{% docs col_bmunit_generation_capacity %}
+Generation Capacity of the BM Unit, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_demand_capacity %}
+Demand Capacity of the BM Unit, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_production_or_consumption_flag %}
+Whether the BM Unit is a Production (`P`) or Consumption (`C`) BM Unit.
+{% enddocs %}
+
+{% docs col_bmunit_transmission_loss_factor %}
+Transmission Loss Factor of the BM Unit (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_caic_working_day %}
+BM Unit Credit Assessment Import Capability for a working day, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_caic_non_working_day %}
+BM Unit Credit Assessment Import Capability for a non-working day, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_caec_working_day %}
+BM Unit Credit Assessment Export Capability for a working day, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_caec_non_working_day %}
+BM Unit Credit Assessment Export Capability for a non-working day, in MW (published as text).
+{% enddocs %}
+
+{% docs col_bmunit_credit_qualifying_status %}
+Whether the BM Unit is credit qualifying, as published by Elexon.
+{% enddocs %}
+
+{% docs col_bmunit_demand_in_production_flag %}
+Whether demand is included in the Production BM Unit, as published by Elexon.
+{% enddocs %}
+
+{% docs col_bmunit_gsp_group_id %}
+Id of the GSP Group the BM Unit is in.
+{% enddocs %}
+
+{% docs col_bmunit_gsp_group_name %}
+Name of the GSP Group the BM Unit is in.
+{% enddocs %}
+
+{% docs col_bmunit_eic %}
+EIC (object type W) of the BM Unit as Elexon lists it; absent for most units, and a unit may be listed under more than one EIC.
+{% enddocs %}
+
+{% docs col_bmunit_interconnector_id %}
+Interconnector the BM Unit belongs to, for Interconnector BM Units.
+{% enddocs %}
+
 {% docs col_valid_from %}
 Start of the version's validity (UTC); join facts as-of their timestamp.
 {% enddocs %}
@@ -343,16 +567,24 @@ The border is an HVDC link.
 EIC (object type X) of a party, a legal entity with a VAT number or other unique identification code.
 {% enddocs %}
 
+{% docs col_resource_code %}
+Key of a resource in its publisher's scheme (`resource_scheme`): the EIC (object type W) of a resource object used for production, consumption or storage of energy (e.g. generation unit, production unit), or the BM Unit Id Elexon registers for a BM Unit.
+{% enddocs %}
+
+{% docs col_resource_scheme %}
+The scheme of `resource_code`, `EIC` (ENTSO-E's EIC list) or `BM_UNIT` (Elexon's BM unit list).
+{% enddocs %}
+
 {% docs col_resource_eic_code %}
 EIC (object type W) of a resource object used for production, consumption or storage of energy (e.g. generation unit, production unit); the smallest published asset granularity.
 {% enddocs %}
 
-{% docs col_parent_resource_eic_code %}
+{% docs col_parent_resource_code %}
 Published EIC parent of the resource, e.g. the production unit of a generating unit.
 {% enddocs %}
 
-{% docs col_ancestor_eic_code %}
-A resource containing `resource_eic_code` (itself at depth 0), following published EIC parents.
+{% docs col_ancestor_resource_code %}
+A resource containing `resource_code` (itself at depth 0), following published EIC parents.
 {% enddocs %}
 
 {% docs col_technology_code %}
@@ -857,6 +1089,26 @@ Fraction of the hour (0.0-1.0) holding data from the series' source. Means are o
 
 {% docs col__series_key %}
 Hash of the columns identifying the series (all but time, measures and provenance); with `timestamp_utc`, the row's key.
+{% enddocs %}
+
+{% docs col_unavailable_capacity_mw %}
+Unavailable capacity of the facility, in MW: the capacity affected by the event (ACER field 9), as published for the whole event. Where several events affect the same asset at the same time, each reports only the capacity made unavailable by its own event, so events add up.
+{% enddocs %}
+
+{% docs col_available_capacity_mw %}
+Available capacity of the facility, in MW: the remaining capacity of the facility concerned (ACER field 10), over the interval where the message publishes an outage profile, else for the whole event. Each event reports the facility's remaining capacity, so events do not add up.
+{% enddocs %}
+
+{% docs col_installed_capacity_mw %}
+Installed capacity of the facility, in MW: the nominal generating/transmission/consumption capacity (ACER field 11/a).
+{% enddocs %}
+
+{% docs col_interval_index %}
+Position of the interval in the message's outage profile; empty where the row is the whole event period (no outage profile published).
+{% enddocs %}
+
+{% docs col_events %}
+Number of REMIT events (distinct mRID) adding to the row.
 {% enddocs %}
 
 {% docs col_data_upload_time_gmt %}

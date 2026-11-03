@@ -22,8 +22,12 @@ schema:
   physicalName: dim_resource
   physicalType: table
   logicalType: object
-  description: Resource objects (EIC object type W), one row per version.
-  dataGranularityDescription: One row per resource_eic_code, valid_from.
+  description: 'Resources in their publishers'' own schemes, one row per version: ENTSO-E resource objects by EIC
+
+    (object type W) and Elexon''s BM Units by BM Unit Id (`resource_scheme`). Each source joins on its own
+
+    scheme; `bridge_resource_eic` relates BM Units to the EICs Elexon lists for them.'
+  dataGranularityDescription: One row per resource_code.
   context:
     instructions: Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published version
       (`valid_from`, `valid_to`, `is_current`). `bridge_*_hierarchy` relates each key to itself (`depth` 0) and every broader
@@ -32,17 +36,49 @@ schema:
     - constraint: 'Do not join a versioned dimension on its key alone, which repeats the row per version: add `is_current`
         (or the version valid at the row''s time).'
   properties:
-  - name: resource_eic_code
+  - name: resource_code
     logicalType: string
     physicalType: VARCHAR
-    description: EIC (object type W) of a resource object used for production, consumption or storage of energy (e.g. generation
-      unit, production unit); the smallest published asset granularity.
+    description: 'Key of a resource in its publisher''s scheme (`resource_scheme`): the EIC (object type W) of a resource
+      object used for production, consumption or storage of energy (e.g. generation unit, production unit), or the BM Unit
+      Id Elexon registers for a BM Unit.'
     primaryKey: true
     primaryKeyPosition: 1
+    required: true
     authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: BM Unit'
     - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       type: businessDefinition
       description: EIC Reference Manual 5.5
+    quality:
+    - name: not_null_dim_resource_resource_code
+      description: not null
+      type: custom
+      engine: dbt
+      implementation: not_null_dim_resource_resource_code
+      dimension: completeness
+      severity: error
+  - name: resource_scheme
+    logicalType: string
+    physicalType: VARCHAR
+    description: The scheme of `resource_code`, `EIC` (ENTSO-E's EIC list) or `BM_UNIT` (Elexon's BM unit list).
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: BM Unit'
+    - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      type: businessDefinition
+      description: EIC Reference Manual 5.5
+    quality:
+    - name: accepted_values_dim_resource_resource_scheme__EIC__BM_UNIT
+      description: one of EIC, BM_UNIT
+      type: custom
+      engine: dbt
+      implementation: accepted_values_dim_resource_resource_scheme__EIC__BM_UNIT
+      dimension: conformity
+      severity: error
   - name: display_name
     logicalType: string
     physicalType: VARCHAR
@@ -87,7 +123,7 @@ schema:
     - url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
       type: businessDefinition
       description: EIC data exchange implementation guide 1.2
-  - name: parent_resource_eic_code
+  - name: parent_resource_code
     logicalType: string
     physicalType: VARCHAR
     description: Published EIC parent of the resource, e.g. the production unit of a generating unit.
@@ -104,12 +140,76 @@ schema:
     - url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
       type: businessDefinition
       description: EIC data exchange implementation guide 1.2
+  - name: technology_code
+    logicalType: string
+    physicalType: VARCHAR
+    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    relationships:
+    - to: dim_technology.technology_code
+    quality:
+    - name: dim_resource_known_technology
+      description: every value is a key of dim_technology.technology_code
+      type: custom
+      engine: dbt
+      implementation: dim_resource_known_technology
+      dimension: conformity
+      severity: error
+  - name: national_grid_bm_unit
+    logicalType: string
+    physicalType: VARCHAR
+    description: The BM Unit's identifier as registered with National Grid (NESO).
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: BM Unit'
+    - url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+      type: businessDefinition
+      description: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+  - name: bm_unit_type
+    logicalType: string
+    physicalType: VARCHAR
+    description: BM Unit type code as published by Elexon (e.g. `T`, `E`, `I`, `S`, `V`, `G`).
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: BM Unit'
+    - url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+      type: businessDefinition
+      description: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+  - name: lead_party_name
+    logicalType: string
+    physicalType: VARCHAR
+    description: Name of the BM Unit's Lead Party.
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/lead-party/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: Lead Party'
+  - name: generation_capacity_mw
+    logicalType: number
+    physicalType: DOUBLE
+    description: Generation Capacity of the BM Unit, in MW (published as text).
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/generation-capacity/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: Generation Capacity'
+    customProperties:
+    - property: unit
+      value: MW
+  - name: demand_capacity_mw
+    logicalType: number
+    physicalType: DOUBLE
+    description: Demand Capacity of the BM Unit, in MW (published as text).
+    authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/demand-capacity/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: Demand Capacity'
+    customProperties:
+    - property: unit
+      value: MW
   - name: valid_from
     logicalType: timestamp
     physicalType: TIMESTAMP
     description: Start of the version's validity (UTC); join facts as-of their timestamp.
-    primaryKey: true
-    primaryKeyPosition: 2
   - name: valid_to
     logicalType: timestamp
     physicalType: TIMESTAMP
@@ -119,8 +219,15 @@ schema:
     physicalType: BOOLEAN
     description: The version is in the latest publication.
   quality:
+  - name: dim_resource_one_current_version
+    description: unique on (resource_code)
+    type: custom
+    engine: dbt
+    implementation: dim_resource_one_current_version
+    dimension: uniqueness
+    severity: error
   - name: dim_resource_unique_version
-    description: unique on (resource_eic_code, valid_from)
+    description: unique on (resource_code, valid_from)
     type: custom
     engine: dbt
     implementation: dim_resource_unique_version

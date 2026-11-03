@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from power_desk_elt.ingest.pipeline import make_pipeline, make_source, run
 from power_desk_elt.ingest.registry import SOURCES
 from power_desk_elt.ingest.seed.load import load_seed
@@ -299,3 +301,82 @@ def test_a_first_build_by_hand_processes_every_load(tmp_path, monkeypatch):
     load_seed(db)
     assert run_dbt(["build"], db, target_path=tmp_path / "target") == 0
     assert query(db, "select count(*) from dlt_meta.dlt_pending_loads") == [(0,)]
+
+
+def remit_mrid(number: int, sender: str = "NGET") -> str:
+    return f"48X000000000SEED-{sender}-RMT-{number:08d}"
+
+
+DIDCOT, DRAX, WALNEY, PEMBROKE = remit_mrid(1), remit_mrid(2), remit_mrid(5), remit_mrid(7)
+EVENT_HOURS = (
+    "select min(timestamp_utc), max(timestamp_utc), count(distinct timestamp_utc) "
+    "from marts.mart_unavailability where mrid = '{}'"
+)
+
+
+def test_remit_marts_place_each_events_latest_revision_on_the_hour(seeded_warehouse):
+    # revision 2 shortened Didcot's outage to 2024-03-04 20:00: only its hours remain
+    assert query(seeded_warehouse, EVENT_HOURS.format(DIDCOT)) == [
+        (datetime(2024, 3, 3, 6), datetime(2024, 3, 4, 19), 38)
+    ]
+    # Drax's outage profile: available capacity per interval, the event's unavailable capacity throughout
+    drax = (
+        "select timestamp_utc, available_capacity_mw, unavailable_capacity_mw, coverage from marts.mart_unavailability "
+        f"where mrid = '{DRAX}' and timestamp_utc in ('2024-03-02 19:00', '2024-03-02 20:00') order by 1"
+    )
+    assert query(seeded_warehouse, drax) == [
+        (datetime(2024, 3, 2, 19), 400.0, 265.0, 1.0),
+        (datetime(2024, 3, 2, 20), 500.0, 265.0, 1.0),
+    ]
+    # one message listing two units: a series per unit; an open-ended event is not placed
+    units = f"select count(distinct source_code) from marts.mart_unavailability where mrid = '{WALNEY}'"
+    assert query(seeded_warehouse, units) == [(2,)]
+    assert query(seeded_warehouse, EVENT_HOURS.format(remit_mrid(4)))[0][2] == 0
+    # the dismissed nuclear outage stays in the combined mart, but not in the GB total
+    statuses = "select distinct event_status from marts.mart_unavailability where mrid = '{}'"
+    assert query(seeded_warehouse, statuses.format(remit_mrid(6))) == [("Dismissed",)]
+    gb = (
+        "select technology_code, unavailability_type, unavailable_capacity_mw, events "
+        "from marts.mart_gb_generation_unavailability where timestamp_utc = '{}' order by 1"
+    )
+    assert query(seeded_warehouse, gb.format("2024-03-06 12:00")) == []
+    assert query(seeded_warehouse, gb.format("2024-03-05 08:00")) == [("gas", "Planned", 225.0, 1)]
+    # the transmission unavailability (Moyle) is not generation
+    moyle = "select count(*) from marts.mart_gb_generation_unavailability where timestamp_utc = '2024-03-06 19:00'"
+    assert query(seeded_warehouse, moyle) == [(0,)]
+
+
+def test_a_remit_revision_rebuilds_every_hour_of_its_event(warehouse_copy, tmp_path):
+    pembroke = f"select distinct _dbt_invocation_id from marts.mart_unavailability where mrid = '{PEMBROKE}'"
+    untouched = query(warehouse_copy, pembroke)
+    publishers = SeedPublishers.from_seed()
+    messages = sorted(publishers.records["REMIT"], key=lambda m: m["id"])
+    latest = {m["mrid"]: m for m in messages}
+    revised = {"publishTime": "2024-03-08T12:00:00Z"}
+    # Didcot shortened again, Walney's two units dismissed, Drax made open-ended
+    didcot = {**latest[DIDCOT], **revised, "id": 201, "revisionNumber": 3, "eventEndTime": "2024-03-04T06:00:00Z"}
+    walney = [
+        {**m, **revised, "id": 202 + i, "revisionNumber": 2, "eventStatus": "Dismissed"}
+        for i, m in enumerate(m for m in messages if m["mrid"] == WALNEY)
+    ]
+    drax = {k: v for k, v in latest[DRAX].items() if k not in ("eventEndTime", "outageProfile")}
+    publishers.records["REMIT"] = [didcot, *walney, {**drax, **revised, "id": 204, "revisionNumber": 2}]
+    with replay(publishers):
+        run(
+            make_pipeline("bmrs", warehouse_copy),
+            make_source("bmrs", SOURCES["bmrs"].window("2024-03-08", "2024-03-08"), ["bmrs__remit"]),
+        )
+    assert build(warehouse_copy, tmp_path) == 0
+
+    assert query(warehouse_copy, EVENT_HOURS.format(DIDCOT)) == [(datetime(2024, 3, 3, 6), datetime(2024, 3, 4, 5), 24)]
+    assert query(warehouse_copy, EVENT_HOURS.format(DRAX))[0][2] == 0
+    statuses = f"select distinct event_status from marts.mart_unavailability where mrid = '{WALNEY}'"
+    assert query(warehouse_copy, statuses) == [("Dismissed",)]
+    # the hours the revisions moved the events out of are gone from the GB total as well
+    gb = "select technology_code from marts.mart_gb_generation_unavailability where timestamp_utc = '{}'"
+    assert query(warehouse_copy, gb.format("2024-03-04 10:00")) == []
+    assert query(warehouse_copy, gb.format("2024-03-02 16:00")) == []
+    # every revision stays in the entity; events no load touched are not rebuilt
+    revisions = f"select count(distinct revision_number) from ods.ods_unavailability where mrid = '{DIDCOT}'"
+    assert query(warehouse_copy, revisions) == [(3,)]
+    assert query(warehouse_copy, pembroke) == untouched

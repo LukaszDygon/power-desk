@@ -1,5 +1,5 @@
-version: 2
-version_hash: 03TmFdrIHAUnILxJbTxCH2+y9fYQ0jBN++LMhspJ77Y=
+version: 6
+version_hash: OewLY+a1SBsjwUlHXUeQ3fIsWgsuNnVKCmH45JnLYjw=
 engine_version: 11
 name: bmrs
 tables:
@@ -47,6 +47,179 @@ tables:
     write_disposition: skip
     resource: _dlt_loads
     description: Created by DLT. Tracks completed loads
+  bmrs__remit:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      id:
+        nullable: false
+        data_type: bigint
+        primary_key: true
+        merge_key: true
+      dataset:
+        data_type: text
+        nullable: true
+      mrid:
+        data_type: text
+        nullable: true
+      revision_number:
+        data_type: bigint
+        nullable: true
+      publish_time:
+        data_type: timestamp
+        nullable: true
+        incremental: true
+      created_time:
+        data_type: timestamp
+        nullable: true
+      message_type:
+        data_type: text
+        nullable: true
+      message_heading:
+        data_type: text
+        nullable: true
+      event_type:
+        data_type: text
+        nullable: true
+      unavailability_type:
+        data_type: text
+        nullable: true
+      participant_id:
+        data_type: text
+        nullable: true
+      registration_code:
+        data_type: text
+        nullable: true
+      asset_id:
+        data_type: text
+        nullable: true
+      asset_type:
+        data_type: text
+        nullable: true
+      affected_unit:
+        data_type: text
+        nullable: true
+      affected_unit_eic:
+        data_type: text
+        nullable: true
+      affected_area:
+        data_type: text
+        nullable: true
+      bidding_zone:
+        data_type: text
+        nullable: true
+      fuel_type:
+        data_type: text
+        nullable: true
+      normal_capacity:
+        data_type: double
+        nullable: true
+      available_capacity:
+        data_type: double
+        nullable: true
+      unavailable_capacity:
+        data_type: double
+        nullable: true
+      event_status:
+        data_type: text
+        nullable: true
+      event_start_time:
+        data_type: timestamp
+        nullable: true
+      event_end_time:
+        data_type: timestamp
+        nullable: true
+      duration_uncertainty:
+        data_type: text
+        nullable: true
+      cause:
+        data_type: text
+        nullable: true
+      related_information:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: bmrs__remit
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+  bmrs__remit__outage_profile:
+    columns:
+      start_time:
+        data_type: timestamp
+        nullable: true
+      end_time:
+        data_type: timestamp
+        nullable: true
+      capacity:
+        data_type: double
+        nullable: true
+      _dlt_parent_id:
+        data_type: text
+        nullable: false
+        parent_key: true
+      _dlt_list_idx:
+        data_type: bigint
+        nullable: false
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    parent: bmrs__remit
+    x-normalizer:
+      seen-data: true
   bmrs__fuelinst:
     columns:
       dataset:
@@ -276,38 +449,96 @@ tables:
     resource: bmrs__mid
     x-normalizer:
       seen-data: true
-  _dlt_pipeline_state:
+  bmrs__bmunits:
     columns:
-      version:
-        data_type: bigint
-        nullable: false
-      engine_version:
-        data_type: bigint
-        nullable: false
-      pipeline_name:
-        data_type: text
-        nullable: false
-      state:
-        data_type: text
-        nullable: false
-      created_at:
+      _dlt_valid_from:
         data_type: timestamp
-        nullable: false
-      version_hash:
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      national_grid_bm_unit:
+        data_type: text
+        nullable: true
+      elexon_bm_unit:
+        data_type: text
+        nullable: true
+      lead_party_name:
+        data_type: text
+        nullable: true
+      bm_unit_type:
+        data_type: text
+        nullable: true
+      fpn_flag:
+        data_type: bool
+        nullable: true
+      bm_unit_name:
+        data_type: text
+        nullable: true
+      lead_party_id:
+        data_type: text
+        nullable: true
+      demand_capacity:
+        data_type: text
+        nullable: true
+      generation_capacity:
+        data_type: text
+        nullable: true
+      production_or_consumption_flag:
+        data_type: text
+        nullable: true
+      transmission_loss_factor:
+        data_type: text
+        nullable: true
+      working_day_credit_assessment_import_capability:
+        data_type: text
+        nullable: true
+      non_working_day_credit_assessment_import_capability:
+        data_type: text
+        nullable: true
+      working_day_credit_assessment_export_capability:
+        data_type: text
+        nullable: true
+      non_working_day_credit_assessment_export_capability:
+        data_type: text
+        nullable: true
+      credit_qualifying_status:
+        data_type: bool
+        nullable: true
+      demand_in_production_flag:
+        data_type: bool
+        nullable: true
+      gsp_group_id:
+        data_type: text
+        nullable: true
+      gsp_group_name:
         data_type: text
         nullable: true
       _dlt_load_id:
         data_type: text
         nullable: false
-        precision: 64
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
-    write_disposition: append
-    file_format: preferred
-    resource: _dlt_pipeline_state
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+      eic:
+        data_type: text
+        nullable: true
+      fuel_type:
+        data_type: text
+        nullable: true
+      interconnector_id:
+        data_type: text
+        nullable: true
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: bmrs__bmunits
     x-normalizer:
       seen-data: true
 settings:
@@ -348,6 +579,9 @@ normalizers:
           bmrs__mid:
             _dlt_id: _dlt_root_id
 previous_hashes:
-- tnlU7Z4+DCySaArKmNOe+H2oEN4PqrhM9cQypgmgDdw=
-- JBiRerWUM285DhUMfH3xmoDY4fQ7hbip0lJCIYpqT2k=
-- SPc94jv4NZM5R5cQqERlCIbMlr6jSzz/lnd9IDu1tsA=
+- OEX7gsfVkufl1gKUtHKHWLD+xLtBmjCng8UBFK9LYw8=
+- OewLY+a1SBsjwUlHXUeQ3fIsWgsuNnVKCmH45JnLYjw=
+- 2hzQB4CERXVDfuXO+7RJos5Eysvb/fne8t8ONW8d5YE=
+- nnGe3wSDNMXVA5WErx4wtd3jiwgqhN/DCCOJn6TILIo=
+- IYqvrbox6a9nTHW5xPLkxIbELtoND1Rwzn8DvnHigc8=
+- uWp4vyYgr13XlvsYZfkZf61+91ZocZ7JNt2bU0qiSCI=

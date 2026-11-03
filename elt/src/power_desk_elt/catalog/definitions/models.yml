@@ -197,3 +197,33 @@ columns:
   _series_key:
     description: Hash of the columns identifying the series (all but time, measures and provenance); with
       `timestamp_utc`, the row's key.
+  # --- unavailability (REMIT; ACER MoP Annex VII) --------------------------------------------
+  unavailable_capacity_mw:
+    description: >-
+      Unavailable capacity of the facility, in MW: the capacity affected by the event (ACER field 9), as
+      published for the whole event. Where several events affect the same asset at the same time, each reports
+      only the capacity made unavailable by its own event, so events add up.
+    links:
+    - {link: acer_remit_mop, section: Data Field No (9) Unavailable Capacity, page: 81}
+  available_capacity_mw:
+    description: >-
+      Available capacity of the facility, in MW: the remaining capacity of the facility concerned (ACER field
+      10), over the interval where the message publishes an outage profile, else for the whole event. Each
+      event reports the facility's remaining capacity, so events do not add up.
+    links:
+    - {link: acer_remit_mop, section: Data Field No (10) Available Capacity, page: 81}
+  installed_capacity_mw:
+    description: >-
+      Installed capacity of the facility, in MW: the nominal generating/transmission/consumption capacity
+      (ACER field 11/a).
+    links:
+    - {link: acer_remit_mop, section: Data Field No (11/a) Installed Capacity, page: 84}
+  interval_index:
+    description: Position of the interval in the message's outage profile; empty where the row is the whole event
+      period (no outage profile published).
+    links:
+    - {link: acer_remit_mop, section: Data Field No (20) Interval Start, page: 90}
+  events:
+    description: Number of REMIT events (distinct mRID) adding to the row.
+    links:
+    - {link: acer_remit_mop, section: Data Field No (1) Message ID, page: 74}

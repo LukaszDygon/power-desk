@@ -441,3 +441,144 @@ models:
         description: "{{ doc('col_publish_time_utc') }}"
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: ods_unavailability
+    description: |
+      Unavailability of electricity facilities per published REMIT message (every revision) and interval: the
+      outage profile's intervals where the message publishes one, else the whole event period. Grain: one row
+      per `message_id` and `interval_index`. An event (`mrid`) is revised by new messages; only its latest
+      revision (`is_latest_revision`) applies. Intervals start and end at any second (`interval_minutes` may
+      be fractional), and an open-ended event has no `interval_minutes`.
+
+      {{ doc('dataset_bmrs__remit') }}
+    config:
+      meta:
+        context:
+          instructions: >-
+            For the unavailability as currently known, filter `is_latest_revision`; for what was known at a
+            time T, take each event's latest revision with `publish_time_utc` <= T. For hourly figures, query
+            `mart_unavailability` or `mart_gb_generation_unavailability`.
+          constraints:
+            - >-
+              Do not sum across revisions of one event (`mrid`): each revision restates the event. Filter
+              `is_latest_revision` (or the revision applicable at the time you need).
+            - >-
+              Exclude `event_status` = 'Dismissed' (events cancelled or withdrawn) when counting unavailable
+              capacity.
+            - >-
+              Sum `unavailable_capacity_mw` across concurrent events, never `available_capacity_mw`: each event
+              reports only the capacity it makes unavailable, but the facility's whole remaining capacity.
+            - >-
+              `resource_code` is null where the asset (`source_code`) is not a BM Unit in Elexon's list; group
+              by `source_code` to keep those assets.
+    data_tests:
+      - dlt_unique:
+          name: ods_unavailability_unique_key
+          arguments:
+            columns: [message_id, interval_index]
+      - dlt_unique:
+          name: ods_unavailability_one_latest_per_event_unit_interval
+          config:
+            where: is_latest_revision
+          arguments:
+            columns: [mrid, source_code, interval_index]
+      - expression_is_true:
+          name: ods_unavailability_interval_not_negative
+          config:
+            severity: warn
+          arguments:
+            expression: "interval_minutes is null or interval_minutes >= 0"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: ods_unavailability_known_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: ods_unavailability_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: resource_code
+        description: "{{ doc('col_resource_code') }}"
+        data_tests:
+          - not_null:
+              name: ods_unavailability_resource_mapped
+              config:
+                severity: warn
+                where: event_type = 'Production unavailability'
+          - relationships:
+              name: ods_unavailability_known_resource
+              arguments:
+                to: ref('dim_resource')
+                field: resource_code
+      - name: unavailable_capacity_mw
+        description: "{{ doc('col_unavailable_capacity_mw') }}"
+      - name: available_capacity_mw
+        description: "{{ doc('col_available_capacity_mw') }}"
+      - name: installed_capacity_mw
+        description: "{{ doc('col_installed_capacity_mw') }}"
+      - name: mrid
+        description: "{{ doc('col_remit_mrid') }}"
+        data_tests: [not_null]
+      - name: revision_number
+        description: "{{ doc('col_remit_revision_number') }}"
+        data_tests: [not_null]
+      - name: message_id
+        description: "{{ doc('col_remit_message_id') }}"
+        data_tests: [not_null]
+      - name: interval_index
+        description: "{{ doc('col_interval_index') }}"
+      - name: is_latest_revision
+        description: "{{ doc('col_remit_is_latest_revision') }}"
+        data_tests: [not_null]
+      - name: event_status
+        description: "{{ doc('col_remit_event_status') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Active, Inactive, Dismissed]
+      - name: event_type
+        description: "{{ doc('col_remit_event_type') }}"
+      - name: unavailability_type
+        description: "{{ doc('col_remit_unavailability_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Planned, Unplanned]
+      - name: event_start_utc
+        description: "{{ doc('col_remit_event_start') }}"
+      - name: event_end_utc
+        description: "{{ doc('col_remit_event_stop') }}"
+      - name: reason
+        description: "{{ doc('col_remit_reason') }}"
+      - name: affected_unit_eic
+        description: "{{ doc('col_remit_affected_unit_eic') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+        data_tests: [not_null]
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: ods_unavailability_known_source_dataset
+              arguments:
+                to: ref('dim_source_dataset')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

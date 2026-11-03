@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,8 @@ def published_rows(publishers: SeedPublishers) -> dict[str, int]:
     """Rows each raw table must hold after loading everything the publishers serve."""
     return {
         **{dataset.resource: len(publishers.records[dataset.code]) for dataset in bmrs.DATASETS},
+        "bmrs__remit": len(publishers.records["REMIT"]),
+        bmrs.BMUNITS.resource: len(bmrs.BMUNITS.parse(publishers.files[bmrs.BMUNITS.url])),
         "pvlive__solar": len(publishers.records["PVLIVE"]),
         **{
             item.resource: sum(content.count(b"\n") - 1 for _, content in publishers.exports[item.folder].values())
@@ -193,3 +196,34 @@ def test_a_resubmission_closes_its_previous_version_and_rows_not_uploaded_again_
     assert query(db, versions) == [(len(rows) + 1, len(rows))]
     current = f"select flow_in_mw_from_gb from raw.{dataset.resource} where _dlt_valid_to is null"
     assert (1,) in query(db, current)
+
+
+def test_remit_keeps_every_message_and_a_replayed_window_changes_nothing(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    messages = publishers.records["REMIT"]
+    load("bmrs", db, publishers, end=seed_end_date(), resources=["bmrs__remit"])
+    rows = "select count(*), count(distinct id), count(*) filter (where _dlt_valid_to is null) from raw.bmrs__remit"
+    assert query(db, rows) == [(len(messages), len(messages), len(messages))]
+    # a revision is a further message of its event (mrid): both revisions stay in raw
+    revisions = "select list(revision_number order by revision_number) from raw.bmrs__remit where id in (101, 107)"
+    assert query(db, revisions) == [([1, 2],)]
+    segments = sum(len(m.get("outageProfile", [])) for m in messages)
+    assert query(db, "select count(*) from raw.bmrs__remit__outage_profile") == [(segments,)]
+
+    load("bmrs", db, publishers, SEED_START, seed_end_date(), resources=["bmrs__remit"])
+    assert query(db, rows) == [(len(messages), len(messages), len(messages))]
+    assert query(db, "select count(*) from raw.bmrs__remit__outage_profile") == [(segments,)]
+
+
+def test_bm_unit_snapshot_is_skipped_while_unchanged_and_versioned_when_changed(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    units = bmrs.BMUNITS.parse(publishers.files[bmrs.BMUNITS.url])
+    current = "select count(*) filter (where _dlt_valid_to is null), count(*) from raw.bmrs__bmunits"
+    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
+    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
+    assert query(db, current) == [(len(units), len(units))]
+
+    renamed = [{**units[0], "bmUnitName": "RENAMED"}, *units[1:]]
+    publishers.files[bmrs.BMUNITS.url] = json.dumps(renamed)
+    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
+    assert query(db, current) == [(len(units), len(units) + 1)]

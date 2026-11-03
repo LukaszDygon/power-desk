@@ -10,6 +10,10 @@ cursor and pages.
   version and keys missing from a load stay current. If the publisher may append a resubmission as a
   separate row rather than replace it, the publication time joins `primary_key` (not `merge_key`), and
   staging keeps the latest.
+- **Event messages** (immutable messages, a revision being a new message, e.g. Elexon REMIT): key on the
+  publisher's message id (`merge_key` = `primary_key`), flag the latest revision in staging, and rebuild
+  whole events downstream (`delete_touched` pre-hook, append): a revision can drop hours, which
+  `delete+insert` and `hourly_series` would keep. Model: `bmrs.py` (`remit`), ADR 0004.
 - **Paging:** loop until a short page (`itertools.count(0, PAGE_ROWS)`), yield each page as a list.
 - **Windows:** `max_days_per_run` bounds catch-up runs. `window_padding_days` covers publishers whose
   local dates cross UTC days.

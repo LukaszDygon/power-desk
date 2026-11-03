@@ -356,3 +356,93 @@ models:
         description: "{{ doc('col__series_key') }}"
       - name: _last_dlt_load_id
         description: "{{ doc('col__last_dlt_load_id') }}"
+
+  - name: mart_unavailability
+    description: |
+      Unavailability of electricity facilities per REMIT event, unit and hour: each event's latest revision on an
+      hourly spine. Grain: `timestamp_utc` (hour start), `mrid` and `source_code` (the asset). Capacities are
+      time-weighted over the seconds of the hour the event covers (`coverage`); open-ended events (no event stop)
+      are not placed. Dismissed events are kept, with their `event_status`.
+    config:
+      meta:
+        context:
+          instructions: >-
+            One row per event, asset and hour; the series is `mrid` and `source_code`, not the dimension keys
+            alone, since several events can affect one asset at the same time. For GB totals by technology,
+            query `mart_gb_generation_unavailability`.
+          constraints:
+            - Exclude `event_status` = 'Dismissed' (events cancelled or withdrawn).
+            - >-
+              Sum `unavailable_capacity_mw * coverage` across events for the hour's unavailable capacity; never
+              sum `available_capacity_mw`, which each event reports for the whole facility.
+            - >-
+              Events lasting beyond the horizon of interest (some run to 2050) are planned figures: filter
+              `timestamp_utc` to the period you need.
+    data_tests:
+      - dlt_unique:
+          name: mart_unavailability_unique_key
+          arguments:
+            columns: [timestamp_utc, mrid, source_code]
+      - expression_is_true:
+          name: mart_unavailability_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_unavailability_known_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_unavailability_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: resource_code
+        description: "{{ doc('col_resource_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_unavailability_known_resource
+              arguments:
+                to: ref('dim_resource')
+                field: resource_code
+      - name: unavailable_capacity_mw
+        description: "{{ doc('col_unavailable_capacity_mw') }}"
+      - name: available_capacity_mw
+        description: "{{ doc('col_available_capacity_mw') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: event_status
+        description: "{{ doc('col_remit_event_status') }}"
+      - name: event_type
+        description: "{{ doc('col_remit_event_type') }}"
+      - name: unavailability_type
+        description: "{{ doc('col_remit_unavailability_type') }}"
+      - name: mrid
+        description: "{{ doc('col_remit_mrid') }}"
+        data_tests: [not_null]
+      - name: revision_number
+        description: "{{ doc('col_remit_revision_number') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
+      - name: _dbt_invocation_id
+        description: "{{ doc('col__dbt_invocation_id') }}"
+      - name: _dbt_updated_at
+        description: "{{ doc('col__dbt_updated_at') }}"

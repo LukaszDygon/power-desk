@@ -120,17 +120,17 @@ sources:
           - title: 'ENTSO-E EIC function: Bidding Zone'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/bidding-zone
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Control Area'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/control-area
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Member State'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/member-state
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
@@ -297,17 +297,17 @@ sources:
           - title: 'ENTSO-E EIC function: Bidding Zone'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/bidding-zone
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Control Area'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/control-area
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Member State'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/member-state
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
@@ -476,17 +476,17 @@ sources:
           - title: 'ENTSO-E EIC function: Bidding Zone'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/bidding-zone
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Control Area'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/control-area
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Member State'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/member-state
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
@@ -675,17 +675,17 @@ sources:
           - title: 'ENTSO-E EIC function: Bidding Zone'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/bidding-zone
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Control Area'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/control-area
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Member State'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/member-state
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide
@@ -904,17 +904,17 @@ sources:
           - title: 'ENTSO-E EIC function: Bidding Zone'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/bidding-zone
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Control Area'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/control-area
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: 'ENTSO-E EIC function: Member State'
             url: https://www.entsoe.eu/data/eic-functions/
             id: entsoe:eic-functions/member-state
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: 'EIC code type Y; market: Electricity'
           - title: Transparency Platform File Library guide
             url: https://transparencyplatform.zendesk.com/hc/en-us/articles/35960137882129-File-Library-Guide

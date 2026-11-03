@@ -156,3 +156,70 @@ models:
         description: "{{ doc('col__dbt_invocation_id') }}"
       - name: _dbt_updated_at
         description: "{{ doc('col__dbt_updated_at') }}"
+
+  - name: mart_gb_generation_unavailability
+    description: >
+      Generation capacity made unavailable per hour, area, technology and type of unavailability (planned,
+      unplanned), from the production unavailability events Elexon publishes under REMIT: each event's latest
+      revision, dismissed events excluded, summed over events. Incremental: every hour any revision of an event
+      touched by a pending dlt load spans is recomputed in full from `mart_unavailability`.
+    config:
+      meta:
+        context:
+          instructions: >-
+            `unavailable_capacity_mw` is the hour's mean unavailable capacity (missing minutes as zero), summed
+            over events. Hours with no published unavailability have no row.
+          constraints:
+            - >-
+              `technology_code` is null where the event publishes no fuel type: keep those rows when totalling
+              across technologies.
+    data_tests:
+      - dlt_unique:
+          name: mart_gb_generation_unavailability_unique_key
+          arguments:
+            columns: [timestamp_utc, area_eic_code, technology_code, unavailability_type]
+      - expression_is_true:
+          name: mart_gb_generation_unavailability_events_counted
+          arguments:
+            expression: "events >= 1 and events <= _source_rows"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_gb_generation_unavailability_known_area
+              config:
+                severity: warn
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_gb_generation_unavailability_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: unavailability_type
+        description: "{{ doc('col_remit_unavailability_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Planned, Unplanned]
+      - name: unavailable_capacity_mw
+        description: "{{ doc('col_unavailable_capacity_mw') }}"
+        data_tests: [not_null]
+      - name: events
+        description: "{{ doc('col_events') }}"
+      - name: _source_rows
+        description: "{{ doc('col__source_rows') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
+      - name: _dbt_invocation_id
+        description: "{{ doc('col__dbt_invocation_id') }}"
+      - name: _dbt_updated_at
+        description: "{{ doc('col__dbt_updated_at') }}"

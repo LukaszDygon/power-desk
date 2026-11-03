@@ -5,3 +5,5 @@ demand_mw,MW,mean
 price_per_mwh,currency/MWh,mean
 volume_mwh,MWh,sum
 transfer_capacity_mw,MW,mean
+unavailable_capacity_mw,MW,mean
+available_capacity_mw,MW,mean

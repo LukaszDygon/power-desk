@@ -25,7 +25,8 @@ GLOSSARY_API = "https://www.elexon.co.uk/bsc/wp-json/wp/v2/glossary"
 
 # Paragraphs of the OpenAPI descriptions that explain query parameters, not the data.
 API_USAGE_NOTES = re.compile(
-    r"parameters? must be provided|cannot be set when|filters may be supplied|maximum data output range",
+    r"parameters? must be provided|cannot be set when|filters may be supplied|maximum data output range"
+    r"|formats are supported",
     re.IGNORECASE,
 )
 GLOSSARY_SECTIONS = ("BSC defined definition", "BSC documentation", "Further information", "Related terms")

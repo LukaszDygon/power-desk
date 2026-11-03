@@ -4,6 +4,424 @@ sources:
   description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
   schema: raw
   tables:
+  - name: bmrs__remit
+    description: '{{ doc(''dataset_bmrs__remit'') }}'
+    config:
+      meta:
+        dagster:
+          asset_key:
+          - raw
+          - bmrs__remit
+        dlt:
+          pipeline: bmrs
+          resource: bmrs__remit
+          write_disposition: merge
+          merge_strategy: scd2
+          primary_key:
+          - id
+          cursor_column: publish_time
+        dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon Insights API: The Regulation on Wholesale Energy Markets Integrity and Transparency (REMIT)'
+          url: https://data.elexon.co.uk/bmrs/api/v1/datasets/REMIT
+          id: elexon:datasets/REMIT
+          retrieved: '2026-11-02'
+        - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+          url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+          page: 73
+        - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+          url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+          section: '5.4'
+      loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
+      freshness:
+        warn_after:
+          count: 2
+          period: hour
+        error_after:
+          count: 6
+          period: hour
+    data_tests:
+    - dlt_unique:
+        name: bmrs__remit_unique_natural_key
+        arguments:
+          columns:
+          - id
+          - _dlt_valid_to
+    - dlt_unique:
+        name: bmrs__remit_unique_row_version
+        arguments:
+          columns:
+          - _dlt_id
+          - _dlt_valid_from
+    columns:
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: id
+      description: '{{ doc(''col_remit_message_id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: 'Elexon Insights API: The Regulation on Wholesale Energy Markets Integrity and Transparency (REMIT)'
+            url: https://data.elexon.co.uk/bmrs/api/v1/datasets/REMIT
+            id: elexon:datasets/REMIT
+            retrieved: '2026-11-02'
+      data_tests:
+      - not_null
+    - name: dataset
+      description: '{{ doc(''col_dataset'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+    - name: mrid
+      description: '{{ doc(''col_remit_mrid'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 6
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (1) Message ID
+            page: 74
+    - name: revision_number
+      description: '{{ doc(''col_remit_revision_number'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 6
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (1) Message ID
+            page: 75
+    - name: publish_time
+      description: '{{ doc(''col_publish_time'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: created_time
+      description: '{{ doc(''col_remit_created_time'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 9
+    - name: message_type
+      description: '{{ doc(''col_remit_message_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Annex VII
+            page: 73
+    - name: message_heading
+      description: '{{ doc(''col_remit_message_heading'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 10
+    - name: event_type
+      description: '{{ doc(''col_remit_event_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (4/a) Type of Event
+            page: 77
+    - name: unavailability_type
+      description: '{{ doc(''col_remit_unavailability_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (3) Type of Unavailability
+            page: 77
+    - name: participant_id
+      description: '{{ doc(''col_remit_participant_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 10
+    - name: registration_code
+      description: '{{ doc(''col_remit_registration_code'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (19) Market participant code
+            page: 90
+    - name: asset_id
+      description: '{{ doc(''col_remit_asset_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 10
+    - name: asset_type
+      description: '{{ doc(''col_remit_asset_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 10
+    - name: affected_unit
+      description: '{{ doc(''col_remit_affected_unit'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (16) Affected Asset or Unit
+            page: 88
+    - name: affected_unit_eic
+      description: '{{ doc(''col_remit_affected_unit_eic'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (17) Affected Asset or Unit EIC Code
+            page: 89
+    - name: affected_area
+      description: '{{ doc(''col_remit_affected_area'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 11
+    - name: bidding_zone
+      description: '{{ doc(''col_remit_bidding_zone'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (15/a) Bidding Zone
+            page: 87
+    - name: fuel_type
+      description: '{{ doc(''col_remit_fuel_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (14) Fuel Type
+            page: 86
+    - name: normal_capacity
+      description: '{{ doc(''col_remit_installed_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (11/a) Installed Capacity
+            page: 84
+    - name: available_capacity
+      description: '{{ doc(''col_remit_available_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (10) Available Capacity
+            page: 81
+    - name: unavailable_capacity
+      description: '{{ doc(''col_remit_unavailable_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (9) Unavailable Capacity
+            page: 81
+    - name: event_status
+      description: '{{ doc(''col_remit_event_status'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (2) Event Status
+            page: 76
+    - name: event_start_time
+      description: '{{ doc(''col_remit_event_start'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (6) Event Start
+            page: 79
+    - name: event_end_time
+      description: '{{ doc(''col_remit_event_stop'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (7) Event Stop
+            page: 80
+    - name: duration_uncertainty
+      description: '{{ doc(''col_remit_duration_uncertainty'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+            url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+            page: 12
+    - name: cause
+      description: '{{ doc(''col_remit_reason'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (12) Reason for the unavailability
+            page: 85
+    - name: related_information
+      description: '{{ doc(''col_remit_remarks'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (13) Remarks
+            page: 86
+    - name: _dlt_load_id
+      description: '{{ doc(''col__dlt_load_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+      data_tests:
+      - not_null
+    - name: _dlt_id
+      description: '{{ doc(''col__dlt_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+  - name: bmrs__remit__outage_profile
+    description: '{{ doc(''dataset_bmrs__remit__outage_profile'') }}'
+    config:
+      meta:
+        dagster:
+          asset_key:
+          - raw
+          - bmrs__remit__outage_profile
+        dlt:
+          pipeline: bmrs
+          resource: bmrs__remit
+          parent: bmrs__remit
+          write_disposition: null
+          primary_key: []
+          cursor_column: null
+        references:
+        - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+          url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+          page: 90
+    data_tests:
+    - dlt_unique:
+        name: bmrs__remit__outage_profile_unique_dlt_id
+        arguments:
+          columns:
+          - _dlt_id
+    columns:
+    - name: start_time
+      description: '{{ doc(''col_remit_interval_start'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (20) Interval Start
+            page: 90
+    - name: end_time
+      description: '{{ doc(''col_remit_interval_stop'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (21) Interval Stop
+            page: 91
+    - name: capacity
+      description: '{{ doc(''col_remit_interval_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+            url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+            section: Data Field No (20) Interval Start
+            page: 90
+    - name: _dlt_parent_id
+      description: '{{ doc(''col__dlt_parent_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+      data_tests:
+      - not_null
+    - name: _dlt_list_idx
+      description: '{{ doc(''col__dlt_list_idx'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+      data_tests:
+      - not_null
+    - name: _dlt_id
+      description: '{{ doc(''col__dlt_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
   - name: bmrs__fuelinst
     description: '{{ doc(''dataset_bmrs__fuelinst'') }}'
     config:
@@ -28,11 +446,11 @@ sources:
         - title: 'Elexon Insights API: Instantaneous generation outturn by fuel type (FUELINST)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELINST
           id: elexon:datasets/FUELINST
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: Instantaneous Generation by Fuel Type'
           url: https://www.elexon.co.uk/bsc/glossary/instantaneous-generation-by-fuel-type/
           id: elexon:glossary/instantaneous-generation-by-fuel-type
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -75,7 +493,7 @@ sources:
           - title: 'Elexon BSC Glossary: Spot Time'
             url: https://www.elexon.co.uk/bsc/glossary/spot-time/
             id: elexon:glossary/spot-time
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
       data_tests:
       - not_null
     - name: settlement_date
@@ -87,7 +505,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Day'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
             id: elexon:glossary/settlement-day
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
@@ -100,7 +518,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Period'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
             id: elexon:glossary/settlement-period
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
@@ -113,7 +531,7 @@ sources:
           - title: 'Elexon BSC Glossary: Fuel Type'
             url: https://www.elexon.co.uk/bsc/glossary/fuel-type/
             id: elexon:glossary/fuel-type
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
       data_tests:
       - not_null
     - name: generation
@@ -125,7 +543,7 @@ sources:
           - title: 'Elexon BSC Glossary: Instantaneous Generation by Fuel Type'
             url: https://www.elexon.co.uk/bsc/glossary/instantaneous-generation-by-fuel-type/
             id: elexon:glossary/instantaneous-generation-by-fuel-type
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -160,11 +578,11 @@ sources:
         - title: 'Elexon Insights API: Initial National Demand outturn (INDO)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/INDO
           id: elexon:datasets/INDO
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: Initial National Demand Out-Turn'
           url: https://www.elexon.co.uk/bsc/glossary/initial-national-demand-out-turn/
           id: elexon:glossary/initial-national-demand-out-turn
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
           detail: "[BSC Section Q \u2013 Balancing Services Activities](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-q-balancing-services-activities/)\n\
             [BSC Section V \u2013 Reporting](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-v-reporting/)\n[BSC Section\
             \ G \u2013 Contingencies](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-g-contingencies/)\n[BSC Section X,\
@@ -209,7 +627,7 @@ sources:
           - title: 'Elexon BSC Glossary: Spot Time'
             url: https://www.elexon.co.uk/bsc/glossary/spot-time/
             id: elexon:glossary/spot-time
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
@@ -219,7 +637,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Day'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
             id: elexon:glossary/settlement-day
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
@@ -232,7 +650,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Period'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
             id: elexon:glossary/settlement-period
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
@@ -245,7 +663,7 @@ sources:
           - title: 'Elexon BSC Glossary: Initial National Demand Out-Turn'
             url: https://www.elexon.co.uk/bsc/glossary/initial-national-demand-out-turn/
             id: elexon:glossary/initial-national-demand-out-turn
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: "[BSC Section Q \u2013 Balancing Services Activities](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-q-balancing-services-activities/)\n\
               [BSC Section V \u2013 Reporting](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-v-reporting/)\n[BSC Section\
               \ G \u2013 Contingencies](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-g-contingencies/)\n[BSC Section X,\
@@ -284,11 +702,11 @@ sources:
         - title: 'Elexon Insights API: Initial Transmission System Demand outturn (ITSDO)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/ITSDO
           id: elexon:datasets/ITSDO
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: Initial Transmission System Demand Out-Turn'
           url: https://www.elexon.co.uk/bsc/glossary/initial-transmission-system-demand-out-turn/
           id: elexon:glossary/initial-transmission-system-demand-out-turn
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -329,7 +747,7 @@ sources:
           - title: 'Elexon BSC Glossary: Spot Time'
             url: https://www.elexon.co.uk/bsc/glossary/spot-time/
             id: elexon:glossary/spot-time
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
@@ -339,7 +757,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Day'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
             id: elexon:glossary/settlement-day
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
@@ -352,7 +770,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Period'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
             id: elexon:glossary/settlement-period
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
@@ -365,7 +783,7 @@ sources:
           - title: 'Elexon BSC Glossary: Initial Transmission System Demand Out-Turn'
             url: https://www.elexon.co.uk/bsc/glossary/initial-transmission-system-demand-out-turn/
             id: elexon:glossary/initial-transmission-system-demand-out-turn
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -401,11 +819,11 @@ sources:
         - title: 'Elexon Insights API: Day and day-ahead National Demand forecast (NDF)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/NDF
           id: elexon:datasets/NDF
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: National Demand Forecast'
           url: https://www.elexon.co.uk/bsc/glossary/national-demand-forecast/
           id: elexon:glossary/national-demand-forecast
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -442,7 +860,7 @@ sources:
           - title: 'Elexon BSC Glossary: National Demand Forecast'
             url: https://www.elexon.co.uk/bsc/glossary/national-demand-forecast/
             id: elexon:glossary/national-demand-forecast
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: publish_time
       description: '{{ doc(''col_publish_time'') }}'
       config:
@@ -459,7 +877,7 @@ sources:
           - title: 'Elexon BSC Glossary: Spot Time'
             url: https://www.elexon.co.uk/bsc/glossary/spot-time/
             id: elexon:glossary/spot-time
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: settlement_date
       description: '{{ doc(''col_settlement_date'') }}'
       config:
@@ -469,7 +887,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Day'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
             id: elexon:glossary/settlement-day
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
@@ -482,7 +900,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Period'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
             id: elexon:glossary/settlement-period
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
@@ -525,11 +943,11 @@ sources:
         - title: 'Elexon Insights API: Wind generation forecast (WINDFOR)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR
           id: elexon:datasets/WINDFOR
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: Wind Generation Forecast'
           url: https://www.elexon.co.uk/bsc/glossary/wind-generation-forecast/
           id: elexon:glossary/wind-generation-forecast
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
         warn_after:
@@ -579,7 +997,7 @@ sources:
           - title: 'Elexon BSC Glossary: Wind Generation Forecast'
             url: https://www.elexon.co.uk/bsc/glossary/wind-generation-forecast/
             id: elexon:glossary/wind-generation-forecast
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -615,11 +1033,11 @@ sources:
         - title: 'Elexon Insights API: Market Index Data (MID)'
           url: https://data.elexon.co.uk/bmrs/api/v1/datasets/MID
           id: elexon:datasets/MID
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
         - title: 'Elexon BSC Glossary: Market Index Data'
           url: https://www.elexon.co.uk/bsc/glossary/market-index-data/
           id: elexon:glossary/market-index-data
-          retrieved: '2026-10-28'
+          retrieved: '2026-11-02'
           detail: '[BSC Section X, Annex 1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
       freshness:
@@ -657,7 +1075,7 @@ sources:
           - title: 'Elexon BSC Glossary: Spot Time'
             url: https://www.elexon.co.uk/bsc/glossary/spot-time/
             id: elexon:glossary/spot-time
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
     - name: data_provider
       description: '{{ doc(''col_data_provider'') }}'
       config:
@@ -667,13 +1085,13 @@ sources:
           - title: 'Elexon BSC Glossary: Market Index Data Provider'
             url: https://www.elexon.co.uk/bsc/glossary/market-index-data-provider/
             id: elexon:glossary/market-index-data-provider
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: "[BSC Section T \u2013 Settlement and Trading Charges](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-t-settlement-and-trading-charges/)\n\
               [BSC Section X, Annex 1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)"
           - title: 'Elexon Insights API: Market Index Data (MID)'
             url: https://data.elexon.co.uk/bmrs/api/v1/datasets/MID
             id: elexon:datasets/MID
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
       data_tests:
       - not_null
     - name: settlement_date
@@ -685,7 +1103,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Day'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-day/
             id: elexon:glossary/settlement-day
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
       data_tests:
       - not_null
@@ -698,7 +1116,7 @@ sources:
           - title: 'Elexon BSC Glossary: Settlement Period'
             url: https://www.elexon.co.uk/bsc/glossary/settlement-period/
             id: elexon:glossary/settlement-period
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)'
       data_tests:
       - not_null
@@ -711,12 +1129,12 @@ sources:
           - title: 'Elexon BSC Glossary: Market Index Price'
             url: https://www.elexon.co.uk/bsc/glossary/market-index-price/
             id: elexon:glossary/market-index-price
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/documents/bsc-codes/bsc-sections/bsc-section-x-1-general-glossary/)'
           - title: 'Elexon BSC Glossary: Market Index Data'
             url: https://www.elexon.co.uk/bsc/glossary/market-index-data/
             id: elexon:glossary/market-index-data
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
             detail: '[BSC Section X, Annex 1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
           - title: Balancing and Settlement Code, Section T Settlement and Trading Charges
             url: https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges
@@ -730,7 +1148,7 @@ sources:
           - title: 'Elexon BSC Glossary: Market Index Volume'
             url: https://www.elexon.co.uk/bsc/glossary/market-index-volume/
             id: elexon:glossary/market-index-volume
-            retrieved: '2026-10-28'
+            retrieved: '2026-11-02'
           - title: Balancing and Settlement Code, Section T Settlement and Trading Charges
             url: https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges
             section: 1.6.3
@@ -746,3 +1164,304 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
+  - name: bmrs__bmunits
+    description: '{{ doc(''dataset_bmrs__bmunits'') }}'
+    config:
+      meta:
+        dagster:
+          asset_key:
+          - raw
+          - bmrs__bmunits
+        dlt:
+          pipeline: bmrs
+          resource: bmrs__bmunits
+          write_disposition: merge
+          merge_strategy: scd2
+          primary_key: []
+          cursor_column: null
+        dlt_recent_column: _dlt_load_id
+        references:
+        - title: 'Elexon BSC Glossary: BM Unit'
+          url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+          id: elexon:glossary/bm-unit
+          retrieved: '2026-11-02'
+          detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)"
+        - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+          url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+      loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
+    data_tests:
+    - dlt_unique:
+        name: bmrs__bmunits_unique_row_version
+        arguments:
+          columns:
+          - _dlt_id
+          - _dlt_valid_from
+    columns:
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: national_grid_bm_unit
+      description: '{{ doc(''col_bmunit_national_grid_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+            id: elexon:glossary/bm-unit
+            retrieved: '2026-11-02'
+            detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)"
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: elexon_bm_unit
+      description: '{{ doc(''col_bmunit_elexon_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+            id: elexon:glossary/bm-unit
+            retrieved: '2026-11-02'
+            detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)"
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: lead_party_name
+      description: '{{ doc(''col_bmunit_lead_party_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Lead Party'
+            url: https://www.elexon.co.uk/bsc/glossary/lead-party/
+            id: elexon:glossary/lead-party
+            retrieved: '2026-11-02'
+            detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)\n\
+              [BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/documents/bsc-codes/bsc-sections/bsc-section-x-1-general-glossary/)"
+    - name: bm_unit_type
+      description: '{{ doc(''col_bmunit_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+            id: elexon:glossary/bm-unit
+            retrieved: '2026-11-02'
+            detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)"
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: fpn_flag
+      description: '{{ doc(''col_bmunit_fpn_flag'') }}'
+      config:
+        meta:
+          dlt_data_type: BOOLEAN
+          references:
+          - title: 'Elexon BSC Glossary: Final Physical Notification'
+            url: https://www.elexon.co.uk/bsc/glossary/final-physical-notification/
+            id: elexon:glossary/final-physical-notification
+            retrieved: '2026-11-02'
+            detail: '[Section T: Settlement and Trading Charges](https://www.elexon.co.uk/bsc/simple-guide/section-t-settlement-trading-charges/)
+
+              [BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/documents/bsc-codes/bsc-sections/bsc-section-x-2-technical-glossary/)'
+    - name: bm_unit_name
+      description: '{{ doc(''col_bmunit_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: lead_party_id
+      description: '{{ doc(''col_bmunit_lead_party_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Lead Party'
+            url: https://www.elexon.co.uk/bsc/glossary/lead-party/
+            id: elexon:glossary/lead-party
+            retrieved: '2026-11-02'
+            detail: "[BSC Section K \u2013 Classification and Registration of Metering Systems and BM Units](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units/)\n\
+              [BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/documents/bsc-codes/bsc-sections/bsc-section-x-1-general-glossary/)"
+    - name: demand_capacity
+      description: '{{ doc(''col_bmunit_demand_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Demand Capacity'
+            url: https://www.elexon.co.uk/bsc/glossary/demand-capacity/
+            id: elexon:glossary/demand-capacity
+            retrieved: '2026-11-02'
+    - name: generation_capacity
+      description: '{{ doc(''col_bmunit_generation_capacity'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Generation Capacity'
+            url: https://www.elexon.co.uk/bsc/glossary/generation-capacity/
+            id: elexon:glossary/generation-capacity
+            retrieved: '2026-11-02'
+            detail: '[BSC Section K: Classification and Registration of Metering Systems and BM Units](https://bscdocs.elexon.co.uk/bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units)'
+    - name: production_or_consumption_flag
+      description: '{{ doc(''col_bmunit_production_or_consumption_flag'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Production BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/production-bm-unit/
+            id: elexon:glossary/production-bm-unit
+            retrieved: '2026-11-02'
+            detail: '[BSC Section K: Classification and Registration of Metering Systems and BM Units](https://bscdocs.elexon.co.uk/bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units)
+
+              [Guidance Note on Production/Consumption Status and Flag](https://bscdocs.elexon.co.uk/guidance-notes/productionconsumption-status-and-flag)
+
+              [Guidance Note on BM Units](https://bscdocs.elexon.co.uk/guidance-notes/bm-units-registration-of-balancing-mechanism-bm-units)'
+    - name: transmission_loss_factor
+      description: '{{ doc(''col_bmunit_transmission_loss_factor'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Transmission Loss Factor'
+            url: https://www.elexon.co.uk/bsc/glossary/transmission-loss-factor/
+            id: elexon:glossary/transmission-loss-factor
+            retrieved: '2026-11-02'
+            detail: "[BSC Section T \u2013 Settlement and Trading Charges](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-t-settlement-and-trading-charges/)\n\
+              [BSC Section X, Annex X-2](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-2-technical-glossary/)"
+    - name: working_day_credit_assessment_import_capability
+      description: '{{ doc(''col_bmunit_caic_working_day'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit Credit Assessment Import Capability'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit-credit-assessment-import-capability/
+            id: elexon:glossary/bm-unit-credit-assessment-import-capability
+            retrieved: '2026-11-02'
+    - name: non_working_day_credit_assessment_import_capability
+      description: '{{ doc(''col_bmunit_caic_non_working_day'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit Credit Assessment Import Capability'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit-credit-assessment-import-capability/
+            id: elexon:glossary/bm-unit-credit-assessment-import-capability
+            retrieved: '2026-11-02'
+    - name: working_day_credit_assessment_export_capability
+      description: '{{ doc(''col_bmunit_caec_working_day'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit Credit Assessment Export Capability'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit-credit-assessment-export-capability/
+            id: elexon:glossary/bm-unit-credit-assessment-export-capability
+            retrieved: '2026-11-02'
+    - name: non_working_day_credit_assessment_export_capability
+      description: '{{ doc(''col_bmunit_caec_non_working_day'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: BM Unit Credit Assessment Export Capability'
+            url: https://www.elexon.co.uk/bsc/glossary/bm-unit-credit-assessment-export-capability/
+            id: elexon:glossary/bm-unit-credit-assessment-export-capability
+            retrieved: '2026-11-02'
+    - name: credit_qualifying_status
+      description: '{{ doc(''col_bmunit_credit_qualifying_status'') }}'
+      config:
+        meta:
+          dlt_data_type: BOOLEAN
+          references:
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: demand_in_production_flag
+      description: '{{ doc(''col_bmunit_demand_in_production_flag'') }}'
+      config:
+        meta:
+          dlt_data_type: BOOLEAN
+          references:
+          - title: 'Elexon BSC Glossary: Production BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/production-bm-unit/
+            id: elexon:glossary/production-bm-unit
+            retrieved: '2026-11-02'
+            detail: '[BSC Section K: Classification and Registration of Metering Systems and BM Units](https://bscdocs.elexon.co.uk/bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units)
+
+              [Guidance Note on Production/Consumption Status and Flag](https://bscdocs.elexon.co.uk/guidance-notes/productionconsumption-status-and-flag)
+
+              [Guidance Note on BM Units](https://bscdocs.elexon.co.uk/guidance-notes/bm-units-registration-of-balancing-mechanism-bm-units)'
+    - name: gsp_group_id
+      description: '{{ doc(''col_bmunit_gsp_group_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: GSP Group'
+            url: https://www.elexon.co.uk/bsc/glossary/gsp-group/
+            id: elexon:glossary/gsp-group
+            retrieved: '2026-11-02'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
+    - name: gsp_group_name
+      description: '{{ doc(''col_bmunit_gsp_group_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: GSP Group'
+            url: https://www.elexon.co.uk/bsc/glossary/gsp-group/
+            id: elexon:glossary/gsp-group
+            retrieved: '2026-11-02'
+            detail: '[BSC Section X, Annex X-1](https://www.elexon.co.uk/bsc/the-bsc/bsc-section-x-annex-x-1-general-glossary/)'
+    - name: _dlt_load_id
+      description: '{{ doc(''col__dlt_load_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+      data_tests:
+      - not_null
+    - name: _dlt_id
+      description: '{{ doc(''col__dlt_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+    - name: eic
+      description: '{{ doc(''col_bmunit_eic'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+            url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
+    - name: fuel_type
+      description: '{{ doc(''col_fuel_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Fuel Type'
+            url: https://www.elexon.co.uk/bsc/glossary/fuel-type/
+            id: elexon:glossary/fuel-type
+            retrieved: '2026-11-02'
+    - name: interconnector_id
+      description: '{{ doc(''col_bmunit_interconnector_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: 'Elexon BSC Glossary: Interconnector BM Unit'
+            url: https://www.elexon.co.uk/bsc/glossary/interconnector-bm-unit/
+            id: elexon:glossary/interconnector-bm-unit
+            retrieved: '2026-11-02'
+            detail: '[BSC Section K: Classification and Registration of Metering Systems and BM Units](https://bscdocs.elexon.co.uk/bsc/bsc-section-k-classification-and-registration-of-metering-systems-and-bm-units)'

@@ -206,3 +206,227 @@ models:
         data_tests: [not_null]
       - name: _dlt_load_id
         description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__remit
+    description: |
+      Every published REMIT message, typed, one row per message (Elexon's message id); each event (mRID)
+      has one row per revision and unit listed, `is_latest_revision` marking the applicable one.
+
+      {{ doc('dataset_bmrs__remit') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__remit_unique_message
+          arguments:
+            columns: [message_id]
+      - dlt_unique:
+          name: stg_bmrs__remit_one_latest_per_event_and_unit
+          config:
+            where: is_latest_revision
+          arguments:
+            columns: [mrid, asset_id]
+      - expression_is_true:
+          name: stg_bmrs__remit_event_ends_after_start
+          config:
+            severity: warn
+          arguments:
+            expression: "event_end_utc is null or event_end_utc >= event_start_utc"
+    columns:
+      - name: message_id
+        description: "{{ doc('col_remit_message_id') }}"
+        data_tests: [not_null]
+      - name: mrid
+        description: "{{ doc('col_remit_mrid') }}"
+        data_tests: [not_null]
+      - name: revision_number
+        description: "{{ doc('col_remit_revision_number') }}"
+        data_tests: [not_null]
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+        data_tests: [not_null]
+      - name: created_time_utc
+        description: "{{ doc('col_remit_created_time') }}"
+      - name: message_type
+        description: "{{ doc('col_remit_message_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [UnavailabilitiesOfElectricityFacilities, OtherMarketInformation]
+      - name: message_heading
+        description: "{{ doc('col_remit_message_heading') }}"
+      - name: event_type
+        description: "{{ doc('col_remit_event_type') }}"
+        data_tests:
+          - accepted_values:
+              config:
+                severity: warn
+              arguments:
+                values: [Production unavailability, Transmission unavailability, Consumption unavailability,
+                         Other unavailability]
+      - name: unavailability_type
+        description: "{{ doc('col_remit_unavailability_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Planned, Unplanned]
+      - name: event_status
+        description: "{{ doc('col_remit_event_status') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Active, Inactive, Dismissed]
+      - name: participant_id
+        description: "{{ doc('col_remit_participant_id') }}"
+      - name: registration_code
+        description: "{{ doc('col_remit_registration_code') }}"
+      - name: asset_id
+        description: "{{ doc('col_remit_asset_id') }}"
+      - name: asset_type
+        description: "{{ doc('col_remit_asset_type') }}"
+      - name: affected_unit
+        description: "{{ doc('col_remit_affected_unit') }}"
+      - name: affected_unit_eic
+        description: "{{ doc('col_remit_affected_unit_eic') }}"
+      - name: affected_area
+        description: "{{ doc('col_remit_affected_area') }}"
+      - name: bidding_zone
+        description: "{{ doc('col_remit_bidding_zone') }}"
+      - name: fuel_type
+        description: "{{ doc('col_remit_fuel_type') }}"
+      - name: psr_type
+        description: "{{ doc('col_psr_type') }}"
+        data_tests:
+          - expression_is_true:
+              name: stg_bmrs__remit_fuel_type_known
+              config:
+                severity: warn
+              arguments:
+                expression: "psr_type is not null or fuel_type is null"
+      - name: installed_capacity_mw
+        description: "{{ doc('col_remit_installed_capacity') }}"
+      - name: available_capacity_mw
+        description: "{{ doc('col_remit_available_capacity') }}"
+      - name: unavailable_capacity_mw
+        description: "{{ doc('col_remit_unavailable_capacity') }}"
+      - name: event_start_utc
+        description: "{{ doc('col_remit_event_start') }}"
+        data_tests: [not_null]
+      - name: event_end_utc
+        description: "{{ doc('col_remit_event_stop') }}"
+      - name: duration_uncertainty
+        description: "{{ doc('col_remit_duration_uncertainty') }}"
+      - name: reason
+        description: "{{ doc('col_remit_reason') }}"
+      - name: remarks
+        description: "{{ doc('col_remit_remarks') }}"
+      - name: is_latest_revision
+        description: "{{ doc('col_remit_is_latest_revision') }}"
+        data_tests: [not_null]
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__remit__outage_profile
+    description: |
+      The outage profile intervals of each REMIT message, one row per message and interval.
+
+      {{ doc('dataset_bmrs__remit__outage_profile') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__remit__outage_profile_unique_interval
+          arguments:
+            columns: [message_id, interval_index]
+      - expression_is_true:
+          name: stg_bmrs__remit__outage_profile_ends_after_start
+          config:
+            severity: warn
+          arguments:
+            expression: "interval_end_utc >= interval_start_utc"
+    columns:
+      - name: message_id
+        description: "{{ doc('col_remit_message_id') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: stg_bmrs__remit__outage_profile_known_message
+              arguments:
+                to: ref('stg_bmrs__remit')
+                field: message_id
+      - name: interval_index
+        description: "{{ doc('col__dlt_list_idx') }}"
+        data_tests: [not_null]
+      - name: interval_start_utc
+        description: "{{ doc('col_remit_interval_start') }}"
+        data_tests: [not_null]
+      - name: interval_end_utc
+        description: "{{ doc('col_remit_interval_stop') }}"
+        data_tests: [not_null]
+      - name: available_capacity_mw
+        description: "{{ doc('col_remit_interval_capacity') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
+  - name: stg_bmrs__bmunits
+    description: |
+      Elexon's BM unit list, typed, every published version.
+
+      {{ doc('dataset_bmrs__bmunits') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_bmrs__bmunits_unique_current_unit_and_eic
+          config:
+            where: is_current
+          arguments:
+            columns: [national_grid_bm_unit, eic_code]
+    columns:
+      - name: elexon_bm_unit
+        description: "{{ doc('col_bmunit_elexon_id') }}"
+      - name: national_grid_bm_unit
+        description: "{{ doc('col_bmunit_national_grid_id') }}"
+        data_tests: [not_null]
+      - name: eic_code
+        description: "{{ doc('col_bmunit_eic') }}"
+      - name: bm_unit_name
+        description: "{{ doc('col_bmunit_name') }}"
+      - name: bm_unit_type
+        description: "{{ doc('col_bmunit_type') }}"
+      - name: fuel_type
+        description: "{{ doc('col_fuel_type') }}"
+      - name: lead_party_id
+        description: "{{ doc('col_bmunit_lead_party_id') }}"
+      - name: lead_party_name
+        description: "{{ doc('col_bmunit_lead_party_name') }}"
+      - name: production_or_consumption_flag
+        description: "{{ doc('col_bmunit_production_or_consumption_flag') }}"
+      - name: gsp_group_id
+        description: "{{ doc('col_bmunit_gsp_group_id') }}"
+      - name: gsp_group_name
+        description: "{{ doc('col_bmunit_gsp_group_name') }}"
+      - name: interconnector_id
+        description: "{{ doc('col_bmunit_interconnector_id') }}"
+      - name: generation_capacity_mw
+        description: "{{ doc('col_bmunit_generation_capacity') }}"
+      - name: demand_capacity_mw
+        description: "{{ doc('col_bmunit_demand_capacity') }}"
+      - name: transmission_loss_factor
+        description: "{{ doc('col_bmunit_transmission_loss_factor') }}"
+      - name: caic_working_day_mw
+        description: "{{ doc('col_bmunit_caic_working_day') }}"
+      - name: caic_non_working_day_mw
+        description: "{{ doc('col_bmunit_caic_non_working_day') }}"
+      - name: caec_working_day_mw
+        description: "{{ doc('col_bmunit_caec_working_day') }}"
+      - name: caec_non_working_day_mw
+        description: "{{ doc('col_bmunit_caec_non_working_day') }}"
+      - name: fpn_flag
+        description: "{{ doc('col_bmunit_fpn_flag') }}"
+      - name: credit_qualifying_status
+        description: "{{ doc('col_bmunit_credit_qualifying_status') }}"
+      - name: demand_in_production_flag
+        description: "{{ doc('col_bmunit_demand_in_production_flag') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

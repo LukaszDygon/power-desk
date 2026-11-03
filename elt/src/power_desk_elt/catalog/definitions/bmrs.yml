@@ -3,6 +3,15 @@ links:
   bsc_section_t:
     title: Balancing and Settlement Code, Section T Settlement and Trading Charges
     url: https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges
+  acer_remit_mop:
+    title: ACER, Manual of Procedures on Data Reporting (REMIT), Version 10 (26 March 2026), Annex VII
+    url: https://www.acer.europa.eu/sites/default/files/REMIT/REMIT%20Reporting%20Guidance/Manual%20of%20Procedures%20(MoP)%20on%20Data%20Reporting/ACER-REMIT-Manual-data-reporting-V10.pdf
+  elexon_remit_xml_guide:
+    title: Elexon, REMIT XML Implementation Guide v1.2 (4 July 2014)
+    url: https://assets.elexon.co.uk/wp-content/uploads/2014/08/28164207/REMIT-XML-Implementation-Guide-v1.2.pdf
+  elexon_bmunits_api:
+    title: Elexon Insights API, Reference - BM Units (`/reference/bmunits/all`)
+    url: https://data.elexon.co.uk/bmrs/api/v1/reference/bmunits/all
 sources:
   bmrs:
     description: Elexon Insights Solution (BMRS) datasets, loaded by the `bmrs` dlt pipeline.
@@ -51,6 +60,84 @@ tables:
     columns:
       price: mid_price
       volume: mid_volume
+  bmrs__remit:
+    title: REMIT messages (urgent market messages)
+    refs:
+    - elexon:datasets/REMIT
+    links:
+    - {link: acer_remit_mop, page: 73}
+    - {link: elexon_remit_xml_guide, section: '5.4'}
+    freshness: actuals
+    columns:
+      id: remit_message_id
+      mrid: remit_mrid
+      revision_number: remit_revision_number
+      created_time: remit_created_time
+      message_type: remit_message_type
+      message_heading: remit_message_heading
+      event_type: remit_event_type
+      unavailability_type: remit_unavailability_type
+      participant_id: remit_participant_id
+      registration_code: remit_registration_code
+      asset_id: remit_asset_id
+      asset_type: remit_asset_type
+      affected_unit: remit_affected_unit
+      affected_unit_eic: remit_affected_unit_eic
+      affected_area: remit_affected_area
+      bidding_zone: remit_bidding_zone
+      fuel_type: remit_fuel_type
+      normal_capacity: remit_installed_capacity
+      available_capacity: remit_available_capacity
+      unavailable_capacity: remit_unavailable_capacity
+      event_status: remit_event_status
+      event_start_time: remit_event_start
+      event_end_time: remit_event_stop
+      duration_uncertainty: remit_duration_uncertainty
+      cause: remit_reason
+      related_information: remit_remarks
+  bmrs__remit__outage_profile:
+    title: REMIT outage profile intervals
+    description: >-
+      The time intervals of a REMIT message over which its available capacity fluctuates, each with its
+      capacity: "If the available/unavailable capacity fluctuates over time, information on the time
+      interval (interval start and stop) and available/unavailable capacity should be reported via Data
+      Field No (20) Interval Start and Data Field No (21) Interval Stop."
+    links:
+    - {link: acer_remit_mop, page: 90}
+    columns:
+      start_time: remit_interval_start
+      end_time: remit_interval_stop
+      capacity: remit_interval_capacity
+  bmrs__bmunits:
+    title: BM units
+    description: >-
+      A current list of BM units held by Elexon, with their registered identifiers, lead party, type,
+      capacities, loss factor and credit assessment capabilities.
+    refs:
+    - elexon:glossary/bm-unit
+    links: [elexon_bmunits_api]
+    columns:
+      national_grid_bm_unit: bmunit_national_grid_id
+      elexon_bm_unit: bmunit_elexon_id
+      lead_party_name: bmunit_lead_party_name
+      lead_party_id: bmunit_lead_party_id
+      bm_unit_type: bmunit_type
+      bm_unit_name: bmunit_name
+      fpn_flag: bmunit_fpn_flag
+      demand_capacity: bmunit_demand_capacity
+      generation_capacity: bmunit_generation_capacity
+      production_or_consumption_flag: bmunit_production_or_consumption_flag
+      transmission_loss_factor: bmunit_transmission_loss_factor
+      working_day_credit_assessment_import_capability: bmunit_caic_working_day
+      non_working_day_credit_assessment_import_capability: bmunit_caic_non_working_day
+      working_day_credit_assessment_export_capability: bmunit_caec_working_day
+      non_working_day_credit_assessment_export_capability: bmunit_caec_non_working_day
+      credit_qualifying_status: bmunit_credit_qualifying_status
+      demand_in_production_flag: bmunit_demand_in_production_flag
+      gsp_group_id: bmunit_gsp_group_id
+      gsp_group_name: bmunit_gsp_group_name
+      eic: bmunit_eic
+      interconnector_id: bmunit_interconnector_id
 columns:
   dataset:
     description: Elexon dataset code of the record (e.g. `FUELINST`, `INDO`).
@@ -107,3 +194,240 @@ columns:
     refs:
     - elexon:glossary/market-index-volume
     links: [{link: bsc_section_t, section: 1.6.3}]
+  # --- REMIT (ACER MoP Annex VII field numbers; Elexon REMIT XML Implementation Guide) ---------
+  remit_message_id:
+    description: Elexon's identifier of a published REMIT message (one per message and unit listed); the key of
+      `/remit/{messageId}`.
+    refs:
+    - elexon:datasets/REMIT
+  remit_mrid:
+    description: 'Unique identification of the message (mRID), unique within a given sender market participant; it
+      remains the same while the revision number increases to reflect changes made to the original message.
+      ACER: the "UMM thread ID" uniquely identifying the event a series of UMMs reports on.'
+    links:
+    - {link: elexon_remit_xml_guide, page: 6}
+    - {link: acer_remit_mop, section: Data Field No (1) Message ID, page: 74}
+  remit_revision_number:
+    description: 'Unique identification of the message revision, used to follow up on a previous message with the
+      same mRID. ACER: "The latest update of an event is represented by the UMM with the highest version number.
+      The latest UMM published (latest UMM version) related to an event is the only applicable one."'
+    links:
+    - {link: elexon_remit_xml_guide, page: 6}
+    - {link: acer_remit_mop, section: Data Field No (1) Message ID, page: 75}
+  remit_created_time:
+    description: Date and time of the creation of the document (UTC).
+    links:
+    - {link: elexon_remit_xml_guide, page: 9}
+  remit_message_type:
+    description: 'The UMM schema the message follows: `UnavailabilitiesOfElectricityFacilities` (UMMs reporting
+      planned or unplanned electricity unavailability likely to significantly affect wholesale energy prices) or
+      `OtherMarketInformation` (UMMs that do not fall under the unavailability of electricity or gas facilities).'
+    links:
+    - {link: acer_remit_mop, section: Annex VII, page: 73}
+  remit_message_heading:
+    description: Description of message; free text with a high-level description of the message.
+    links:
+    - {link: elexon_remit_xml_guide, page: 10}
+  remit_event_type:
+    description: 'Type of Event: identifies the main characteristic of the event (`Production unavailability`,
+      `Transmission unavailability`, `Consumption unavailability`, `Other unavailability`).'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (4/a) Type of Event, page: 77}
+  remit_unavailability_type:
+    description: 'Type of Unavailability: whether the unavailability was planned or not. "Planned unavailability"
+      means a programmed change in capacity (for example a maintenance, seasonal closing); "unplanned
+      unavailability" means a not-programmed change in capacity (for example an outage, forced limitation).'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (3) Type of Unavailability, page: 77}
+  remit_participant_id:
+    description: Unique identification of the Market Participant associated with the event being reported upon,
+      either a registered BSC participant ID or a non-BSC participant ID registered with Elexon.
+    links:
+    - {link: elexon_remit_xml_guide, page: 10}
+  remit_registration_code:
+    description: 'Market Participant Code: the ACER registration code which the market participant received, or the
+      unique market participant code which it provided.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (19) Market participant code, page: 90}
+  remit_asset_id:
+    description: Unique identification of an asset; `NO_ASSET` where the message does not relate to any particular
+      asset.
+    links:
+    - {link: elexon_remit_xml_guide, page: 10}
+  remit_asset_type:
+    description: Type of asset being reported upon (Production, Consumption, Transmission, Distribution).
+    links:
+    - {link: elexon_remit_xml_guide, page: 10}
+  remit_affected_unit:
+    description: 'Affected Asset or Unit: the official name of the generation or production unit, consumption unit,
+      transmission, or other asset, identified at the highest level of granularity.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (16) Affected Asset or Unit, page: 88}
+  remit_affected_unit_eic:
+    description: 'Affected Asset or Unit EIC code: the EIC W, T, Z or A code of the resource object, tie-line,
+      measurement point or substation, as the market participant published it.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (17) Affected Asset or Unit EIC Code, page: 89}
+  remit_affected_area:
+    description: BMRS Zone affected by the event; `N` denotes National, other identifiers (`B1`..`B17`) the
+      individual BMRS Zones.
+    links:
+    - {link: elexon_remit_xml_guide, page: 11}
+  remit_bidding_zone:
+    description: 'Bidding Zone: identification (EIC Y code) of the bidding zone(s) where the affected asset or unit
+      is located or feeds into.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (15/a) Bidding Zone, page: 87}
+  remit_fuel_type:
+    description: 'Fuel Type: classification of electricity production types (ENTSO-E production type names, e.g.
+      `Fossil Gas`, `Wind Offshore`); only for production unavailability.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (14) Fuel Type, page: 86}
+  remit_installed_capacity:
+    description: 'Installed Capacity, in MW: the nominal generating/transmission/consumption capacity, the maximum
+      electrical active power the facility can produce/transmit/consume continuously throughout a long period of
+      operation in normal conditions.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (11/a) Installed Capacity, page: 84}
+  remit_available_capacity:
+    description: 'Available Capacity, in MW: remaining capacity of the facility concerned.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (10) Available Capacity, page: 81}
+  remit_unavailable_capacity:
+    description: 'Unavailable Capacity, in MW: the capacity of the facility concerned that is affected by the event.
+      Where more than one unavailability event affects the same asset at the same time, it represents only the
+      capacity made unavailable by the event the message relates to.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (9) Unavailable Capacity, page: 81}
+  remit_event_status:
+    description: 'Event Status: `Active`, a UMM with the most recent update on an event that will occur in the
+      future or is occurring; `Dismissed`, an event not to be taken into account anymore because it was cancelled
+      or withdrawn; `Inactive`, the most recent update on an event that already occurred in the past.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (2) Event Status, page: 76}
+  remit_event_start:
+    description: 'Event Start: estimated/actual starting time and date of the relevant event (UTC).'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (6) Event Start, page: 79}
+  remit_event_stop:
+    description: 'Event Stop: estimated/actual ending time and date of the relevant event (UTC); optional under
+      Other market information.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (7) Event Stop, page: 80}
+  remit_duration_uncertainty:
+    description: Description of estimated uncertainty of event duration, e.g. `+- 1 day`.
+    links:
+    - {link: elexon_remit_xml_guide, page: 12}
+  remit_reason:
+    description: 'Reason for the unavailability: explanation of the reason(s) behind the unavailability event.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (12) Reason for the unavailability, page: 85}
+  remit_remarks:
+    description: 'Remarks: any other information that facilitates the full understanding of the potential impact of
+      the event on wholesale energy prices.'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (13) Remarks, page: 86}
+  remit_interval_start:
+    description: 'Interval Start: estimated/actual starting time and date of the interval of relevant event (UTC).'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (20) Interval Start, page: 90}
+  remit_interval_stop:
+    description: 'Interval Stop: estimated/actual ending time and date of the interval of relevant event (UTC).'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (21) Interval Stop, page: 91}
+  remit_interval_capacity:
+    description: Available capacity of the facility over the interval, in MW, reported per interval where the
+      available/unavailable capacity fluctuates over time.
+    links:
+    - {link: acer_remit_mop, section: Data Field No (20) Interval Start, page: 90}
+  remit_is_latest_revision:
+    description: 'Whether the message is its event''s latest revision (highest revision number, latest publication):
+      "The latest UMM published (latest UMM version) related to an event is the only applicable one."'
+    links:
+    - {link: acer_remit_mop, section: Data Field No (1) Message ID, page: 75}
+  # --- BM units (Elexon Insights reference list; BSC Glossary) ---------------------------------
+  bmunit_national_grid_id:
+    description: The BM Unit's identifier as registered with National Grid (NESO).
+    refs:
+    - elexon:glossary/bm-unit
+    links: [elexon_bmunits_api]
+  bmunit_elexon_id:
+    description: The BM Unit Id registered with Elexon under the BSC.
+    refs:
+    - elexon:glossary/bm-unit
+    links: [elexon_bmunits_api]
+  bmunit_name:
+    description: Name of the BM Unit.
+    links: [elexon_bmunits_api]
+  bmunit_lead_party_name:
+    description: Name of the BM Unit's Lead Party.
+    refs:
+    - elexon:glossary/lead-party
+  bmunit_lead_party_id:
+    description: Participant id of the BM Unit's Lead Party.
+    refs:
+    - elexon:glossary/lead-party
+  bmunit_type:
+    description: BM Unit type code as published by Elexon (e.g. `T`, `E`, `I`, `S`, `V`, `G`).
+    refs:
+    - elexon:glossary/bm-unit
+    links: [elexon_bmunits_api]
+  bmunit_fpn_flag:
+    description: Whether the BM Unit submits Final Physical Notifications.
+    refs:
+    - elexon:glossary/final-physical-notification
+  bmunit_generation_capacity:
+    description: Generation Capacity of the BM Unit, in MW (published as text).
+    refs:
+    - elexon:glossary/generation-capacity
+  bmunit_demand_capacity:
+    description: Demand Capacity of the BM Unit, in MW (published as text).
+    refs:
+    - elexon:glossary/demand-capacity
+  bmunit_production_or_consumption_flag:
+    description: Whether the BM Unit is a Production (`P`) or Consumption (`C`) BM Unit.
+    refs:
+    - elexon:glossary/production-bm-unit
+  bmunit_transmission_loss_factor:
+    description: Transmission Loss Factor of the BM Unit (published as text).
+    refs:
+    - elexon:glossary/transmission-loss-factor
+  bmunit_caic_working_day:
+    description: BM Unit Credit Assessment Import Capability for a working day, in MW (published as text).
+    refs:
+    - elexon:glossary/bm-unit-credit-assessment-import-capability
+  bmunit_caic_non_working_day:
+    description: BM Unit Credit Assessment Import Capability for a non-working day, in MW (published as text).
+    refs:
+    - elexon:glossary/bm-unit-credit-assessment-import-capability
+  bmunit_caec_working_day:
+    description: BM Unit Credit Assessment Export Capability for a working day, in MW (published as text).
+    refs:
+    - elexon:glossary/bm-unit-credit-assessment-export-capability
+  bmunit_caec_non_working_day:
+    description: BM Unit Credit Assessment Export Capability for a non-working day, in MW (published as text).
+    refs:
+    - elexon:glossary/bm-unit-credit-assessment-export-capability
+  bmunit_credit_qualifying_status:
+    description: Whether the BM Unit is credit qualifying, as published by Elexon.
+    links: [elexon_bmunits_api]
+  bmunit_demand_in_production_flag:
+    description: Whether demand is included in the Production BM Unit, as published by Elexon.
+    refs:
+    - elexon:glossary/production-bm-unit
+  bmunit_gsp_group_id:
+    description: Id of the GSP Group the BM Unit is in.
+    refs:
+    - elexon:glossary/gsp-group
+  bmunit_gsp_group_name:
+    description: Name of the GSP Group the BM Unit is in.
+    refs:
+    - elexon:glossary/gsp-group
+  bmunit_eic:
+    description: EIC (object type W) of the BM Unit as Elexon lists it; absent for most units, and a unit may be
+      listed under more than one EIC.
+    links: [elexon_bmunits_api]
+  bmunit_interconnector_id:
+    description: Interconnector the BM Unit belongs to, for Interconnector BM Units.
+    refs:
+    - elexon:glossary/interconnector-bm-unit

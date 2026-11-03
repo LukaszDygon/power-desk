@@ -101,7 +101,7 @@ def test_dataset_definitions_drop_api_usage_notes():
     assert dataset_definitions(spec, ["INDO"])["INDO"]["summary"] == "Initial demand in MW."
 
 
-def test_child_tables_are_sources_under_their_root_resource():
+def test_child_tables_are_sources_of_their_root_resource_with_their_own_asset_key():
     from power_desk_elt.catalog.generate import source_for_schema
 
     definitions = {
@@ -130,7 +130,9 @@ def test_child_tables_are_sources_under_their_root_resource():
     }
     root, child = source_for_schema(schema, Catalogue(definitions, {}))["tables"]
     assert root["config"]["loaded_at_field"] and root["config"]["freshness"]
-    assert child["config"]["meta"]["dagster"] == {"asset_key": ["raw", "pub__units"]}
+    # Dagster keys each dbt source once: the child is keyed by its own table, loaded by the root resource
+    assert child["config"]["meta"]["dagster"] == {"asset_key": ["raw", "pub__units__points"]}
+    assert child["config"]["meta"]["dlt"]["resource"] == "pub__units"
     assert child["config"]["meta"]["dlt"]["parent"] == "pub__units"
     assert "loaded_at_field" not in child["config"] and "dlt_recent_column" not in child["config"]["meta"]
     assert [next(iter(t.values()))["name"] for t in child["data_tests"]] == ["pub__units__points_unique_dlt_id"]

@@ -1,0 +1,27 @@
+-- Elexon's BM unit list, every published version (scd2), typed: capacities and factors are published as text.
+select
+    elexon_bm_unit,
+    national_grid_bm_unit,
+    nullif(trim(eic), '') as eic_code,
+    bm_unit_name,
+    bm_unit_type,
+    fuel_type,
+    lead_party_id,
+    lead_party_name,
+    production_or_consumption_flag,
+    gsp_group_id,
+    gsp_group_name,
+    interconnector_id,
+    cast(generation_capacity as double) as generation_capacity_mw,
+    cast(demand_capacity as double) as demand_capacity_mw,
+    cast(transmission_loss_factor as double) as transmission_loss_factor,
+    cast(working_day_credit_assessment_import_capability as double) as caic_working_day_mw,
+    cast(non_working_day_credit_assessment_import_capability as double) as caic_non_working_day_mw,
+    cast(working_day_credit_assessment_export_capability as double) as caec_working_day_mw,
+    cast(non_working_day_credit_assessment_export_capability as double) as caec_non_working_day_mw,
+    fpn_flag,
+    credit_qualifying_status,
+    demand_in_production_flag,
+    {{ scd2_validity() }},
+    _dlt_load_id
+from {{ dlt_source('bmrs', 'bmrs__bmunits') }}

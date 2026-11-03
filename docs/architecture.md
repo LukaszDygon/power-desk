@@ -66,7 +66,9 @@ dimensions; the dimension tables explain what each key means and how keys relate
   (`source_dataset`, `_last_dlt_load_id`).
 - **Conformed dimensions:** area, border, technology, time horizon, resource, party, source dataset,
   plus the metrics the marts carry (unit, hourly aggregation). Each is keyed
-  by a natural key (EIC code or canonical code) and versioned where its publisher revises it.
+  by a natural key (EIC code or canonical code) and versioned where its publisher revises it. Resources
+  keep each publisher's scheme (ENTSO-E EIC, Elexon BM Unit Id), related only where a publisher lists
+  the link ([ADR 0004](adr/0004-remit-events-and-resource-schemes.md)).
 - **Bridges** relate keys across granularities (unit → plant, zone → member state, technology →
   group). Rolling a row up to any level is one join. They are graphs, not trees.
 - **Mappings** (`seeds/mappings`) translate each publisher's codes into dimension keys, at the most
@@ -90,6 +92,10 @@ dimensions; the dimension tables explain what each key means and how keys relate
   upload time, so a resubmission is new data, and they load as scd2 merged on the natural key, like
   file partitions. NESO at times appends a resubmission instead of replacing it, so the upload time
   joins the `primary_key` but not the `merge_key`; staging keeps the latest upload.
+- **Event messages** (Elexon REMIT) are immutable messages, a revision being a new message of its
+  event: they load as scd2 merged on the publisher's message id, so raw keeps every message and a
+  replay changes nothing; staging flags each event's latest revision, and the entity and marts rebuild
+  whole events ([ADR 0004](adr/0004-remit-events-and-resource-schemes.md)).
 - **Snapshots** (reference files) re-read the whole file, skip it while unchanged (ETag / hash), and
   load with scd2, so changes and withdrawals keep their history.
 - **File partitions** (periodic files the publisher re-exports when revised) load the files new or
@@ -109,9 +115,10 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 | Kind | Disposition | `_dlt_id` | Why |
 |---|---|---|---|
 | Streams (Elexon, PVLive) | `merge` + `delete-insert` on `primary_key` | row id | one row per key, also when a load repeats it; a republication replaces it |
-| Snapshots (EIC) | `merge` + `scd2` (full extract, no `merge_key`) | hash of the row (version) | every version kept; withdrawn codes are closed |
+| Snapshots (EIC, BM units) | `merge` + `scd2` (full extract, no `merge_key`) | hash of the row (version) | every version kept; withdrawn codes are closed |
 | File partitions (ENTSO-E) | `merge` + `scd2`, `merge_key` = `primary_key` | hash of the row (version) | every version kept; only keys in the load are closed |
 | Revised streams (NESO) | `merge` + `scd2`, `merge_key` = natural key | hash of the row (version) | every submission kept; only keys in the load are closed |
+| Event messages (REMIT) | `merge` + `scd2`, `merge_key` = `primary_key` = message id | hash of the row (version) | every message kept; a revision is a new message |
 
 - **Rows, not Arrow:** dlt computes the scd2 row hash only for row items (dicts); for Arrow tables it
   adds none and scd2 cannot run. ENTSO-E exports are streamed to disk, read by DuckDB (which infers
@@ -140,8 +147,8 @@ source. Details: [services](../services/README.md).
   `recent_data` (the newest data by its own datetime, the dlt cursor) ignores re-delivered copies and
   backfills of old data. Ingestion time comes only from dlt's metadata.
 - **Every ingest job builds all dbt models.** Staging reads raw tables through `dlt_source()`, which is
-  empty until a table's first load, so entities build from the sources loaded so far; tests
-  downstream of a never-loaded table are skipped.
+  empty until a table's first load (and null for a documented column until its first value), so
+  entities build from the sources loaded so far; tests downstream of a never-loaded table are skipped.
 - **The catch-up sensor** re-runs a job while its last run was capped.
 - **Nightly** runs every test unscoped and refreshes dbt docs.
 - **One run at a time:** DuckDB allows a single writer.

@@ -189,15 +189,30 @@ models:
 
   - name: dim_resource
     description: |
-      Resource objects (EIC object type W), one row per version.
+      Resources in their publishers' own schemes, one row per version: ENTSO-E resource objects by EIC
+      (object type W) and Elexon's BM Units by BM Unit Id (`resource_scheme`). Each source joins on its own
+      scheme; `bridge_resource_eic` relates BM Units to the EICs Elexon lists for them.
     data_tests:
       - dlt_unique:
           name: dim_resource_unique_version
           arguments:
-            columns: [resource_eic_code, valid_from]
+            columns: [resource_code, valid_from]
+      - dlt_unique:
+          name: dim_resource_one_current_version
+          config:
+            where: is_current
+          arguments:
+            columns: [resource_code]
     columns:
-      - name: resource_eic_code
-        description: "{{ doc('col_resource_eic_code') }}"
+      - name: resource_code
+        description: "{{ doc('col_resource_code') }}"
+        data_tests: [not_null]
+      - name: resource_scheme
+        description: "{{ doc('col_resource_scheme') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EIC, BM_UNIT]
       - name: display_name
         description: "{{ doc('col_display_name') }}"
       - name: long_name
@@ -206,10 +221,51 @@ models:
         description: "{{ doc('col_country_code') }}"
       - name: roles
         description: "{{ doc('col_roles') }}"
-      - name: parent_resource_eic_code
-        description: "{{ doc('col_parent_resource_eic_code') }}"
+      - name: parent_resource_code
+        description: "{{ doc('col_parent_resource_code') }}"
       - name: responsible_party_eic_code
         description: "{{ doc('col_responsible_party_eic_code') }}"
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: dim_resource_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: national_grid_bm_unit
+        description: "{{ doc('col_bmunit_national_grid_id') }}"
+      - name: bm_unit_type
+        description: "{{ doc('col_bmunit_type') }}"
+      - name: lead_party_name
+        description: "{{ doc('col_bmunit_lead_party_name') }}"
+      - name: generation_capacity_mw
+        description: "{{ doc('col_bmunit_generation_capacity') }}"
+      - name: demand_capacity_mw
+        description: "{{ doc('col_bmunit_demand_capacity') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+
+  - name: bridge_resource_eic
+    description: |
+      Elexon's BM Units and the EICs Elexon lists for them, one row per pair and version; most BM Units
+      have none, some several.
+    data_tests:
+      - dlt_unique:
+          name: bridge_resource_eic_unique_version
+          arguments:
+            columns: [resource_code, resource_eic_code, valid_from]
+    columns:
+      - name: resource_code
+        description: "{{ doc('col_resource_code') }}"
+        data_tests: [not_null]
+      - name: resource_eic_code
+        description: "{{ doc('col_resource_eic_code') }}"
+        data_tests: [not_null]
       - name: valid_from
         description: "{{ doc('col_valid_from') }}"
       - name: valid_to
@@ -219,17 +275,17 @@ models:
 
   - name: bridge_resource_hierarchy
     description: |
-      Each current resource with itself and every containing resource.
+      Each current resource with itself and every containing resource, following published EIC parents.
     data_tests:
       - dlt_unique:
           name: bridge_resource_hierarchy_unique
           arguments:
-            columns: [resource_eic_code, ancestor_eic_code]
+            columns: [resource_code, ancestor_resource_code]
     columns:
-      - name: resource_eic_code
-        description: "{{ doc('col_resource_eic_code') }}"
-      - name: ancestor_eic_code
-        description: "{{ doc('col_ancestor_eic_code') }}"
+      - name: resource_code
+        description: "{{ doc('col_resource_code') }}"
+      - name: ancestor_resource_code
+        description: "{{ doc('col_ancestor_resource_code') }}"
       - name: depth
         description: "{{ doc('col_depth') }}"
 

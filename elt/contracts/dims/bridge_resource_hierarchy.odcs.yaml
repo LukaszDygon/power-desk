@@ -22,8 +22,8 @@ schema:
   physicalName: bridge_resource_hierarchy
   physicalType: table
   logicalType: object
-  description: Each current resource with itself and every containing resource.
-  dataGranularityDescription: One row per resource_eic_code, ancestor_eic_code.
+  description: Each current resource with itself and every containing resource, following published EIC parents.
+  dataGranularityDescription: One row per resource_code, ancestor_resource_code.
   context:
     instructions: Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published version
       (`valid_from`, `valid_to`, `is_current`). `bridge_*_hierarchy` relates each key to itself (`depth` 0) and every broader
@@ -32,21 +32,25 @@ schema:
     - constraint: 'Do not join a versioned dimension on its key alone, which repeats the row per version: add `is_current`
         (or the version valid at the row''s time).'
   properties:
-  - name: resource_eic_code
+  - name: resource_code
     logicalType: string
     physicalType: VARCHAR
-    description: EIC (object type W) of a resource object used for production, consumption or storage of energy (e.g. generation
-      unit, production unit); the smallest published asset granularity.
+    description: 'Key of a resource in its publisher''s scheme (`resource_scheme`): the EIC (object type W) of a resource
+      object used for production, consumption or storage of energy (e.g. generation unit, production unit), or the BM Unit
+      Id Elexon registers for a BM Unit.'
     primaryKey: true
     primaryKeyPosition: 1
     authoritativeDefinitions:
+    - url: https://www.elexon.co.uk/bsc/glossary/bm-unit/
+      type: businessDefinition
+      description: 'Elexon BSC Glossary: BM Unit'
     - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       type: businessDefinition
       description: EIC Reference Manual 5.5
-  - name: ancestor_eic_code
+  - name: ancestor_resource_code
     logicalType: string
     physicalType: VARCHAR
-    description: A resource containing `resource_eic_code` (itself at depth 0), following published EIC parents.
+    description: A resource containing `resource_code` (itself at depth 0), following published EIC parents.
     primaryKey: true
     primaryKeyPosition: 2
     authoritativeDefinitions:
@@ -59,7 +63,7 @@ schema:
     description: Number of hierarchy links between the row and its ancestor (0 = itself).
   quality:
   - name: bridge_resource_hierarchy_unique
-    description: unique on (resource_eic_code, ancestor_eic_code)
+    description: unique on (resource_code, ancestor_resource_code)
     type: custom
     engine: dbt
     implementation: bridge_resource_hierarchy_unique

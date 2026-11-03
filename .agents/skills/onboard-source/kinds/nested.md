@@ -11,8 +11,9 @@ them by hand and never load JSON columns.
   JSON column.
 - **Catalogue:** a child table needs a `tables` entry and definitions for its columns
   (`catalog/definitions/<source>.yml`), the same as a root table. `catalog.generate` declares it as a
-  dbt source under its root resource's Dagster asset. It has no `_dlt_load_id`, so it has no freshness
-  of its own (the root table's applies) and its tests are not scoped to pending loads.
+  dbt source with its own Dagster asset key (`raw/<table>`; Dagster keys each dbt source once), loaded by
+  its root resource. It has no `_dlt_load_id`, so it has no freshness of its own (the root table's
+  applies) and its tests are not scoped to pending loads.
 - **Schedule:** nothing to add. One resource loads the root table and its children, and the root's
   `IngestJob` covers both.
 - **Staging:** join the child to the current versions of its parent:

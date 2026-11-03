@@ -8,37 +8,27 @@ Published by the ENTSO-E Central Issuing Office, regenerated nightly
 - `entsoe_eic__issuing_offices`: the Local Issuing Office list (HTML table); the first two
   characters of an EIC identify its issuing office
 
-Snapshots, not streams: each resource re-reads the whole file and loads with dlt's `scd2`
-merge strategy, so renamed, changed and withdrawn codes keep their history
-(`_dlt_valid_from` / `_dlt_valid_to`). A file whose ETag / content is unchanged is skipped,
-and a skipped run changes nothing.
+Snapshots, not streams (`ingest/snapshot.py`): each resource re-reads the whole file and loads it as
+scd2 versions, so renamed, changed and withdrawn codes keep their history; an unchanged file is skipped.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
 import csv
-from dataclasses import dataclass
-import hashlib
 from html.parser import HTMLParser
 import io
-import logging
 from typing import Any
 
 import dlt
-from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
-from power_desk_elt.ingest import http
+from power_desk_elt.ingest.snapshot import Snapshot, snapshot_resource
 from power_desk_elt.ingest.spec import RunWindow, SourceSpec
-
-logger = logging.getLogger(__name__)
 
 BLOB = "https://eepublicdownloads.blob.core.windows.net/cio-lio/csv"
 CODES_URL = f"{BLOB}/CIO_extraction-all-eic-codes.csv"
 FUNCTIONS_URL = f"{BLOB}/eicFunctions.csv"
 ISSUING_OFFICES_URL = "https://www.entsoe.eu/data/energy-identification-codes-eic/"
-SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
 
 
 def parse_csv(text: str, delimiter: str) -> list[dict[str, str]]:
@@ -107,14 +97,6 @@ def parse_issuing_offices(page_html: str) -> list[dict[str, Any]]:
     return parser.rows
 
 
-@dataclass(frozen=True)
-class Snapshot:
-    resource: str
-    url: str
-    parse: Callable[[str], list[dict[str, Any]]]
-    natural_key: tuple[str, ...]  # published column names
-
-
 SNAPSHOTS = (
     Snapshot("entsoe_eic__codes", CODES_URL, lambda text: parse_csv(text, ";"), ("EicCode",)),
     Snapshot(
@@ -127,39 +109,10 @@ SNAPSHOTS = (
 )
 
 
-def changed_rows(snapshot: Snapshot) -> Iterator[list[dict[str, Any]]]:
-    """All rows of the published file, unless it is unchanged since its last load."""
-    state = dlt.current.resource_state()
-    previous = state.get("source_file", {})
-    text, validators = http.fetch_if_changed(snapshot.url, etag=previous.get("etag") or None)
-    digest = hashlib.sha256(text.encode()).hexdigest() if text is not None else previous.get("sha256")
-    new_text = text if digest != previous.get("sha256") else None
-    state["source_file"] = {
-        "url": snapshot.url,
-        "etag": validators.get("etag") or previous.get("etag"),
-        "last_modified": validators.get("last_modified") or previous.get("last_modified"),
-        "sha256": digest,
-        "changed": new_text is not None,
-    }
-    if new_text is not None:
-        rows = snapshot.parse(new_text)
-        logger.info("%s: %d rows from %s", snapshot.resource, len(rows), snapshot.url)
-        yield rows
-
-
 @dlt.source(name="entsoe_eic")
 def entsoe_eic_source(window: RunWindow | None = None) -> list[DltResource]:
     """Snapshots ignore the run window of the shared source interface."""
-    return [
-        dlt.resource(
-            changed_rows(snapshot),
-            name=snapshot.resource,
-            write_disposition=SCD2,
-            primary_key=list(snapshot.natural_key),
-            file_format="parquet",
-        )
-        for snapshot in SNAPSHOTS
-    ]
+    return [snapshot_resource(snapshot) for snapshot in SNAPSHOTS]
 
 
 SPEC = SourceSpec("entsoe_eic", entsoe_eic_source, max_days_per_run=1)

@@ -32,8 +32,8 @@ INGEST_JOBS = (
         "ingest_actuals",
         "actuals_halfhourly",
         "5,35 * * * *",
-        ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "bmrs__mid", "pvlive__solar"),
-        description="Outturn published every few minutes to half-hourly.",
+        ("bmrs__fuelinst", "bmrs__indo", "bmrs__itsdo", "bmrs__mid", "bmrs__remit", "pvlive__solar"),
+        description="Outturn and REMIT messages, published every few minutes to half-hourly.",
     ),
     IngestJob(
         "ingest_forecasts",
@@ -69,7 +69,7 @@ INGEST_JOBS = (
         "refresh_reference",
         "reference_daily",
         "0 6 * * *",
-        ("entsoe_eic__codes", "entsoe_eic__functions", "entsoe_eic__issuing_offices"),
+        ("entsoe_eic__codes", "entsoe_eic__functions", "entsoe_eic__issuing_offices", "bmrs__bmunits"),
         description="Reference snapshots (scd2), skipped while unchanged.",
     ),
 )

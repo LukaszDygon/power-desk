@@ -82,16 +82,29 @@ columns:
   party_eic_code:
     description: EIC (object type X) of a party, a legal entity with a VAT number or other unique identification code.
     links: [eic_manual]
+  resource_code:
+    description: >-
+      Key of a resource in its publisher's scheme (`resource_scheme`): the EIC (object type W) of a resource
+      object used for production, consumption or storage of energy (e.g. generation unit, production unit),
+      or the BM Unit Id Elexon registers for a BM Unit.
+    refs:
+    - elexon:glossary/bm-unit
+    links: [eic_manual]
+  resource_scheme:
+    description: The scheme of `resource_code`, `EIC` (ENTSO-E's EIC list) or `BM_UNIT` (Elexon's BM unit list).
+    refs:
+    - elexon:glossary/bm-unit
+    links: [eic_manual]
   resource_eic_code:
     description: >-
       EIC (object type W) of a resource object used for production, consumption or storage of energy
       (e.g. generation unit, production unit); the smallest published asset granularity.
     links: [eic_manual]
-  parent_resource_eic_code:
+  parent_resource_code:
     description: Published EIC parent of the resource, e.g. the production unit of a generating unit.
     links: [eic_implementation_guide]
-  ancestor_eic_code:
-    description: A resource containing `resource_eic_code` (itself at depth 0), following published EIC parents.
+  ancestor_resource_code:
+    description: A resource containing `resource_code` (itself at depth 0), following published EIC parents.
     links: [eic_implementation_guide]
   # --- technology ---------------------------------------------------------------------------
   technology_code:

@@ -15,8 +15,9 @@ Outputs:
   for the dlt metadata tables. Descriptions are `{{ doc() }}` references; where each definition
   comes from is `meta.references` (title, url, and id, retrieved, section, page or path where known).
   Tables also carry `meta.dlt`, `meta.dagster.asset_key`, freshness and key-scoped duplication guards.
-  Child tables (dlt's normalization of nested lists) are sources too, under their root resource's asset; they
-  have no load id, so no freshness or test scoping of their own.
+  Child tables (dlt's normalization of nested lists) are sources too, each with its own asset key (Dagster keys
+  each dbt source once), loaded by their root resource's asset; they have no load id, so no freshness or test
+  scoping of their own.
 
 Generation fails on a raw table or column without a definition, on unknown references and on
 raw table names shared by two sources. `--check` exits non-zero if any output is stale.
@@ -142,7 +143,8 @@ def source_table(schema: dict[str, Any], name: str, catalogue: Catalogue) -> dic
         "description": doc_ref(dataset_doc(name)),
         "config": {
             "meta": {
-                "dagster": {"asset_key": [DATASET_NAME, root]},
+                # a child table is loaded by its root resource but needs its own key: Dagster keys each dbt source once
+                "dagster": {"asset_key": [DATASET_NAME, name]},
                 "dlt": dlt_meta,
                 **({"dlt_recent_column": "_dlt_load_id"} if loaded else {}),
                 "references": catalogue.references(definition),

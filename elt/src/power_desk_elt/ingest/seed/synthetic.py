@@ -2,7 +2,10 @@
 
 Deterministic (fixed random seed): FUELINST every 5 minutes per fuel type, INDO / ITSDO / NDF / MID
 per settlement period, WINDFOR hourly, PVLive per half hour (half-hour ending); NESO net transfer
-capacity restrictions per interconnector, the day-ahead submission and an evening intraday one per day.
+capacity restrictions per interconnector, the day-ahead submission and an evening intraday one per day;
+REMIT messages for the units of the recorded BM unit list (`elt/seed/bmrs/bmunits.json`), covering a
+revision that shortens an event, an outage profile, a message listing two units, a dismissed event, a
+republished revision, an open-ended event, an unlisted asset and other market information.
 """
 
 from __future__ import annotations
@@ -172,6 +175,118 @@ def neso_records(day: date) -> Records:
     }
 
 
+REMIT_FIELDS = {
+    "dataset": "REMIT",
+    "messageType": "UnavailabilitiesOfElectricityFacilities",
+    "biddingZone": "10YGB----------A",
+}
+
+
+def remit_message(message_id: int, mrid: str, revision: int, published: datetime, **fields: Any) -> dict[str, Any]:
+    """One REMIT message as `/remit?messageId=` returns it: null fields are left out, as Elexon does."""
+    message = {
+        "id": message_id,
+        **REMIT_FIELDS,
+        "mrid": mrid,
+        "revisionNumber": revision,
+        "publishTime": iso(published),
+        "createdTime": iso(published - timedelta(minutes=2)),
+        **fields,
+    }
+    return {key: value for key, value in message.items() if value is not None}
+
+
+def unit_outage(
+    unit: str, eic: str | None, fuel: str | None, normal: float, available: float, start: datetime, end: datetime | None
+) -> dict[str, Any]:
+    return {
+        "messageHeading": "Planned Unavailability of Generation Unit",
+        "eventType": "Production unavailability",
+        "unavailabilityType": "Planned",
+        "participantId": "SEED",
+        "registrationCode": "48X000000000SEED",
+        "assetId": unit,
+        "assetType": "Production",
+        "affectedUnit": unit.removeprefix("T_"),
+        "affectedUnitEIC": eic,
+        "affectedArea": "N",
+        "fuelType": fuel,
+        "normalCapacity": normal,
+        "availableCapacity": available,
+        "unavailableCapacity": normal - available,
+        "eventStatus": "Active",
+        "eventStartTime": iso(start),
+        "eventEndTime": iso(end) if end else None,
+        "cause": "Planned Outage",
+    }
+
+
+def remit_records(start_date: str) -> list[dict[str, Any]]:
+    """REMIT messages published in the seed week, by message id."""
+    day = datetime.fromisoformat(start_date).replace(tzinfo=UTC)
+
+    def at(days: int, hours: float = 0.0) -> datetime:
+        return day + timedelta(days=days, hours=hours)
+
+    def mrid(number: int, sender: str = "NGET") -> str:
+        return f"48X000000000SEED-{sender}-RMT-{number:08d}"
+
+    didcot = unit_outage("T_DIDCB5", "48W000000DIDCB5C", "Fossil Gas", 770, 0, at(2, 6), at(4, 18))
+    drax = {
+        **unit_outage("T_DRAXX-1", "48W00000DRAXX-1E", "Biomass", 665, 400, at(1, 14), at(2, 2)),
+        "unavailabilityType": "Unplanned",
+        "messageHeading": "Unplanned Unavailability of Generation Unit",
+        "cause": "Mill Failure",
+        "outageProfile": [
+            {"startTime": iso(at(1, 14)), "endTime": iso(at(1, 20)), "capacity": 400.0},
+            {"startTime": iso(at(1, 20)), "endTime": iso(at(2, 2)), "capacity": 500.0},
+        ],
+    }
+    walney = unit_outage("T_WLNYO-4", "48W00000WLNYO-4-", "Wind Offshore", 330, 165, at(3, 8), at(3, 16))
+    cairn = unit_outage("2__PSTAT001", "48W00000CAIRW-2E", "Wind Onshore", 42, 0, at(3, 8), at(3, 16))
+    heysham = unit_outage("T_HEYM27", "48W000000HEYM27Y", "Nuclear", 660, 0, at(5, 0), at(6, 0))
+    pembroke = unit_outage("T_PEMB-11", "48W00000PEMB-11T", "Fossil Gas", 475, 250, at(4, 7), at(4, 11))
+    baglan = {**unit_outage("T_BAGE-1", "48W000000BAGE-1L", "Fossil Gas", 500, 300, at(2, 12), None),
+              "durationUncertainty": "Unknown"}  # fmt: skip
+    lion = unit_outage("T_LionB-1", None, "Other", 50, 0, at(1, 0), at(1, 6))
+    moyle = {
+        **unit_outage("I_IEG-MOYL1", None, None, 500, 250, at(5, 18), at(5, 22)),
+        "eventType": "Transmission unavailability",
+        "assetType": "Transmission",
+        "biddingZone": "10YGB----------B",
+        "affectedArea": None,
+    }
+    notice = {
+        "messageType": "OtherMarketInformation",
+        "messageHeading": "Interconnector Testing Market Notice",
+        "participantId": "SEED",
+        "registrationCode": "48X000000000SEED",
+        "assetId": "NO_ASSET",
+        "biddingZone": None,
+        "eventStatus": "Active",
+        "eventStartTime": iso(at(6, 3)),
+        "eventEndTime": iso(at(6, 7)),
+        "cause": "A short test is to be undertaken.",
+    }
+    didcot_shortened = {**didcot, "eventEndTime": iso(at(3, 20))}
+    heysham_dismissed = {**heysham, "eventStatus": "Dismissed"}
+    return [
+        remit_message(101, mrid(1), 1, at(0, 9), **didcot),
+        remit_message(102, mrid(2), 1, at(1, 14.5), **drax),
+        remit_message(103, mrid(3, "ELXP"), 1, at(1, 0.5), **lion),
+        remit_message(104, mrid(4), 1, at(2, 12.5), **baglan),
+        remit_message(105, mrid(5), 1, at(2, 18), **walney),  # one message, two units
+        remit_message(106, mrid(5), 1, at(2, 18), **cairn),
+        remit_message(107, mrid(1), 2, at(3, 10), **didcot_shortened),
+        remit_message(108, mrid(6), 1, at(3, 12), **heysham),
+        remit_message(109, mrid(7), 3, at(3, 15), **pembroke),  # a revision Elexon republishes
+        remit_message(110, mrid(7), 3, at(4, 9), **pembroke),
+        remit_message(111, mrid(8), 1, at(4, 12), **moyle),
+        remit_message(112, mrid(6), 2, at(5, 9), **heysham_dismissed),
+        remit_message(113, mrid(9, "ELXP"), 1, at(5, 10), **notice),
+    ]
+
+
 def generate(start_date: str, num_days: int) -> Records:
     """Records per dataset code (`FUELINST`, ..., `PVLIVE`, NESO raw table) for `num_days` from `start_date`."""
     random.seed(42)
@@ -184,4 +299,5 @@ def generate(start_date: str, num_days: int) -> Records:
                 records[code] += rows
         for resource, rows in neso_records(day).items():
             records[resource] += rows
+    records["REMIT"] = remit_records(start_date)
     return dict(records)

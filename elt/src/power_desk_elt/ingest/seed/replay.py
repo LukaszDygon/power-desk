@@ -1,4 +1,4 @@
-"""Publishers replaced by the seed: Elexon / PVLive / NESO APIs, EIC files and the ENTSO-E File Library."""
+"""Publishers replaced by the seed: Elexon / PVLive / NESO APIs, EIC and BM unit files and the ENTSO-E File Library."""
 
 from __future__ import annotations
 
@@ -20,10 +20,12 @@ from power_desk_elt.settings import SEED_DIR
 
 SEED_START = "2024-03-01"
 SEED_DAYS = 7
-EIC_FILES = {
-    entsoe_eic.CODES_URL: "CIO_extraction-all-eic-codes.csv",
-    entsoe_eic.FUNCTIONS_URL: "eicFunctions.csv",
-    entsoe_eic.ISSUING_OFFICES_URL: "eic-issuing-offices.html",
+# reference files: url -> recorded file under elt/seed/
+REFERENCE_FILES = {
+    entsoe_eic.CODES_URL: "entsoe_eic/CIO_extraction-all-eic-codes.csv",
+    entsoe_eic.FUNCTIONS_URL: "entsoe_eic/eicFunctions.csv",
+    entsoe_eic.ISSUING_OFFICES_URL: "entsoe_eic/eic-issuing-offices.html",
+    bmrs.BMUNITS_URL: "bmrs/bmunits.json",
 }
 # the parts of a NESO upload query (`neso.upload_query`) the replay answers
 NESO_QUERY = re.compile(
@@ -35,7 +37,7 @@ NESO_QUERY = re.compile(
 class SeedPublishers:
     """Payloads served per publisher; tests may change them between runs."""
 
-    records: dict[str, list[dict[str, Any]]]  # Elexon dataset code / "PVLIVE" / NESO raw table -> API records
+    records: dict[str, list[dict[str, Any]]]  # Elexon dataset code / "REMIT" / "PVLIVE" / NESO raw table -> records
     files: dict[str, str]  # url -> published file text
     exports: dict[str, dict[str, tuple[str, bytes]]]  # folder -> file name -> (lastUpdatedTimestamp, content)
     requests: list[str] = field(default_factory=list)
@@ -49,7 +51,7 @@ class SeedPublishers:
             name = path.name.removesuffix(".gz")
             folder = name.split("_", 2)[2].removesuffix(".csv")
             exports.setdefault(folder, {})[name] = ("seed", gzip.decompress(path.read_bytes()))
-        files = {url: (seed_dir / "entsoe_eic" / name).read_text(encoding="utf-8") for url, name in EIC_FILES.items()}
+        files = {url: (seed_dir / name).read_text(encoding="utf-8") for url, name in REFERENCE_FILES.items()}
         return cls(synthetic.generate(start_date, num_days), files, exports)
 
     def fetch_json(self, url: str, params: dict[str, Any] | None = None) -> Any:
@@ -60,6 +62,13 @@ class SeedPublishers:
             return {"meta": ["pes_id", "datetime_gmt", "generation_mw"], "data": [list(r.values()) for r in rows]}
         if url == neso.SQL_URL:
             return {"result": {"records": self.neso_page(params["sql"])}}
+        if url == bmrs.REMIT_LIST_URL:
+            listed = (r for r in self.records["REMIT"] if params["from"] <= r["publishTime"] <= params["to"])
+            keys = ("id", "mrid", "revisionNumber", "createdTime", "publishTime")
+            return {"data": [{key: r[key] for key in keys} for r in listed]}
+        if url == bmrs.REMIT_URL:
+            ids = set(params["messageId"])
+            return {"data": [r for r in self.records["REMIT"] if r["id"] in ids]}
         dataset = next(dataset for dataset in bmrs.DATASETS if url.endswith(f"/{dataset.code}"))
         first, last = (params[name] for name in dataset.time_filter)
         return {"data": [r for r in self.records[dataset.code] if first <= r[dataset.cursor] <= last]}
