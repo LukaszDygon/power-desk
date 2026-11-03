@@ -12,6 +12,10 @@ clean-targets: [target]
 vars:
   # First date the warehouse must cover; completeness tests start here.
   backfill_start_date: "{{ env_var('POWER_DESK_START_DATE', '2024-01-01') }}"
+  # REPD sites the ECMWF source reads weather for; must equal ingest/sources/ecmwf.py (SITE_*)
+  weather_site_status: Operational
+  weather_site_technologies: [Wind Onshore, Wind Offshore, Solar Photovoltaics]
+  weather_site_min_capacity_mw: 50
   # Set by the orchestrator (see macros/dlt_loads.sql):
   #   dlt_load_ids: explicit list of dlt load ids this invocation processes
   #   dlt_scope: "recent" (default, tests see only pending loads) | "all"

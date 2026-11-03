@@ -7,3 +7,13 @@ volume_mwh,MWh,sum
 transfer_capacity_mw,MW,mean
 unavailable_capacity_mw,MW,mean
 available_capacity_mw,MW,mean
+temperature_2m_c,°C,mean
+wind_u_10m_ms,m/s,mean
+wind_v_10m_ms,m/s,mean
+wind_speed_10m_ms,m/s,mean
+wind_u_100m_ms,m/s,mean
+wind_v_100m_ms,m/s,mean
+wind_speed_100m_ms,m/s,mean
+solar_radiation_wm2,W/m2,mean
+cloud_cover_fraction,fraction,mean
+precipitation_mm,mm,sum

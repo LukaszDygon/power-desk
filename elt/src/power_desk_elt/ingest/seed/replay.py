@@ -1,10 +1,12 @@
-"""Publishers replaced by the seed: Elexon / PVLive / NESO APIs, EIC and BM unit files and the ENTSO-E File Library."""
+"""Publishers replaced by the seed: Elexon / PVLive / NESO APIs, EIC, BM unit and REPD files, the
+ENTSO-E File Library and the ECMWF open-data portal."""
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import UTC, date, datetime, timedelta
 import gzip
 import hashlib
 from pathlib import Path
@@ -14,7 +16,7 @@ from unittest.mock import patch
 
 from power_desk_elt.ingest import http
 from power_desk_elt.ingest.seed import synthetic
-from power_desk_elt.ingest.sources import bmrs, entsoe_eic, neso
+from power_desk_elt.ingest.sources import bmrs, desnz_repd, ecmwf, entsoe_eic, neso
 from power_desk_elt.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient, export_file
 from power_desk_elt.settings import SEED_DIR
 
@@ -27,6 +29,12 @@ REFERENCE_FILES = {
     entsoe_eic.ISSUING_OFFICES_URL: "entsoe_eic/eic-issuing-offices.html",
     bmrs.BMUNITS_URL: "bmrs/bmunits.json",
 }
+REPD_URL = "https://assets.publishing.service.gov.uk/media/seed/REPD_Publication_seed.csv"
+REPD_FILE = "REPD_Publication_seed.csv"
+# a step file on the ECMWF open-data portal (`ecmwf.Dataset.file_url`)
+ECMWF_FILE = re.compile(
+    r"/(?P<model>[^/]+)/(?P<resolution>[^/]+)/(?P<stream>[^/]+)/(?P<run>\d{10})0000-(?P<step>\d+)h-[^.]+\.(?P<ext>index|grib2)$"
+)
 # the parts of a NESO upload query (`neso.upload_query`) the replay answers
 NESO_QUERY = re.compile(
     r"from \"(?P<resource_id>[^\"]+)\" .* >= '(?P<first>[^']+)' .* < '(?P<end>[^']+)' .* offset (?P<offset>\d+)"
@@ -41,6 +49,7 @@ class SeedPublishers:
     files: dict[str, str]  # url -> published file text
     exports: dict[str, dict[str, tuple[str, bytes]]]  # folder -> file name -> (lastUpdatedTimestamp, content)
     requests: list[str] = field(default_factory=list)
+    ecmwf_runs: set[datetime] = field(default_factory=set)  # runs the portal serves (synthetic step files)
 
     @classmethod
     def from_seed(
@@ -52,11 +61,21 @@ class SeedPublishers:
             folder = name.split("_", 2)[2].removesuffix(".csv")
             exports.setdefault(folder, {})[name] = ("seed", gzip.decompress(path.read_bytes()))
         files = {url: (seed_dir / name).read_text(encoding="utf-8") for url, name in REFERENCE_FILES.items()}
-        return cls(synthetic.generate(start_date, num_days), files, exports)
+        files[REPD_URL] = (seed_dir / "desnz_repd" / REPD_FILE).read_bytes().decode(desnz_repd.ENCODING)
+        first = date.fromisoformat(start_date)
+        runs = {
+            datetime(day.year, day.month, day.day, hour, tzinfo=UTC)
+            for day in (first + timedelta(days=n) for n in range(num_days))
+            for dataset in ecmwf.DATASETS
+            for hour in dataset.steps
+        }
+        return cls(synthetic.generate(start_date, num_days), files, exports, ecmwf_runs=runs)
 
     def fetch_json(self, url: str, params: dict[str, Any] | None = None) -> Any:
         self.requests.append(url)
         params = params or {}
+        if url == desnz_repd.CONTENT_URL:
+            return {"details": {"attachments": [{"content_type": "text/csv", "url": REPD_URL}]}}
         if "pvlive" in url:
             rows = [r for r in self.records["PVLIVE"] if params["start"] <= r["datetime_gmt"] <= params["end"]]
             return {"meta": ["pes_id", "datetime_gmt", "generation_mw"], "data": [list(r.values()) for r in rows]}
@@ -84,11 +103,26 @@ class SeedPublishers:
         offset = int(query["offset"])
         return [{"_id": offset + i, **row} for i, row in enumerate(rows[offset : offset + neso.PAGE_ROWS], 1)]
 
-    def fetch_if_changed(self, url: str, etag: str | None = None) -> tuple[str | None, dict[str, str]]:
+    def fetch_if_changed(
+        self, url: str, etag: str | None = None, encoding: str = "utf-8-sig"
+    ) -> tuple[str | None, dict[str, str]]:
         self.requests.append(url)
         text = self.files[url]
         tag = hashlib.sha256(text.encode()).hexdigest()
         return (None, {"etag": tag}) if etag == tag else (text, {"etag": tag})
+
+    def fetch_bytes(self, url: str, byte_range: tuple[int, int] | None = None) -> bytes | None:
+        """An ECMWF step file (index or GRIB2, or a byte range of it) of a served run; None otherwise."""
+        self.requests.append(url)
+        match = ECMWF_FILE.search(url)
+        assert match, url
+        run = datetime.strptime(match["run"], "%Y%m%d%H").replace(tzinfo=UTC)
+        if run not in self.ecmwf_runs:
+            return None
+        index, content = synthetic.ecmwf_step_file(match["stream"], run, int(match["step"]))
+        if match["ext"] == "index":
+            return index.encode()
+        return content[byte_range[0] : byte_range[1] + 1] if byte_range else content
 
     def list_folder(self, folder: str) -> list[ExportFile]:
         listed = [
@@ -110,6 +144,7 @@ def replay(publishers: SeedPublishers | None = None) -> Iterator[SeedPublishers]
     with (
         patch.object(http, "fetch_json", publishers.fetch_json),
         patch.object(http, "fetch_if_changed", publishers.fetch_if_changed),
+        patch.object(http, "fetch_bytes", publishers.fetch_bytes),
         patch.object(
             FileLibraryClient, "list_folder", lambda _, *args, **kwargs: publishers.list_folder(*args, **kwargs)
         ),

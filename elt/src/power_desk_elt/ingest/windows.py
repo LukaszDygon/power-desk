@@ -85,13 +85,20 @@ def plan_window(
     return WindowPlan(DateRange(first_day, min(today, cap_day)), capped=cap_day < today)
 
 
-def incremental_window(cursor: dlt.sources.incremental, max_days: int) -> DateRange:
-    """This run's days; open-ended runs record them in resource state (`last_window`)."""
+def incremental_window(cursor: dlt.sources.incremental, max_days: int, revisit_days: int = 0) -> DateRange:
+    """This run's days; open-ended runs record them in resource state (`last_window`).
+
+    `revisit_days` re-reads that many days before the last one fetched, for publishers whose files
+    for a day can appear after the day has passed.
+    """
     if cursor.end_value is not None:
         return plan_window(cursor.start_value, cursor.end_value, max_days).days
     state = dlt.current.resource_state()
     previous: LastWindow = state.get("last_window", {})
-    plan = plan_window(cursor.start_value, None, max_days, fetched_until=previous.get("last_day"))
+    fetched_until = previous.get("last_day")
+    if fetched_until and revisit_days:
+        fetched_until = (date.fromisoformat(fetched_until) - timedelta(days=revisit_days)).isoformat()
+    plan = plan_window(cursor.start_value, None, max_days, fetched_until=fetched_until)
     state["last_window"] = LastWindow(
         first_day=plan.days.first.isoformat(), last_day=plan.days.last.isoformat(), capped=plan.capped
     )

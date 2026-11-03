@@ -272,6 +272,36 @@ seeds:
       - name: notes
         description: "{{ doc('col_notes') }}"
 
+  - name: map_area
+    description: |
+      Publisher location codes (REPD `Country`) mapped onto areas.
+    data_tests:
+      - dlt_unique:
+          name: map_area_unique
+          arguments:
+            columns: [source_dataset, source_code]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: map_area_known_dataset
+              arguments:
+                to: ref('source_datasets')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: map_area_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: notes
+        description: "{{ doc('col_notes') }}"
+
   - name: entsoe_psr_types
     description: |
       ENTSO-E PsrType code list (production types): the name the Transparency Platform displays and

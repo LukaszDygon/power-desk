@@ -191,6 +191,67 @@ columns:
   restriction_reason:
     description: NESO's reason for the restriction in this direction (e.g. `Network Constraints`, `No Restriction`); null for ENTSO-E.
     links: [neso_nsl]
+  # --- weather forecast (ECMWF Parameter Database) ------------------------------------------------
+  temperature_2m_c:
+    description: >-
+      2 metre temperature at the start of the interval, in °C: "the temperature of air at 2m above the
+      surface of land, sea or in-land waters"; "Temperature measured in kelvin can be converted to
+      degrees Celsius (°C) by subtracting 273.15."
+    links: [param_2t]
+  wind_u_10m_ms:
+    description: >-
+      10 metre U wind component at the start of the interval, inm/s: "the eastward component of the 10m
+      wind ... the horizontal speed of air moving towards the east, at a height of ten metres above the
+      surface of the Earth".
+    links: [param_10u]
+  wind_v_10m_ms:
+    description: >-
+      10 metre V wind component at the start of the interval, inm/s: "the northward component of the 10m
+      wind ... the horizontal speed of air moving towards the north, at a height of ten metres above the
+      surface of the Earth".
+    links: [param_10v]
+  wind_speed_10m_ms:
+    description: >-
+      Speed of the horizontal 10 m wind at the start of the interval, inm/s: the U and V components
+      combined (sqrt(u² + v²)); "This parameter can be combined with the V component of 10m wind to give
+      the speed and direction of the horizontal 10m wind."
+    links: [param_10u, param_10v]
+  wind_u_100m_ms:
+    description: >-
+      100 metre U wind component at the start of the interval, inm/s: "the eastward component of the
+      100 m wind ... the horizontal speed of air moving towards the east, at a height of 100 metres
+      above the surface of the Earth".
+    links: [param_100u]
+  wind_v_100m_ms:
+    description: >-
+      100 metre V wind component at the start of the interval, inm/s: "the northward component of the
+      100 m wind ... the horizontal speed of air moving towards the north, at a height of 100 metres
+      above the surface of the Earth".
+    links: [param_100v]
+  wind_speed_100m_ms:
+    description: >-
+      Speed of the horizontal 100 m wind at the start of the interval, inm/s: the U and V components
+      combined (sqrt(u² + v²)); "This parameter can be combined with the northward component to give the
+      speed and direction of the horizontal 100 m wind."
+    links: [param_100u, param_100v]
+  solar_radiation_wm2:
+    description: >-
+      Surface short-wave (solar) radiation downwards, mean over the interval in W/m²: "the amount of
+      solar radiation ... that reaches a horizontal plane at the surface of the Earth", "both direct and
+      diffuse"; "To convert to watts per square metre (W m-2), the accumulated values should be divided
+      by the accumulation period expressed in seconds."
+    links: [param_ssrd]
+  cloud_cover_fraction:
+    description: >-
+      Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by
+      cloud"; "Cloud fractions vary from 0 to 1."
+    links: [param_tcc]
+  precipitation_mm:
+    description: >-
+      Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and
+      frozen water, comprising rain and snow, that falls to the Earth's surface", in "depth in metres of
+      water equivalent" (x 1000 for mm).
+    links: [param_tp]
   coverage:
     description: Fraction of the hour (0.0-1.0) holding data from the series' source. Means are over those
       minutes; multiply by `coverage` for the mean over the whole hour with missing minutes as zero.

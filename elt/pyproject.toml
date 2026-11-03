@@ -12,6 +12,8 @@ dependencies = [
     "dbt-oss>=2.0.8",
     "dlt[duckdb]>=1.0.0",
     "duckdb>=1.1.0",
+    "eccodes>=2.50",
+    "eccodeslib>=2.50 ; sys_platform != 'win32'",
     "power-desk-logging",
     "power-desk-warehouse",
     "pyarrow>=18",

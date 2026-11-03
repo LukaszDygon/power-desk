@@ -4,13 +4,16 @@
 power_desk:
   target: "{{ env_var('POWER_DESK_ENV', 'dev') }}"
   outputs:
+    # spatial: British National Grid coordinates (REPD) to latitude / longitude, in tables only
     dev:
       type: duckdb
       path: "{{ env_var('POWER_DESK_DUCKDB_PATH', 'data/warehouse_dev.duckdb') }}"
       schema: main
       threads: 4
+      extensions: [spatial]
     prod:
       type: duckdb
       path: "{{ env_var('POWER_DESK_DUCKDB_PATH', 'data/warehouse_prod.duckdb') }}"
       schema: main
       threads: 4
+      extensions: [spatial]

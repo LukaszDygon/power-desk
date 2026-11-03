@@ -31,13 +31,16 @@ class Snapshot:
     url: str
     parse: Callable[[str], list[dict[str, Any]]]
     natural_key: tuple[str, ...]  # published column names; empty where the publisher documents none
+    encoding: str = "utf-8-sig"
 
 
 def changed_rows(snapshot: Snapshot) -> Iterator[list[dict[str, Any]]]:
     """All rows of the published file, unless it is unchanged since its last load."""
     state = dlt.current.resource_state()
     previous = state.get("source_file", {})
-    text, validators = http.fetch_if_changed(snapshot.url, etag=previous.get("etag") or None)
+    text, validators = http.fetch_if_changed(
+        snapshot.url, etag=previous.get("etag") or None, encoding=snapshot.encoding
+    )
     digest = hashlib.sha256(text.encode()).hexdigest() if text is not None else previous.get("sha256")
     new_text = text if digest != previous.get("sha256") else None
     state["source_file"] = {

@@ -1,0 +1,211 @@
+# Source `desnz_repd` (DESNZ Renewable Energy Planning Database): dbt source, raw table and REPD fields.
+# Wording is quoted from the REPD publication page and the "Definition Sheet" of the Excel release
+# (the CSV carries the data only). Columns the Definition Sheet does not define say so; where the CSV
+# heading differs from the sheet's, the sheet's heading is named.
+links:
+  repd_publication:
+    title: Renewable Energy Planning Database (REPD) quarterly extract, GOV.UK
+    url: https://www.gov.uk/government/publications/renewable-energy-planning-database-quarterly-extract
+  repd_definitions:
+    title: REPD Definition Sheet (Excel release of the quarterly extract)
+    url: https://www.gov.uk/government/publications/renewable-energy-planning-database-quarterly-extract
+
+sources:
+  desnz_repd:
+    description: >-
+      DESNZ's Renewable Energy Planning Database, loaded by the `desnz_repd` dlt pipeline from the
+      current quarterly CSV extract as an scd2 snapshot (every published version kept).
+tables:
+  desnz_repd__repd:
+    title: Renewable Energy Planning Database (REPD)
+    description: >-
+      "The Renewable Energy Planning Database ('REPD') ... track[s] the progress of renewable electricity
+      projects (including those that could also be used for CHP), and electricity storage projects from
+      inception, through planning, construction, operation and decommissioning." It covers "UK
+      renewable electricity projects over 150kW"; "the minimum threshold for installed capacity was 1MW
+      until 2021", so "projects below 1MW that were going through planning system before 2021 may not
+      be represented". "The REPD is updated on a quarterly basis".
+    url: https://www.gov.uk/government/publications/renewable-energy-planning-database-quarterly-extract
+    links: [repd_publication, {link: repd_definitions, section: "Introduction"}]
+    columns: {old_ref_id: repd_old_ref_id, ref_id: repd_ref_id, site_name: repd_site_name,
+              technology_type: repd_technology_type, address: repd_address, county: repd_county,
+              region: repd_region, country: repd_country, post_code: repd_post_code,
+              x_coordinate: repd_x_coordinate, y_coordinate: repd_y_coordinate,
+              under_construction: repd_under_construction, operational: repd_operational}
+
+columns:
+  repd_old_ref_id:
+    description: The old reference ID associated with a project in a previous version of the database.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Old Ref. ID"}]
+  repd_ref_id:
+    description: Project reference ID number in REPD database; the natural key of a project.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Ref. ID"}]
+  record_last_updated_dd_mm_yyyyx:
+    description: Date a project record was last updated or checked (dd/mm/yyyy, as published).
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Record Last Updated"}]
+  operator_or_applicantx:
+    description: Name of operator or applicant.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Operator (or Applicant)"}]
+  repd_site_name:
+    description: Name of development site.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Site Name"}]
+  repd_technology_type:
+    description: Type of technology (e.g. solar photovoltaics, offshore wind etc.).
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Technology Type"}]
+  storage_type:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  storage_co_location_repd_ref_id:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  installed_capacity_m_welecx:
+    description: Installed electrical capacity in megawatts (MW).
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Installed Capacity (MWelec)"}]
+  share_community_scheme:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  chp_enabled:
+    description: Is the project capable of combined heat and power output.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: CHP Enabled"}]
+  cf_d_allocation_round:
+    description: The round of CFD funding the agreement was made.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: CfD Allocation Round"}]
+  ro_banding_roc_m_whx:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  fi_t_tariff_p_k_whx:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  cf_d_capacity_mwx:
+    description: The agreed Contracts for Difference investment capacity.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: CfD Capacity (MW)"}]
+  turbine_capacity_mwx:
+    description: For windfarms, the individual capacity of each wind turbine in megawatts (MW).
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Wind Turbine Capacity (MW)"}]
+  no_of_turbines:
+    description: For windfarms, the number of wind turbines to be located on the development site.
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: No. of Wind Turbines"}]
+  height_of_turbines_mx:
+    description: For windfarms, the height of the wind turbines in metres (m).
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Height of Turbines (m)"}]
+  mounting_type_for_solar:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]
+  development_status:
+    description: >-
+      Current status of the project, one of: No Application Required, Planning Application Submitted,
+      Planning Application Withdrawn, Planning Permission Granted, Planning Permission Refused, Revised,
+      Appeal Lodged, Appeal Withdrawn, Appeal Refused, Appeal Granted, Secretary of State - Called In,
+      Secretary of State - Refusal, Secretary of State - Granted, Under Construction ("A project is under
+      construction"), Operational ("A project is operational"), Decommissioned ("A project has been
+      decommissioned and is no longer operating"), Abandoned ("Project has been abandoned by developer").
+    links: [{link: repd_definitions, section: "Current Status: Development Status"}]
+  development_status_shortx:
+    description: >-
+      "This is a description of the current status of the development in a more succinct form. For
+      example, where a facility has obtained planning permission either directly from the Local Planning
+      Authority, through an appeal, or from the Secretary of State, it is classified here as 'Awaiting
+      Construction'."
+    links: [{link: repd_definitions, section: "Current Status: Development Status (short)"}]
+  are_they_re_applying_new_repd_refx:
+    description: Reference ID for the revised planning application for the same project.
+    links: [{link: repd_definitions, section: "Current Status: Are they re-applying (New REPD Ref)"}]
+  are_they_re_applying_old_repd_refx:
+    description: Reference ID for the previous planning application before project was revised.
+    links: [{link: repd_definitions, section: "Current Status: Are they re-applying (Old REPD Ref)"}]
+  repd_address:
+    description: Site address of the development.
+    links: [{link: repd_definitions, section: "Location Details: Address"}]
+  repd_county:
+    description: >-
+      Published in the REPD extract without a definition (the Definition Sheet lists a "District"
+      heading, "District the development site is located within", which the CSV does not carry).
+    links: [{link: repd_definitions, section: "Location Details"}]
+  repd_region:
+    description: Region the development site is located within.
+    links: [{link: repd_definitions, section: "Location Details: Region"}]
+  repd_country:
+    description: Country the development site is located within.
+    links: [{link: repd_definitions, section: "Location Details: Country"}]
+  repd_post_code:
+    description: Post code of the development site.
+    links: [{link: repd_definitions, section: "Location Details: Post Code"}]
+  repd_x_coordinate:
+    description: X & Y coordinates for development site in British National Grid (the easting, metres).
+    links: [{link: repd_definitions, section: "Location Details: X-coordinate"}]
+  repd_y_coordinate:
+    description: X & Y coordinates for development site in British National Grid (the northing, metres).
+    links: [{link: repd_definitions, section: "Location Details: Y-coordinate"}]
+  planning_authority:
+    description: The relevant local planning authority for the project.
+    links: [{link: repd_definitions, section: "Planning Details: Local Planning Authority"}]
+  planning_application_reference:
+    description: The reference number associated with the planning application.
+    links: [{link: repd_definitions, section: "Planning Details: Planning Application Reference"}]
+  appeal_reference:
+    description: The reference number associated with an appeal.
+    links: [{link: repd_definitions, section: "Planning Details: Appeal Reference"}]
+  secretary_of_state_reference:
+    description: The reference number associated with a Secretary of State Intervention.
+    links: [{link: repd_definitions, section: "Planning Details: Secretary of State Reference"}]
+  type_of_secretary_of_state_intervention:
+    description: >-
+      The type of Secretary of State of Intervention. This can be one of three types: recovery,
+      call-in, or holding direction.
+    links: [{link: repd_definitions, section: "Planning Details: Type of Secretary of State Intervention"}]
+  judicial_review:
+    description: >-
+      The latest date of when a legal challenge has been launched to review the lawfulness of a
+      planning application and/or appeal decision.
+    links: [{link: repd_definitions, section: "Planning Details: Judicial Review"}]
+  offshore_wind_round:
+    description: Leasing round in which an offshore wind project was established.
+    links: [{link: repd_definitions, section: "Planning Details: Offshore Wind Round"}]
+  planning_application_submitted:
+    description: Date planning application was validated.
+    links: [{link: repd_definitions, section: "Timeline: Planning Application Submitted"}]
+  planning_application_withdrawn:
+    description: Date planning application was withdrawn.
+    links: [{link: repd_definitions, section: "Timeline: Planning Application Withdrawn"}]
+  planning_permission_refused:
+    description: Date planning permission was refused.
+    links: [{link: repd_definitions, section: "Timeline: Planning Permission Refused"}]
+  appeal_lodged:
+    description: Date an appeal was lodged.
+    links: [{link: repd_definitions, section: "Timeline: Appeal Lodged"}]
+  appeal_withdrawn:
+    description: Date an appeal was withdrawn.
+    links: [{link: repd_definitions, section: "Timeline: Appeal Withdrawn"}]
+  appeal_refused:
+    description: Date an appeal was refused (dismissed).
+    links: [{link: repd_definitions, section: "Timeline: Appeal Refused"}]
+  appeal_granted:
+    description: Date an appeal was granted (upheld).
+    links: [{link: repd_definitions, section: "Timeline: Appeal Granted"}]
+  planning_permission_granted:
+    description: Date planning permission was granted by the planning authority.
+    links: [{link: repd_definitions, section: "Timeline: Planning Permission Granted"}]
+  secretary_of_state_intervened:
+    description: Date of a project that is 'Called In' by the Secretary of State.
+    links: [{link: repd_definitions, section: "Timeline: Secretary of State - Intervened"}]
+  secretary_of_state_refusal:
+    description: Date planning permission was refused by the Secretary of State.
+    links: [{link: repd_definitions, section: "Timeline: Secretary of State - Refusal"}]
+  secretary_of_state_granted:
+    description: Date planning permission was granted by the Secretary of State.
+    links: [{link: repd_definitions, section: "Timeline: Secretary of State - Granted"}]
+  planning_permission_expired:
+    description: Date a planning permission expires (as per the planning decision).
+    links: [{link: repd_definitions, section: "Timeline: Permission Expiration Date"}]
+  repd_under_construction:
+    description: Date construction on site has begun.
+    links: [{link: repd_definitions, section: "Timeline: Under Construction"}]
+  repd_operational:
+    description: Date a project become operational.
+    links: [{link: repd_definitions, section: "Timeline: Operational"}]
+  heat_network_ref:
+    description: Reference ID for same project in HNPD (the Heat Network Planning Database).
+    links: [{link: repd_definitions, section: "Timeline: Heat Network Ref"}]
+  solar_site_area_sqmx:
+    description: Published in the REPD extract without a definition (no entry on the Definition Sheet).
+    links: [repd_definitions]

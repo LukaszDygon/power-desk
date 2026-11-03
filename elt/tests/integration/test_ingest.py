@@ -11,10 +11,20 @@ import pytest
 from power_desk_elt.ingest import http
 from power_desk_elt.ingest.pipeline import make_pipeline, make_source, resource_progress, run
 from power_desk_elt.ingest.registry import SOURCES
+from power_desk_elt.ingest.seed import synthetic
 from power_desk_elt.ingest.seed.load import seed_end_date
-from power_desk_elt.ingest.seed.replay import SEED_START, SeedPublishers, replay
-from power_desk_elt.ingest.sources import bmrs, entsoe, entsoe_eic, neso
+from power_desk_elt.ingest.seed.replay import REPD_URL, SEED_START, SeedPublishers, replay
+from power_desk_elt.ingest.sources import bmrs, desnz_repd, ecmwf, entsoe, entsoe_eic, neso
 from tests.support import query
+
+
+def ecmwf_rows(publishers: SeedPublishers, dataset: ecmwf.Dataset) -> int:
+    """Fields read x grid points nearest to the REPD sites, per step of every served run."""
+    sites = ecmwf.select_sites(desnz_repd.parse_extract(publishers.files[REPD_URL]))
+    _, content = synthetic.ecmwf_step_file(dataset.stream, min(publishers.ecmwf_runs), 0)
+    points = {(row["latitude"], row["longitude"]) for row in ecmwf.field_rows(content, sites, {})}
+    steps = sum(len(dataset.steps[run.hour]) for run in publishers.ecmwf_runs)
+    return steps * len(ecmwf.PARAMS) * len(points)
 
 
 def published_rows(publishers: SeedPublishers) -> dict[str, int]:
@@ -30,6 +40,8 @@ def published_rows(publishers: SeedPublishers) -> dict[str, int]:
         },
         **{snapshot.resource: len(snapshot.parse(publishers.files[snapshot.url])) for snapshot in entsoe_eic.SNAPSHOTS},
         **{dataset.resource: len(publishers.records[dataset.resource]) for dataset in neso.DATASETS},
+        desnz_repd.RESOURCE: len(desnz_repd.parse_extract(publishers.files[REPD_URL])),
+        **{dataset.resource: ecmwf_rows(publishers, dataset) for dataset in ecmwf.DATASETS},
     }
 
 
@@ -179,6 +191,33 @@ def test_a_record_the_publisher_repeats_within_a_load_is_stored_once(tmp_path):
     publishers.records["NDF"] += [dict(publishers.records["NDF"][0])] * 2
     load("bmrs", db, publishers, end=seed_end_date(), resources=["bmrs__ndf"])
     assert query(db, "select count(*) from raw.bmrs__ndf") == [(published,)]
+
+
+def test_forecast_runs_load_once_complete_and_a_reload_changes_nothing(tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    resource = ecmwf.DATASETS[0].resource
+    late_run = max(publishers.ecmwf_runs)
+    publishers.ecmwf_runs.discard(late_run)  # not complete yet: its last step is not published
+    first = load("ecmwf", db, publishers, max_days=6, resources=[resource])[resource]  # to the late run's day
+    runs = f"select count(distinct (data_date, data_time)), count(*) from raw.{resource}"
+    [(loaded_runs, rows)] = query(db, runs)
+    assert loaded_runs == len(publishers.ecmwf_runs)
+
+    # the next open-ended run reads only the run published since
+    publishers.ecmwf_runs.add(late_run)
+    requests = len(publishers.requests)
+    load("ecmwf", db, publishers, max_days=6, resources=[resource])
+    grib_requests = [url for url in publishers.requests[requests:] if url.endswith(".grib2")]
+    assert {url.rsplit("/", 1)[1][:10] for url in grib_requests} == {ecmwf.run_stamp(late_run)}
+    assert query(db, runs)[0][0] == loaded_runs + 1
+
+    # a bounded reload of the whole week adds no version
+    total = query(db, f"select count(*) from raw.{resource}")[0][0]
+    load("ecmwf", db, publishers, SEED_START, seed_end_date(), resources=[resource])
+    versions = f"select count(*), count(*) filter (where _dlt_valid_to is null) from raw.{resource}"
+    assert query(db, versions) == [(total, total)]
+    assert first["cursor_last_value"] <= int(f"{late_run:%Y%m%d}")
+    assert rows < total
 
 
 def test_a_resubmission_closes_its_previous_version_and_rows_not_uploaded_again_stay_current(tmp_path):

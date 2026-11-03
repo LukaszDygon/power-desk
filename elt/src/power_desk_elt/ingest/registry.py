@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from power_desk_elt.ingest.sources import bmrs, entsoe, entsoe_eic, neso, pvlive
+from power_desk_elt.ingest.sources import bmrs, desnz_repd, ecmwf, entsoe, entsoe_eic, neso, pvlive
 from power_desk_elt.ingest.spec import SourceSpec
 
 SOURCES: dict[str, SourceSpec] = {
-    spec.name: spec for spec in (bmrs.SPEC, pvlive.SPEC, entsoe.SPEC, entsoe_eic.SPEC, neso.SPEC)
+    spec.name: spec
+    for spec in (bmrs.SPEC, pvlive.SPEC, entsoe.SPEC, entsoe_eic.SPEC, neso.SPEC, desnz_repd.SPEC, ecmwf.SPEC)
 }

@@ -66,11 +66,24 @@ INGEST_JOBS = (
         description="Monthly files re-exported daily around 05:40 UTC; unchanged files are skipped.",
     ),
     IngestJob(
+        "ingest_forecast_runs",
+        "forecast_runs_12h",
+        "15 8,20 * * *",
+        ("ecmwf__ifs_oper",),
+        description="Weather forecast runs: ECMWF IFS 00z and 12z, each complete on the portal at run + 7h34m UTC.",
+    ),
+    IngestJob(
         "refresh_reference",
         "reference_daily",
         "0 6 * * *",
-        ("entsoe_eic__codes", "entsoe_eic__functions", "entsoe_eic__issuing_offices", "bmrs__bmunits"),
-        description="Reference snapshots (scd2), skipped while unchanged.",
+        (
+            "entsoe_eic__codes",
+            "entsoe_eic__functions",
+            "entsoe_eic__issuing_offices",
+            "bmrs__bmunits",
+            "desnz_repd__repd",
+        ),
+        description="Reference snapshots (scd2), skipped while unchanged; the REPD changes quarterly.",
     ),
 )
 NIGHTLY_CRON = "0 3 * * *"

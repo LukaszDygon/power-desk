@@ -21,3 +21,5 @@ NESO_NSL,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_VIKING,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 REMIT,bmrs,dataset,Elexon,unavailability,,10YGB----------A
 BMUNITS,bmrs,code_list,Elexon,,,
+ECMWF_IFS_OPER,ecmwf,dataset,ECMWF,weather_forecast,180,10YGB----------A
+REPD,desnz_repd,code_list,DESNZ,,,

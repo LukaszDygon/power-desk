@@ -22,6 +22,14 @@ freshness:
     error_after:
       count: 54
       period: hour
+  # forecast runs published twice a day (ECMWF IFS 00z and 12z, each complete at run + 7h34m)
+  forecast_runs:
+    warn_after:
+      count: 14
+      period: hour
+    error_after:
+      count: 26
+      period: hour
   # published only where a restriction applies: some interconnectors go two weeks without an upload
   capacity_restrictions:
     warn_after:

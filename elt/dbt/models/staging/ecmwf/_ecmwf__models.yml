@@ -1,0 +1,64 @@
+# Each ECMWF field per run, forecast interval and grid point (macros/ecmwf.sql), incrementally by run.
+models:
+  - name: stg_ecmwf__ifs_oper
+    description: |
+      IFS fields per run, forecast interval (between consecutive published steps) and grid point;
+      instantaneous fields at the start of the interval, accumulated fields over it.
+
+      {{ doc('dataset_ecmwf__ifs_oper') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_ecmwf__ifs_oper_unique_key
+          arguments:
+            columns: [publish_time_utc, step_hours, short_name, grid_latitude, grid_longitude]
+      - expression_is_true:
+          name: stg_ecmwf__ifs_oper_known_units
+          arguments:
+            expression: "(param_id, grib_units) in {{ ecmwf_known_units() }}"
+      - expression_is_true:
+          name: stg_ecmwf__ifs_oper_interval_on_the_step_grid
+          arguments:
+            expression: "(timestamp_utc < publish_time_utc + interval 144 hour) = (interval_minutes = 180) and interval_minutes in (180, 360)"
+      # an accumulation never decreases, but each step is rounded to its field's packing step, so a
+      # difference can dip below zero by at most its packing uncertainty
+      - expression_is_true:
+          name: stg_ecmwf__ifs_oper_accumulations_within_packing_precision
+          arguments:
+            expression: "step_type <> 'accum' or interval_value >= -packing_uncertainty"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_forecast_run_time_utc') }}"
+        data_tests: [not_null]
+      - name: step_hours
+        description: "{{ doc('col_step_hours') }}"
+      - name: param_id
+        description: "{{ doc('col_param_id') }}"
+        data_tests: [not_null]
+      - name: short_name
+        description: "{{ doc('col_short_name') }}"
+      - name: grib_units
+        description: "{{ doc('col_grib_units') }}"
+      - name: step_type
+        description: "{{ doc('col_step_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [instant, accum]
+      - name: grid_latitude
+        description: "{{ doc('col_grid_latitude') }}"
+        data_tests: [not_null]
+      - name: grid_longitude
+        description: "{{ doc('col_grid_longitude') }}"
+        data_tests: [not_null]
+      - name: interval_value
+        description: "{{ doc('col_interval_value') }}"
+      - name: packing_uncertainty
+        description: "{{ doc('col_packing_uncertainty') }}"
+        data_tests: [not_null]
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
