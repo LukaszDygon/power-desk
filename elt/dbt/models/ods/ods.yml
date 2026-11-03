@@ -471,6 +471,11 @@ models:
             - >-
               `resource_code` is null where the asset (`source_code`) is not a BM Unit in Elexon's list; group
               by `source_code` to keep those assets.
+            - >-
+              Do not filter on `area_eic_code` = '10YGB----------A' alone for GB figures: Elexon publishes the
+              nonconforming code `10YGB----------B` as the bidding zone of some messages, which `dim_area` reads as
+              GB (seed `nonconforming_eic_codes`). Join `dim_area` and filter or group on
+              `registered_area_eic_code`, or roll up with `bridge_area_hierarchy`.
     data_tests:
       - dlt_unique:
           name: ods_unavailability_unique_key

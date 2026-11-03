@@ -380,3 +380,23 @@ def test_a_remit_revision_rebuilds_every_hour_of_its_event(warehouse_copy, tmp_p
     revisions = f"select count(distinct revision_number) from ods.ods_unavailability where mrid = '{DIDCOT}'"
     assert query(warehouse_copy, revisions) == [(3,)]
     assert query(warehouse_copy, pembroke) == untouched
+
+
+def test_a_nonconforming_area_code_resolves_to_its_registered_area(seeded_warehouse):
+    # Elexon's 10YGB----------B (seed nonconforming_eic_codes) on the Moyle message: GB, rolled up through it
+    resolved = (
+        "select distinct a.registered_area_eic_code, a.display_name, a.is_bidding_zone, c.issuing_office_code "
+        "from ods.ods_unavailability o join dims.dim_area a on a.area_eic_code = o.area_eic_code and a.is_current "
+        "join dims.dim_eic_code c on c.eic_code = a.area_eic_code and c.valid_from = a.valid_from "
+        "where o.area_eic_code = '10YGB----------B'"
+    )
+    assert query(seeded_warehouse, resolved) == [("10YGB----------A", "GB", True, None)]
+    ancestors = (
+        "select ancestor_area_eic_code, depth from dims.bridge_area_hierarchy "
+        "where area_eic_code = '10YGB----------B' order by depth"
+    )
+    assert query(seeded_warehouse, ancestors) == [
+        ("10YGB----------B", 0),
+        ("10YGB----------A", 1),
+        ("10Y1001A1001A92E", 2),
+    ]

@@ -173,6 +173,11 @@ models:
             - >-
               `technology_code` is null where the event publishes no fuel type: keep those rows when totalling
               across technologies.
+            - >-
+              Do not filter on `area_eic_code` = '10YGB----------A' alone for GB figures: Elexon publishes the
+              nonconforming code `10YGB----------B` as the bidding zone of some messages, which `dim_area` reads as
+              GB (seed `nonconforming_eic_codes`). Join `dim_area` and filter or group on
+              `registered_area_eic_code`, or roll up with `bridge_area_hierarchy`.
     data_tests:
       - dlt_unique:
           name: mart_gb_generation_unavailability_unique_key

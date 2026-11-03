@@ -484,7 +484,23 @@ Containing area in a curated hierarchy link.
 {% enddocs %}
 
 {% docs col_relation %}
-Kind of hierarchy link (`part_of`, curated) or `eic_parent` (published by EIC).
+Kind of hierarchy link: `part_of` (curated), `eic_parent` (published by EIC) or `registered_code` (a nonconforming code to the registered code it stands for, seed `nonconforming_eic_codes`).
+{% enddocs %}
+
+{% docs col_registered_eic_code %}
+The code in ENTSO-E's central registry that the row's code stands for: the code itself when registered; for a code a publisher uses that does not conform to the EIC scheme, the registered code it is read as (seed `nonconforming_eic_codes`).
+{% enddocs %}
+
+{% docs col_registered_area_eic_code %}
+The area code in ENTSO-E's central registry that `area_eic_code` stands for: the code itself when registered; for a nonconforming code a publisher uses, the registered area it is read as (seed `nonconforming_eic_codes`).
+{% enddocs %}
+
+{% docs col_nonconformity %}
+The EIC rules the code breaks (e.g. an invalid check character, absence from the central registry).
+{% enddocs %}
+
+{% docs col_explanation %}
+Curator's evidence for accepting the code and for the registered code it is read as.
 {% enddocs %}
 
 {% docs col_depth %}

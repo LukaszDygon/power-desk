@@ -7,6 +7,11 @@ with recursive links as (
     union
     select child_area_eic_code, parent_area_eic_code, relation
     from {{ ref('area_hierarchy') }}
+    union
+    -- a nonconforming code (seed `nonconforming_eic_codes`) rolls up through the registered code it stands for
+    select area_eic_code, registered_area_eic_code, 'registered_code'
+    from {{ ref('dim_area') }}
+    where is_current and area_eic_code <> registered_area_eic_code
 ),
 
 closure(area_eic_code, ancestor_area_eic_code, depth, path) as (

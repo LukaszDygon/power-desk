@@ -22,7 +22,9 @@ schema:
   physicalName: dim_area
   physicalType: table
   logicalType: object
-  description: Areas at every granularity (EIC object type Y), one row per version, with flags for common roles.
+  description: Areas at every granularity (EIC object type Y), one row per version, with flags for common roles. Includes
+    nonconforming area codes that publishers use (seed `nonconforming_eic_codes`), with the roles of the registered area they
+    stand for.
   dataGranularityDescription: One row per area_eic_code, valid_from.
   context:
     instructions: Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published version
@@ -31,6 +33,8 @@ schema:
     constraints:
     - constraint: 'Do not join a versioned dimension on its key alone, which repeats the row per version: add `is_current`
         (or the version valid at the row''s time).'
+    - constraint: 'Do not count areas on `area_eic_code`: a nonconforming code repeats its registered area. Count or group
+        on `registered_area_eic_code`.'
   properties:
   - name: area_eic_code
     logicalType: string
@@ -44,6 +48,24 @@ schema:
     - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
       type: businessDefinition
       description: EIC Reference Manual 5.5
+  - name: registered_area_eic_code
+    logicalType: string
+    physicalType: VARCHAR
+    description: 'The area code in ENTSO-E''s central registry that `area_eic_code` stands for: the code itself when registered;
+      for a nonconforming code a publisher uses, the registered area it is read as (seed `nonconforming_eic_codes`).'
+    required: true
+    authoritativeDefinitions:
+    - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      type: businessDefinition
+      description: EIC Reference Manual 5.5
+    quality:
+    - name: not_null_dim_area_registered_area_eic_code
+      description: not null
+      type: custom
+      engine: dbt
+      implementation: not_null_dim_area_registered_area_eic_code
+      dimension: completeness
+      severity: error
   - name: display_name
     logicalType: string
     physicalType: VARCHAR

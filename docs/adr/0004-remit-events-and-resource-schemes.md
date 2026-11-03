@@ -35,6 +35,6 @@ list, and REMIT's EIC is at times a station, party or interconnector code rather
   fetch takes the ids in batches.
 - Unavailable capacity adds up across concurrent events (ACER field 9); available capacity does not.
   The data contracts state both, and the business mart sums unavailable capacity only.
-- Assets that are not listed BM Units (about 3% of REMIT units) and the unregistered `10YGB----------B`
-  zone stay unresolved, and their tests warn.
+- Assets that are not listed BM Units (about 3% of REMIT units) stay unresolved, and their test warns.
+  The unregistered `10YGB----------B` zone resolves to GB since [ADR 0005](0005-nonconforming-eic-codes.md).
 - Open-ended events stay in the entity but are not placed on the hourly spine.

@@ -74,6 +74,50 @@ seeds:
       - name: description
         description: "{{ doc('col_description') }}"
 
+  - name: nonconforming_eic_codes
+    description: |
+      Codes that publishers use as EICs but that do not conform to the EIC scheme (not allocated by an
+      issuing office, e.g. an invalid check character), accepted after review and read as the registered
+      code each stands for. `dim_eic_code` adds them to ENTSO-E's registry, separately identifiable by
+      `registered_eic_code`.
+    data_tests:
+      - dlt_unique:
+          name: nonconforming_eic_codes_unique
+          arguments:
+            columns: [eic_code]
+    columns:
+      - name: eic_code
+        description: "{{ doc('col_eic_code') }}"
+      - name: eic_type
+        description: "{{ doc('col_eic_type') }}"
+        data_tests:
+          - relationships:
+              name: nonconforming_eic_codes_known_type
+              arguments:
+                to: ref('eic_code_types')
+                field: eic_type
+      - name: registered_eic_code
+        description: "{{ doc('col_registered_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: nonconforming_eic_codes_registered
+              arguments:
+                to: ref('stg_entsoe_eic__codes')
+                field: eic_code
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: nonconforming_eic_codes_known_dataset
+              arguments:
+                to: ref('source_datasets')
+                field: source_dataset
+      - name: nonconformity
+        description: "{{ doc('col_nonconformity') }}"
+      - name: explanation
+        description: "{{ doc('col_explanation') }}"
+
   - name: area_hierarchy
     description: |
       Curated containment links between areas where EIC publishes no parent.

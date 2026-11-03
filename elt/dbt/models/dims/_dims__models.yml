@@ -1,7 +1,7 @@
 models:
   - name: dim_eic_code
     description: |
-      Every EIC (all object types), one row per published version.
+      Every EIC (all object types), one row per published version, plus the codes publishers use that do not conform to the EIC scheme (seed `nonconforming_eic_codes`), each with the versions of the registered code it stands for.
 
       {{ doc('dataset_entsoe_eic__codes') }}
     data_tests:
@@ -34,6 +34,9 @@ models:
         description: "{{ doc('col_roles') }}"
       - name: has_valid_check_character
         description: "{{ doc('col_has_valid_check_character') }}"
+      - name: registered_eic_code
+        description: "{{ doc('col_registered_eic_code') }}"
+        data_tests: [not_null]
       - name: valid_from
         description: "{{ doc('col_valid_from') }}"
       - name: valid_to
@@ -42,8 +45,17 @@ models:
         description: "{{ doc('col_is_current') }}"
 
   - name: dim_area
-    description: |
+    description: >
       Areas at every granularity (EIC object type Y), one row per version, with flags for common roles.
+      Includes nonconforming area codes that publishers use (seed `nonconforming_eic_codes`), with the roles of
+      the registered area they stand for.
+    config:
+      meta:
+        context:
+          constraints:
+            - >-
+              Do not count areas on `area_eic_code`: a nonconforming code repeats its registered area. Count or
+              group on `registered_area_eic_code`.
     data_tests:
       - dlt_unique:
           name: dim_area_unique_version
@@ -52,6 +64,9 @@ models:
     columns:
       - name: area_eic_code
         description: "{{ doc('col_area_eic_code') }}"
+      - name: registered_area_eic_code
+        description: "{{ doc('col_registered_area_eic_code') }}"
+        data_tests: [not_null]
       - name: display_name
         description: "{{ doc('col_display_name') }}"
       - name: long_name

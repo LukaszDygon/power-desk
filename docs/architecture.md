@@ -69,6 +69,9 @@ dimensions; the dimension tables explain what each key means and how keys relate
   by a natural key (EIC code or canonical code) and versioned where its publisher revises it. Resources
   keep each publisher's scheme (ENTSO-E EIC, Elexon BM Unit Id), related only where a publisher lists
   the link ([ADR 0004](adr/0004-remit-events-and-resource-schemes.md)).
+- **Nonconforming codes:** a code a publisher uses as an EIC that no issuing office allocated is kept,
+  after review, in the `nonconforming_eic_codes` seed and added to the EIC dimensions as the registered
+  code it stands for (`registered_eic_code`) ([ADR 0005](adr/0005-nonconforming-eic-codes.md)).
 - **Bridges** relate keys across granularities (unit → plant, zone → member state, technology →
   group). Rolling a row up to any level is one join. They are graphs, not trees.
 - **Mappings** (`seeds/mappings`) translate each publisher's codes into dimension keys, at the most

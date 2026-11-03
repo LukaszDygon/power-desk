@@ -22,7 +22,8 @@ schema:
   physicalName: dim_eic_code
   physicalType: table
   logicalType: object
-  description: 'Every EIC (all object types), one row per published version.
+  description: 'Every EIC (all object types), one row per published version, plus the codes publishers use that do not conform
+    to the EIC scheme (seed `nonconforming_eic_codes`), each with the versions of the registered code it stands for.
 
 
     **EIC approved codes (central registry)**
@@ -173,6 +174,24 @@ schema:
     - url: https://www.entsoe.eu/Documents/EDI/Library/cim_based/EIC_Data_Exchange_IG_v1.2.pdf
       type: businessDefinition
       description: EIC data exchange implementation guide 1.2
+  - name: registered_eic_code
+    logicalType: string
+    physicalType: VARCHAR
+    description: 'The code in ENTSO-E''s central registry that the row''s code stands for: the code itself when registered;
+      for a code a publisher uses that does not conform to the EIC scheme, the registered code it is read as (seed `nonconforming_eic_codes`).'
+    required: true
+    authoritativeDefinitions:
+    - url: https://eepublicdownloads.entsoe.eu/clean-documents/EDI/Library/EIC_Reference_Manual_Release_5_5.pdf
+      type: businessDefinition
+      description: EIC Reference Manual 5.5
+    quality:
+    - name: not_null_dim_eic_code_registered_eic_code
+      description: not null
+      type: custom
+      engine: dbt
+      implementation: not_null_dim_eic_code_registered_eic_code
+      dimension: completeness
+      severity: error
   - name: valid_from
     logicalType: timestamp
     physicalType: TIMESTAMP

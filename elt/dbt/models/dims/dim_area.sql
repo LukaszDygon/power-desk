@@ -1,5 +1,6 @@
 select
     eic_code as area_eic_code,
+    registered_eic_code as registered_area_eic_code,
     display_name,
     long_name,
     country_code,
