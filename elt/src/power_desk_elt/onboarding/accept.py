@@ -140,6 +140,11 @@ def accept(source: str, start: date, end: date, label: str = "") -> dict[str, An
     with isolated(out, start) as records:
         if reference := [s for s in REFERENCE_SOURCES if s != source]:
             load_seed(db, sources=reference)
+        for required in SOURCES[source].requires:  # from the real publisher, like the source
+            run(
+                make_pipeline(required, db, schemas_dir=None),
+                make_source(required, SOURCES[required].window(start, end)),
+            )
         pipeline, window = make_pipeline(source, db, schemas_dir=None), SOURCES[source].window(start, end)
         _, ingest_s = timed(run, pipeline, make_source(source, window))
         tables = sorted(pipeline.default_schema.data_table_names())

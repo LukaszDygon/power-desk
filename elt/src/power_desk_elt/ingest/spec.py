@@ -40,13 +40,15 @@ class SourceSpec:
     """A dlt source and its run limits; `name` is the dlt source, schema and pipeline name.
 
     `window_padding_days` widens requested date ranges for publishers whose local dates
-    cross UTC day boundaries.
+    cross UTC day boundaries. `requires` names sources whose tables the source's models also read
+    (e.g. a site list), loaded first by an acceptance run.
     """
 
     name: str
     build: Callable[[RunWindow], DltSource]  # the source module's `@dlt.source` function
     max_days_per_run: int = 7
     window_padding_days: int = 0
+    requires: tuple[str, ...] = ()
 
     def window(
         self, start: date | str | None = None, end: date | str | None = None, max_days: int | None = None

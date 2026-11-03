@@ -1,0 +1,189 @@
+version: 2
+version_hash: ZAlXk9C/QiCi6szkZG/augQRRVI5Nq6KGFZ1UkUCAZI=
+engine_version: 11
+name: ecmwf
+tables:
+  _dlt_version:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_name:
+        data_type: text
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: false
+      schema:
+        data_type: text
+        nullable: false
+    write_disposition: skip
+    resource: _dlt_version
+    description: Created by DLT. Tracks schema updates
+  _dlt_loads:
+    columns:
+      load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      schema_name:
+        data_type: text
+        nullable: true
+      status:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_version_hash:
+        data_type: text
+        nullable: true
+    write_disposition: skip
+    resource: _dlt_loads
+    description: Created by DLT. Tracks completed loads
+  ecmwf__ifs_oper:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      data_date:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        incremental: true
+        data_type: bigint
+      data_time:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: bigint
+      step_range:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      step_type:
+        data_type: text
+        nullable: true
+      short_name:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: text
+      param_id:
+        data_type: bigint
+        nullable: true
+      units:
+        data_type: text
+        nullable: true
+      type_of_level:
+        data_type: text
+        nullable: true
+      level:
+        data_type: bigint
+        nullable: true
+      binary_scale_factor:
+        data_type: bigint
+        nullable: true
+      decimal_scale_factor:
+        data_type: bigint
+        nullable: true
+      latitude:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: double
+      longitude:
+        nullable: false
+        primary_key: true
+        merge_key: true
+        data_type: double
+      value:
+        data_type: double
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: ecmwf__ifs_oper
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+settings:
+  detections:
+  - iso_timestamp
+  default_hints:
+    not_null:
+    - _dlt_id
+    - _dlt_root_id
+    - _dlt_parent_id
+    - _dlt_list_idx
+    - _dlt_load_id
+    parent_key:
+    - _dlt_parent_id
+    root_key:
+    - _dlt_root_id
+    unique:
+    - _dlt_id
+    row_key:
+    - _dlt_id
+normalizers:
+  names: snake_case
+  json:
+    module: dlt.common.normalizers.json.relational
+previous_hashes:
+- k+WiggGFFTGiZaSv/ax43hTksys5ndK7LtHqSF9K4Jg=
+- fIjAMLlRrppS/AlUN5oo6XKJBVdByZ32oLO5XKNX8DU=

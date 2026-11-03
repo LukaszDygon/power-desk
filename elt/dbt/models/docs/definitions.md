@@ -103,6 +103,18 @@ The time intervals of a REMIT message over which its available capacity fluctuat
 A current list of BM units held by Elexon, with their registered identifiers, lead party, type, capacities, loss factor and credit assessment capabilities.
 {% enddocs %}
 
+{% docs dataset_desnz_repd__repd %}
+**Renewable Energy Planning Database (REPD)**
+
+"The Renewable Energy Planning Database ('REPD') ... track[s] the progress of renewable electricity projects (including those that could also be used for CHP), and electricity storage projects from inception, through planning, construction, operation and decommissioning." It covers "UK renewable electricity projects over 150kW"; "the minimum threshold for installed capacity was 1MW until 2021", so "projects below 1MW that were going through planning system before 2021 may not be represented". "The REPD is updated on a quarterly basis".
+{% enddocs %}
+
+{% docs dataset_ecmwf__ifs_oper %}
+**ECMWF IFS medium-range forecast (atmosphere), 0.25°**
+
+"A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the public free of charge", from "real-time forecast data on a rolling archive basis" of "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)". This table holds the IFS medium-range forecast (atmosphere, `stream=oper`, `type=fc`) at 0.25°, "produced from the same high-resolution (~9 km) forecast" as the 0.1° data, for the 00z and 12z runs: "0 to 144 by 3, 150 to 360 by 6" hours.
+{% enddocs %}
+
 {% docs dataset_entsoe__actual_total_load %}
 **Actual total load per bidding zone per market time unit**
 
@@ -455,6 +467,218 @@ EIC (object type W) of the BM Unit as Elexon lists it; absent for most units, an
 Interconnector the BM Unit belongs to, for Interconnector BM Units.
 {% enddocs %}
 
+{% docs col_repd_old_ref_id %}
+The old reference ID associated with a project in a previous version of the database.
+{% enddocs %}
+
+{% docs col_repd_ref_id %}
+Project reference ID number in REPD database; the natural key of a project.
+{% enddocs %}
+
+{% docs col_record_last_updated_dd_mm_yyyyx %}
+Date a project record was last updated or checked (dd/mm/yyyy, as published).
+{% enddocs %}
+
+{% docs col_operator_or_applicantx %}
+Name of operator or applicant.
+{% enddocs %}
+
+{% docs col_repd_site_name %}
+Name of development site.
+{% enddocs %}
+
+{% docs col_repd_technology_type %}
+Type of technology (e.g. solar photovoltaics, offshore wind etc.).
+{% enddocs %}
+
+{% docs col_storage_type %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_storage_co_location_repd_ref_id %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_installed_capacity_m_welecx %}
+Installed electrical capacity in megawatts (MW).
+{% enddocs %}
+
+{% docs col_share_community_scheme %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_chp_enabled %}
+Is the project capable of combined heat and power output.
+{% enddocs %}
+
+{% docs col_cf_d_allocation_round %}
+The round of CFD funding the agreement was made.
+{% enddocs %}
+
+{% docs col_ro_banding_roc_m_whx %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_fi_t_tariff_p_k_whx %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_cf_d_capacity_mwx %}
+The agreed Contracts for Difference investment capacity.
+{% enddocs %}
+
+{% docs col_turbine_capacity_mwx %}
+For windfarms, the individual capacity of each wind turbine in megawatts (MW).
+{% enddocs %}
+
+{% docs col_no_of_turbines %}
+For windfarms, the number of wind turbines to be located on the development site.
+{% enddocs %}
+
+{% docs col_height_of_turbines_mx %}
+For windfarms, the height of the wind turbines in metres (m).
+{% enddocs %}
+
+{% docs col_mounting_type_for_solar %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
+{% docs col_development_status %}
+Current status of the project, one of: No Application Required, Planning Application Submitted, Planning Application Withdrawn, Planning Permission Granted, Planning Permission Refused, Revised, Appeal Lodged, Appeal Withdrawn, Appeal Refused, Appeal Granted, Secretary of State - Called In, Secretary of State - Refusal, Secretary of State - Granted, Under Construction ("A project is under construction"), Operational ("A project is operational"), Decommissioned ("A project has been decommissioned and is no longer operating"), Abandoned ("Project has been abandoned by developer").
+{% enddocs %}
+
+{% docs col_development_status_shortx %}
+"This is a description of the current status of the development in a more succinct form. For example, where a facility has obtained planning permission either directly from the Local Planning Authority, through an appeal, or from the Secretary of State, it is classified here as 'Awaiting Construction'."
+{% enddocs %}
+
+{% docs col_are_they_re_applying_new_repd_refx %}
+Reference ID for the revised planning application for the same project.
+{% enddocs %}
+
+{% docs col_are_they_re_applying_old_repd_refx %}
+Reference ID for the previous planning application before project was revised.
+{% enddocs %}
+
+{% docs col_repd_address %}
+Site address of the development.
+{% enddocs %}
+
+{% docs col_repd_county %}
+Published in the REPD extract without a definition (the Definition Sheet lists a "District" heading, "District the development site is located within", which the CSV does not carry).
+{% enddocs %}
+
+{% docs col_repd_region %}
+Region the development site is located within.
+{% enddocs %}
+
+{% docs col_repd_country %}
+Country the development site is located within.
+{% enddocs %}
+
+{% docs col_repd_post_code %}
+Post code of the development site.
+{% enddocs %}
+
+{% docs col_repd_x_coordinate %}
+X & Y coordinates for development site in British National Grid (the easting, metres).
+{% enddocs %}
+
+{% docs col_repd_y_coordinate %}
+X & Y coordinates for development site in British National Grid (the northing, metres).
+{% enddocs %}
+
+{% docs col_planning_authority %}
+The relevant local planning authority for the project.
+{% enddocs %}
+
+{% docs col_planning_application_reference %}
+The reference number associated with the planning application.
+{% enddocs %}
+
+{% docs col_appeal_reference %}
+The reference number associated with an appeal.
+{% enddocs %}
+
+{% docs col_secretary_of_state_reference %}
+The reference number associated with a Secretary of State Intervention.
+{% enddocs %}
+
+{% docs col_type_of_secretary_of_state_intervention %}
+The type of Secretary of State of Intervention. This can be one of three types: recovery, call-in, or holding direction.
+{% enddocs %}
+
+{% docs col_judicial_review %}
+The latest date of when a legal challenge has been launched to review the lawfulness of a planning application and/or appeal decision.
+{% enddocs %}
+
+{% docs col_offshore_wind_round %}
+Leasing round in which an offshore wind project was established.
+{% enddocs %}
+
+{% docs col_planning_application_submitted %}
+Date planning application was validated.
+{% enddocs %}
+
+{% docs col_planning_application_withdrawn %}
+Date planning application was withdrawn.
+{% enddocs %}
+
+{% docs col_planning_permission_refused %}
+Date planning permission was refused.
+{% enddocs %}
+
+{% docs col_appeal_lodged %}
+Date an appeal was lodged.
+{% enddocs %}
+
+{% docs col_appeal_withdrawn %}
+Date an appeal was withdrawn.
+{% enddocs %}
+
+{% docs col_appeal_refused %}
+Date an appeal was refused (dismissed).
+{% enddocs %}
+
+{% docs col_appeal_granted %}
+Date an appeal was granted (upheld).
+{% enddocs %}
+
+{% docs col_planning_permission_granted %}
+Date planning permission was granted by the planning authority.
+{% enddocs %}
+
+{% docs col_secretary_of_state_intervened %}
+Date of a project that is 'Called In' by the Secretary of State.
+{% enddocs %}
+
+{% docs col_secretary_of_state_refusal %}
+Date planning permission was refused by the Secretary of State.
+{% enddocs %}
+
+{% docs col_secretary_of_state_granted %}
+Date planning permission was granted by the Secretary of State.
+{% enddocs %}
+
+{% docs col_planning_permission_expired %}
+Date a planning permission expires (as per the planning decision).
+{% enddocs %}
+
+{% docs col_repd_under_construction %}
+Date construction on site has begun.
+{% enddocs %}
+
+{% docs col_repd_operational %}
+Date a project become operational.
+{% enddocs %}
+
+{% docs col_heat_network_ref %}
+Reference ID for same project in HNPD (the Heat Network Planning Database).
+{% enddocs %}
+
+{% docs col_solar_site_area_sqmx %}
+Published in the REPD extract without a definition (no entry on the Definition Sheet).
+{% enddocs %}
+
 {% docs col_valid_from %}
 Start of the version's validity (UTC); join facts as-of their timestamp.
 {% enddocs %}
@@ -465,6 +689,22 @@ End of the version's validity (UTC); null while current.
 
 {% docs col_is_current %}
 The version is in the latest publication.
+{% enddocs %}
+
+{% docs col_site_code %}
+REPD `Ref ID` of the site: "Project reference ID number in REPD database".
+{% enddocs %}
+
+{% docs col_site_latitude %}
+Latitude (degrees, WGS84) of the development site, converted from its REPD X & Y coordinates "in British National Grid".
+{% enddocs %}
+
+{% docs col_site_longitude %}
+Longitude (degrees, WGS84) of the development site, converted from its REPD X & Y coordinates "in British National Grid".
+{% enddocs %}
+
+{% docs col_is_selected %}
+The site's current REPD version is selected for weather (operational wind or solar, at least the minimum capacity); false once it no longer is, e.g. "Decommissioned".
 {% enddocs %}
 
 {% docs col_area_eic_code %}
@@ -677,6 +917,78 @@ How `hourly_series` aggregates the measure into an hour: `mean`, the time-weight
 
 {% docs col_description %}
 Description of the row's subject.
+{% enddocs %}
+
+{% docs col_data_date %}
+Reference date (YYYYMMDD) of the forecast run; the ingest cursor.
+{% enddocs %}
+
+{% docs col_data_time %}
+Reference time (HHMM, UTC) of the forecast run.
+{% enddocs %}
+
+{% docs col_step_range %}
+startStep-endStep, in hours from the reference time: the forecast step of an instantaneous field (`24`), the forecast interval of an accumulated one (`0-24`).
+{% enddocs %}
+
+{% docs col_step_type %}
+How the field relates to its step, e.g. `instant` or `accum` (accumulated over the step range).
+{% enddocs %}
+
+{% docs col_short_name %}
+Parameter short name ("Not unique. Different parameters can have the same short name."): use `param_id` to identify the parameter.
+{% enddocs %}
+
+{% docs col_param_id %}
+"Unique identifier of the parameter. A parameter in different formats (grib1/grib2) is identified by the same ID." Loaded: 167 2 metre temperature, 165 / 166 10 metre U / V wind component, 228246 / 228247 100 metre U / V wind component, 169 surface short-wave (solar) radiation downwards, 164 total cloud cover, 228 total precipitation.
+{% enddocs %}
+
+{% docs col_grib_units %}
+Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `(0 - 1)`).
+{% enddocs %}
+
+{% docs col_type_of_level %}
+Type of level, e.g. `surface`, `heightAboveGround`, `entireAtmosphere`.
+{% enddocs %}
+
+{% docs col_grib_level %}
+Level of the field within its type of level (e.g. `2`, `10`, `100` metres above ground).
+{% enddocs %}
+
+{% docs col_grid_latitude %}
+Latitude (degrees) of the grid point, the nearest grid point to a REPD site as ecCodes finds it (`codes_grib_find_nearest`).
+{% enddocs %}
+
+{% docs col_grid_longitude %}
+Longitude (degrees, -180 to 180) of the grid point, the nearest grid point to a REPD site as ecCodes finds it (`codes_grib_find_nearest`).
+{% enddocs %}
+
+{% docs col_field_value %}
+Data value of the field at the grid point, in `grib_units`.
+{% enddocs %}
+
+{% docs col_binary_scale_factor %}
+"Binary scale factor (E)" of the field's packing. With the decimal scale factor (D), a packed value is a whole number of steps of 2^E x 10^-D (WMO FM 92 GRIB: Y x 10^D = R + X x 2^E).
+{% enddocs %}
+
+{% docs col_decimal_scale_factor %}
+"Decimal scale factor (D)" of the field's packing; see `binary_scale_factor`.
+{% enddocs %}
+
+{% docs col_packing_uncertainty %}
+How far `interval_value` can be from the model's value because of GRIB packing, in `grib_units`: half the field's packing step (2^E x 10^-D) for an instantaneous field, the larger of the two fields' steps for an accumulation's difference.
+{% enddocs %}
+
+{% docs col_forecast_run_time_utc %}
+Reference date and time of the forecast run (`dataDate`, `dataTime`), UTC: the run's publish time. ECMWF runs "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)".
+{% enddocs %}
+
+{% docs col_step_hours %}
+The field's published step: "End of the forecast interval or value of the forecast step" (`endStep`), in hours from the run's reference time.
+{% enddocs %}
+
+{% docs col_interval_value %}
+The field over the forecast interval, in `grib_units`: an instantaneous field (`step_type` instant) at the start of the interval (its step); an accumulated one ("accumulated over a particular time period", here from the run's start) as the difference between the interval's end and start steps.
 {% enddocs %}
 
 {% docs col_date_time_utc %}
@@ -1097,6 +1409,46 @@ Capacity for flows from the out area to the in area over the interval, in MW. EN
 
 {% docs col_restriction_reason %}
 NESO's reason for the restriction in this direction (e.g. `Network Constraints`, `No Restriction`); null for ENTSO-E.
+{% enddocs %}
+
+{% docs col_temperature_2m_c %}
+2 metre temperature at the start of the interval, in °C: "the temperature of air at 2m above the surface of land, sea or in-land waters"; "Temperature measured in kelvin can be converted to degrees Celsius (°C) by subtracting 273.15."
+{% enddocs %}
+
+{% docs col_wind_u_10m_ms %}
+10 metre U wind component at the start of the interval, inm/s: "the eastward component of the 10m wind ... the horizontal speed of air moving towards the east, at a height of ten metres above the surface of the Earth".
+{% enddocs %}
+
+{% docs col_wind_v_10m_ms %}
+10 metre V wind component at the start of the interval, inm/s: "the northward component of the 10m wind ... the horizontal speed of air moving towards the north, at a height of ten metres above the surface of the Earth".
+{% enddocs %}
+
+{% docs col_wind_speed_10m_ms %}
+Speed of the horizontal 10 m wind at the start of the interval, inm/s: the U and V components combined (sqrt(u² + v²)); "This parameter can be combined with the V component of 10m wind to give the speed and direction of the horizontal 10m wind."
+{% enddocs %}
+
+{% docs col_wind_u_100m_ms %}
+100 metre U wind component at the start of the interval, inm/s: "the eastward component of the 100 m wind ... the horizontal speed of air moving towards the east, at a height of 100 metres above the surface of the Earth".
+{% enddocs %}
+
+{% docs col_wind_v_100m_ms %}
+100 metre V wind component at the start of the interval, inm/s: "the northward component of the 100 m wind ... the horizontal speed of air moving towards the north, at a height of 100 metres above the surface of the Earth".
+{% enddocs %}
+
+{% docs col_wind_speed_100m_ms %}
+Speed of the horizontal 100 m wind at the start of the interval, inm/s: the U and V components combined (sqrt(u² + v²)); "This parameter can be combined with the northward component to give the speed and direction of the horizontal 100 m wind."
+{% enddocs %}
+
+{% docs col_solar_radiation_wm2 %}
+Surface short-wave (solar) radiation downwards, mean over the interval in W/m²: "the amount of solar radiation ... that reaches a horizontal plane at the surface of the Earth", "both direct and diffuse"; "To convert to watts per square metre (W m-2), the accumulated values should be divided by the accumulation period expressed in seconds."
+{% enddocs %}
+
+{% docs col_cloud_cover_fraction %}
+Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by cloud"; "Cloud fractions vary from 0 to 1."
+{% enddocs %}
+
+{% docs col_precipitation_mm %}
+Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and frozen water, comprising rain and snow, that falls to the Earth's surface", in "depth in metres of water equivalent" (x 1000 for mm).
 {% enddocs %}
 
 {% docs col_coverage %}

@@ -409,3 +409,58 @@ models:
               arguments:
                 to: ref('dim_area')
                 field: area_eic_code
+
+  - name: dim_site
+    description: |
+      Sites with weather forecasts: the REPD's operational wind and solar projects of at least 50 MW
+      (the selection the `ecmwf` source extracts grid points for), one row per project.
+
+      {{ doc('dataset_desnz_repd__repd') }}
+    data_tests:
+      - dlt_unique:
+          name: dim_site_unique
+          arguments:
+            columns: [site_code]
+      - expression_is_true:
+          name: dim_site_in_the_uk
+          arguments:
+            # the UK and its offshore wind areas (e.g. Dogger Bank, ~2°E)
+            expression: "latitude between 49 and 62 and longitude between -11 and 4"
+    columns:
+      - name: site_code
+        description: "{{ doc('col_site_code') }}"
+        data_tests: [not_null]
+      - name: site_name
+        description: "{{ doc('col_repd_site_name') }}"
+      - name: operator_name
+        description: "{{ doc('col_operator_or_applicantx') }}"
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: dim_site_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: installed_capacity_mw
+        description: "{{ doc('col_installed_capacity_m_welecx') }}"
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: dim_site_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: latitude
+        description: "{{ doc('col_site_latitude') }}"
+        data_tests: [not_null]
+      - name: longitude
+        description: "{{ doc('col_site_longitude') }}"
+        data_tests: [not_null]
+      - name: operational_date
+        description: "{{ doc('col_repd_operational') }}"
+      - name: is_selected
+        description: "{{ doc('col_is_selected') }}"

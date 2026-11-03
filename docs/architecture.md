@@ -108,6 +108,10 @@ dimensions; the dimension tables explain what each key means and how keys relate
   publication time (`UpdateTime`), since revisions and re-forecasts are new data. Where an export lists
   several documents per natural key (energy prices, `InstanceCode`), the document id joins the
   `primary_key` but not the `merge_key`, so a revision closes them all; staging keeps the latest update.
+- **Forecast runs** (ECMWF) are streams of gridded files (GRIB2), one per run and forecast step: the
+  cursor is the run date, a run is read once its last step is published, and only the fields and grid
+  points named in the source are kept, one row per field and point with its GRIB keys as published
+  ([ADR 0004](adr/0004-gridded-forecasts-at-named-points.md)). They load as scd2 merged on the natural key.
 
 ### Write dispositions
 
@@ -122,6 +126,7 @@ why we keep dlt's defaults and when to revisit: [ADR 0001](adr/0001-keep-dlt-def
 | File partitions (ENTSO-E) | `merge` + `scd2`, `merge_key` = `primary_key` | hash of the row (version) | every version kept; only keys in the load are closed |
 | Revised streams (NESO) | `merge` + `scd2`, `merge_key` = natural key | hash of the row (version) | every submission kept; only keys in the load are closed |
 | Event messages (REMIT) | `merge` + `scd2`, `merge_key` = `primary_key` = message id | hash of the row (version) | every message kept; a revision is a new message |
+| Forecast runs (ECMWF) | `merge` + `scd2`, `merge_key` = `primary_key` = natural key | hash of the row (version) | a run loaded again changes nothing; only keys in the load are closed |
 
 - **Rows, not Arrow:** dlt computes the scd2 row hash only for row items (dicts); for Arrow tables it
   adds none and scd2 cannot run. ENTSO-E exports are streamed to disk, read by DuckDB (which infers

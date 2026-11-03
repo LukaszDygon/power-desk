@@ -130,6 +130,88 @@ models:
       - name: _last_dlt_load_id
         description: "{{ doc('col__last_dlt_load_id') }}"
 
+  - name: mart_weather_forecast
+    description: |
+      Weather forecasts per site and hour, the latest run covering each hour. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `site_code`, `technology_code`, `source_dataset`, `source_code`).
+    config:
+      meta:
+        context:
+          constraints:
+            - A row is the latest forecast run (`publish_time_utc`) covering the hour; for a forecast as it stood at an earlier time, query `ods_weather_forecast` by `publish_time_utc`.
+            - Values are at the site's nearest 0.25° grid point, a grid-box value, not a measurement at the site; sites can share a grid point.
+            - Instantaneous measures (temperature, wind, cloud cover) are forecast every 3 or 6 hours and held until the next step; within those hours they are the step's value, not an hourly forecast.
+            - Solar radiation and precipitation carry ECMWF's packing precision, which follows each field's range (on the acceptance run up to about 24 W/m² and 0.25 mm per forecast interval), and can be slightly negative; floor at zero before summing.
+            - Do not mix `source_dataset`s (forecast models) of the same site and hour; pick one.
+    data_tests:
+      - dlt_unique:
+          name: mart_weather_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, _series_key]
+      - expression_is_true:
+          name: mart_weather_forecast_coverage_in_range
+          arguments:
+            expression: "coverage > 0 and coverage <= 1"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_weather_forecast_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: site_code
+        description: "{{ doc('col_site_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_weather_forecast_known_site
+              arguments:
+                to: ref('dim_site')
+                field: site_code
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: mart_weather_forecast_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: temperature_2m_c
+        description: "{{ doc('col_temperature_2m_c') }}"
+      - name: wind_u_10m_ms
+        description: "{{ doc('col_wind_u_10m_ms') }}"
+      - name: wind_v_10m_ms
+        description: "{{ doc('col_wind_v_10m_ms') }}"
+      - name: wind_speed_10m_ms
+        description: "{{ doc('col_wind_speed_10m_ms') }}"
+      - name: wind_u_100m_ms
+        description: "{{ doc('col_wind_u_100m_ms') }}"
+      - name: wind_v_100m_ms
+        description: "{{ doc('col_wind_v_100m_ms') }}"
+      - name: wind_speed_100m_ms
+        description: "{{ doc('col_wind_speed_100m_ms') }}"
+      - name: solar_radiation_wm2
+        description: "{{ doc('col_solar_radiation_wm2') }}"
+      - name: cloud_cover_fraction
+        description: "{{ doc('col_cloud_cover_fraction') }}"
+      - name: precipitation_mm
+        description: "{{ doc('col_precipitation_mm') }}"
+      - name: coverage
+        description: "{{ doc('col_coverage') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_publish_time_utc') }}"
+      - name: _series_key
+        description: "{{ doc('col__series_key') }}"
+      - name: _last_dlt_load_id
+        description: "{{ doc('col__last_dlt_load_id') }}"
+
   - name: mart_demand_actual
     description: |
       Actual demand per area and hour, for every source and area. Grain: `timestamp_utc` (hour start) and the series (`area_eic_code`, `source_dataset`).

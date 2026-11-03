@@ -1,0 +1,5 @@
+source_dataset,source_code,area_eic_code,notes
+REPD,England,10YGB----------A,GB bidding zone / control area
+REPD,Scotland,10YGB----------A,GB bidding zone / control area
+REPD,Wales,10YGB----------A,GB bidding zone / control area
+REPD,Northern Ireland,10Y1001A1001A016,Northern Ireland control area (all-island SEM bidding zone)

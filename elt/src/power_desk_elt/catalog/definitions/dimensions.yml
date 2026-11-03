@@ -7,6 +7,26 @@ columns:
     description: End of the version's validity (UTC); null while current.
   is_current:
     description: The version is in the latest publication.
+  # --- site (REPD project) ------------------------------------------------------------------
+  site_code:
+    description: >-
+      REPD `Ref ID` of the site: "Project reference ID number in REPD database".
+    links: [{link: repd_definitions, section: "General 'REPD' Facility Details: Ref. ID"}]
+  site_latitude:
+    description: >-
+      Latitude (degrees, WGS84) of the development site, converted from its REPD X & Y coordinates
+      "in British National Grid".
+    links: [{link: repd_definitions, section: "Location Details: X-coordinate"}]
+  site_longitude:
+    description: >-
+      Longitude (degrees, WGS84) of the development site, converted from its REPD X & Y coordinates
+      "in British National Grid".
+    links: [{link: repd_definitions, section: "Location Details: X-coordinate"}]
+  is_selected:
+    description: >-
+      The site's current REPD version is selected for weather (operational wind or solar, at least the
+      minimum capacity); false once it no longer is, e.g. "Decommissioned".
+    links: [{link: repd_definitions, section: "Current Status: Development Status"}]
   # --- area ---------------------------------------------------------------------------------
   area_eic_code:
     description: >-

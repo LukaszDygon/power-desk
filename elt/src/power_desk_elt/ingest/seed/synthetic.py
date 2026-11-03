@@ -6,16 +6,23 @@ capacity restrictions per interconnector, the day-ahead submission and an evenin
 REMIT messages for the units of the recorded BM unit list (`elt/seed/bmrs/bmunits.json`), covering a
 revision that shortens an event, an outage profile, a message listing two units, a dismissed event, a
 republished revision, an open-ended event, an unlisted asset and other market information.
+ECMWF open-data step files (`ecmwf_step_file`): GRIB2 fields on a 0.25° grid over Great Britain and
+Ireland, with their JSON-lines index, accumulated fields growing from the run's start.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
+from functools import cache
+import json
 import math
 import random
 from typing import Any
 from zoneinfo import ZoneInfo
+
+import eccodes
+import numpy as np
 
 LONDON = ZoneInfo("Europe/London")
 Records = dict[str, list[dict[str, Any]]]
@@ -301,3 +308,104 @@ def generate(start_date: str, num_days: int) -> Records:
             records[resource] += rows
     records["REMIT"] = remit_records(start_date)
     return dict(records)
+
+
+# --- ECMWF open data ---------------------------------------------------------------------------------
+
+GRID = {"north": 61.0, "south": 49.0, "west": -11.0, "east": 3.0, "step": 0.25}
+ECMWF_FIELDS = {  # shortName -> accumulated
+    "100u": False,
+    "100v": False,
+    "10u": False,
+    "10v": False,
+    "2t": False,
+    "tcc": False,
+    "ssrd": True,
+    "tp": True,
+}
+
+
+def _grid() -> tuple[np.ndarray, np.ndarray]:
+    step = GRID["step"]
+    lats = np.arange(GRID["north"], GRID["south"] - step / 2, -step)
+    lons = np.arange(GRID["west"], GRID["east"] + step / 2, step)
+    lat, lon = np.meshgrid(lats, lons, indexing="ij")
+    return lat, lon
+
+
+def _field_values(short_name: str, run: datetime, step: int) -> np.ndarray:
+    """Smooth, deterministic values over the grid; accumulations are totals since the run started."""
+    lat, lon = _grid()
+    valid = run + timedelta(hours=step)
+    phase = valid.timestamp() / 3600.0 / 24.0 * 2 * math.pi
+    if short_name == "2t":
+        return 278.0 + 4.0 * np.sin(phase) - 0.3 * (lat - 55.0)
+    if short_name in ("100u", "10u"):
+        return (1.3 if short_name == "100u" else 1.0) * (6.0 + 3.0 * np.cos(phase + lon / 10.0))
+    if short_name in ("100v", "10v"):
+        return (1.3 if short_name == "100v" else 1.0) * (2.0 * np.sin(phase + lat / 10.0))
+    if short_name == "tcc":
+        return 0.5 + 0.4 * np.sin(phase + (lat + lon) / 5.0)
+    if short_name == "ssrd":  # J m-2: up to 500 W m-2 around noon UTC, none at night
+        hours = (run + timedelta(hours=h) for h in range(step))
+        daylight = sum(max(0.0, math.sin((h.hour - 6) / 12.0 * math.pi)) for h in hours)
+        return daylight * 500.0 * 3600.0 * (1.0 - (lat - 49.0) / 40.0)
+    return 0.0002 * step * (1.0 + (lon + 11.0) / 14.0)  # tp, m
+
+
+def _grib_message(short_name: str, accumulated: bool, run: datetime, step: int) -> bytes:
+    handle = eccodes.codes_grib_new_from_samples("GRIB2")
+    try:
+        lat, _ = _grid()
+        for key, value in (
+            ("gridType", "regular_ll"),
+            ("Ni", lat.shape[1]),
+            ("Nj", lat.shape[0]),
+            ("latitudeOfFirstGridPointInDegrees", GRID["north"]),
+            ("longitudeOfFirstGridPointInDegrees", GRID["west"]),
+            ("latitudeOfLastGridPointInDegrees", GRID["south"]),
+            ("longitudeOfLastGridPointInDegrees", GRID["east"]),
+            ("iDirectionIncrementInDegrees", GRID["step"]),
+            ("jDirectionIncrementInDegrees", GRID["step"]),
+            ("dataDate", int(f"{run:%Y%m%d}")),
+            ("dataTime", run.hour * 100),
+        ):
+            eccodes.codes_set(handle, key, value)
+        if accumulated:
+            eccodes.codes_set(handle, "productDefinitionTemplateNumber", 8)
+        eccodes.codes_set(handle, "shortName", short_name)
+        if accumulated:
+            eccodes.codes_set(handle, "stepType", "accum")
+            eccodes.codes_set(handle, "stepRange", f"0-{step}" if step else "0")
+        else:
+            eccodes.codes_set(handle, "stepRange", str(step))
+        eccodes.codes_set_values(handle, np.ravel(_field_values(short_name, run, step)))
+        return eccodes.codes_get_message(handle)
+    finally:
+        eccodes.codes_release(handle)
+
+
+@cache
+def ecmwf_step_file(stream: str, run: datetime, step: int) -> tuple[str, bytes]:
+    """A step file's JSON-lines index and GRIB2 content, as the open-data portal lays them out."""
+    content, index = b"", []
+    for short_name, accumulated in ECMWF_FIELDS.items():
+        message = _grib_message(short_name, accumulated, run, step)
+        index.append(
+            {
+                "domain": "g",
+                "date": f"{run:%Y%m%d}",
+                "time": f"{run:%H}00",
+                "expver": "0001",
+                "class": "od",
+                "type": "fc",
+                "stream": stream,
+                "step": str(step),
+                "levtype": "sfc",
+                "param": short_name,
+                "_offset": len(content),
+                "_length": len(message),
+            }
+        )
+        content += message
+    return "".join(json.dumps(entry) + "\n" for entry in index), content

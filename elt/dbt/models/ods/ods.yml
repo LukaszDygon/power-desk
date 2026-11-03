@@ -2,6 +2,111 @@
 # (overlaps are resolved by the hourly marts, most recently published first). Columns: keys (time,
 # interval, area, technology, horizon), measures, provenance; GB settlement columns are null elsewhere.
 models:
+  - name: ods_weather_forecast
+    description: |
+      Weather forecasts per site, run and forecast interval: ECMWF IFS (00z and 12z runs) at the nearest
+      0.25° grid point of each REPD operational wind and solar site of at least 50 MW. An interval runs
+      from one published step to the next (3 hours to 144 hours ahead, 6 hours after); accumulated fields
+      (solar radiation, precipitation) cover the interval, the instantaneous ones are its start.
+
+      {{ doc('dataset_ecmwf__ifs_oper') }}
+    config:
+      meta:
+        context:
+          constraints:
+            - Every run is kept (`publish_time_utc`); one run per query, or the hourly mart for the latest.
+            - Instantaneous measures (temperature, wind, cloud cover) are the value at the start of the interval (`timestamp_utc`), not a mean over it; solar radiation is the mean and precipitation the total over the interval.
+            - Solar radiation and precipitation are differences of accumulations ECMWF packs to a precision that follows each field's range (from 20 Oct 2026), so each is uncertain by one packing step (on the acceptance run up to about 24 W/m² and 0.25 mm, larger for larger fields; `stg_ecmwf__*.packing_uncertainty`) and can be slightly negative; do not read a value within that step as a signal, and floor at zero before summing.
+    data_tests:
+      - dlt_unique:
+          name: ods_weather_forecast_unique_key
+          arguments:
+            columns: [timestamp_utc, site_code, publish_time_utc, source_dataset]
+      - expression_is_true:
+          name: ods_weather_forecast_ranges
+          arguments:
+            expression: >-
+              temperature_2m_c between -60 and 60 and wind_speed_10m_ms between 0 and 100
+              and wind_speed_100m_ms between 0 and 120 and cloud_cover_fraction between 0 and 1
+      - expression_is_true:
+          name: ods_weather_forecast_interval_after_the_run
+          arguments:
+            expression: "timestamp_utc >= publish_time_utc"
+    columns:
+      - name: timestamp_utc
+        description: "{{ doc('col_timestamp_utc') }}"
+        data_tests: [not_null]
+      - name: interval_minutes
+        description: "{{ doc('col_interval_minutes') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [180, 360]
+      - name: area_eic_code
+        description: "{{ doc('col_area_eic_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_weather_forecast_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
+      - name: site_code
+        description: "{{ doc('col_site_code') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              name: ods_weather_forecast_known_site
+              arguments:
+                to: ref('dim_site')
+                field: site_code
+      - name: technology_code
+        description: "{{ doc('col_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: ods_weather_forecast_known_technology
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
+      - name: temperature_2m_c
+        description: "{{ doc('col_temperature_2m_c') }}"
+        data_tests: [not_null]
+      - name: wind_u_10m_ms
+        description: "{{ doc('col_wind_u_10m_ms') }}"
+      - name: wind_v_10m_ms
+        description: "{{ doc('col_wind_v_10m_ms') }}"
+      - name: wind_speed_10m_ms
+        description: "{{ doc('col_wind_speed_10m_ms') }}"
+      - name: wind_u_100m_ms
+        description: "{{ doc('col_wind_u_100m_ms') }}"
+      - name: wind_v_100m_ms
+        description: "{{ doc('col_wind_v_100m_ms') }}"
+      - name: wind_speed_100m_ms
+        description: "{{ doc('col_wind_speed_100m_ms') }}"
+        data_tests: [not_null]
+      - name: solar_radiation_wm2
+        description: "{{ doc('col_solar_radiation_wm2') }}"
+        data_tests: [not_null]
+      - name: cloud_cover_fraction
+        description: "{{ doc('col_cloud_cover_fraction') }}"
+      - name: precipitation_mm
+        description: "{{ doc('col_precipitation_mm') }}"
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: ods_weather_forecast_known_dataset
+              arguments:
+                to: ref('dim_source_dataset')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: publish_time_utc
+        description: "{{ doc('col_forecast_run_time_utc') }}"
+        data_tests: [not_null]
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"
+
   - name: ods_generation_actual
     description: |
       Actual generation per area, technology and interval, across sources: GB at 5-minute grain

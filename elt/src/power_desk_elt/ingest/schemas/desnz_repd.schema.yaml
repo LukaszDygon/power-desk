@@ -1,0 +1,294 @@
+version: 2
+version_hash: cg0h/Fvv+MFWUhj8cv+JGQFSMeO/2m7idE5TVDpcvwk=
+engine_version: 11
+name: desnz_repd
+tables:
+  _dlt_version:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_name:
+        data_type: text
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: false
+      schema:
+        data_type: text
+        nullable: false
+    write_disposition: skip
+    resource: _dlt_version
+    description: Created by DLT. Tracks schema updates
+  _dlt_loads:
+    columns:
+      load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      schema_name:
+        data_type: text
+        nullable: true
+      status:
+        data_type: bigint
+        nullable: false
+      inserted_at:
+        data_type: timestamp
+        nullable: false
+      schema_version_hash:
+        data_type: text
+        nullable: true
+    write_disposition: skip
+    resource: _dlt_loads
+    description: Created by DLT. Tracks completed loads
+  desnz_repd__repd:
+    columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
+      old_ref_id:
+        data_type: text
+        nullable: true
+      ref_id:
+        nullable: false
+        primary_key: true
+        data_type: text
+      record_last_updated_dd_mm_yyyyx:
+        data_type: text
+        nullable: true
+      operator_or_applicantx:
+        data_type: text
+        nullable: true
+      site_name:
+        data_type: text
+        nullable: true
+      technology_type:
+        data_type: text
+        nullable: true
+      storage_type:
+        data_type: text
+        nullable: true
+      storage_co_location_repd_ref_id:
+        data_type: text
+        nullable: true
+      installed_capacity_m_welecx:
+        data_type: text
+        nullable: true
+      share_community_scheme:
+        data_type: text
+        nullable: true
+      chp_enabled:
+        data_type: text
+        nullable: true
+      cf_d_allocation_round:
+        data_type: text
+        nullable: true
+      ro_banding_roc_m_whx:
+        data_type: text
+        nullable: true
+      fi_t_tariff_p_k_whx:
+        data_type: text
+        nullable: true
+      cf_d_capacity_mwx:
+        data_type: text
+        nullable: true
+      turbine_capacity_mwx:
+        data_type: text
+        nullable: true
+      no_of_turbines:
+        data_type: text
+        nullable: true
+      height_of_turbines_mx:
+        data_type: text
+        nullable: true
+      mounting_type_for_solar:
+        data_type: text
+        nullable: true
+      development_status:
+        data_type: text
+        nullable: true
+      development_status_shortx:
+        data_type: text
+        nullable: true
+      are_they_re_applying_new_repd_refx:
+        data_type: text
+        nullable: true
+      are_they_re_applying_old_repd_refx:
+        data_type: text
+        nullable: true
+      address:
+        data_type: text
+        nullable: true
+      county:
+        data_type: text
+        nullable: true
+      region:
+        data_type: text
+        nullable: true
+      country:
+        data_type: text
+        nullable: true
+      post_code:
+        data_type: text
+        nullable: true
+      x_coordinate:
+        data_type: text
+        nullable: true
+      y_coordinate:
+        data_type: text
+        nullable: true
+      planning_authority:
+        data_type: text
+        nullable: true
+      planning_application_reference:
+        data_type: text
+        nullable: true
+      appeal_reference:
+        data_type: text
+        nullable: true
+      secretary_of_state_reference:
+        data_type: text
+        nullable: true
+      type_of_secretary_of_state_intervention:
+        data_type: text
+        nullable: true
+      judicial_review:
+        data_type: text
+        nullable: true
+      offshore_wind_round:
+        data_type: text
+        nullable: true
+      planning_application_submitted:
+        data_type: text
+        nullable: true
+      planning_application_withdrawn:
+        data_type: text
+        nullable: true
+      planning_permission_refused:
+        data_type: text
+        nullable: true
+      appeal_lodged:
+        data_type: text
+        nullable: true
+      appeal_withdrawn:
+        data_type: text
+        nullable: true
+      appeal_refused:
+        data_type: text
+        nullable: true
+      appeal_granted:
+        data_type: text
+        nullable: true
+      planning_permission_granted:
+        data_type: text
+        nullable: true
+      secretary_of_state_intervened:
+        data_type: text
+        nullable: true
+      secretary_of_state_refusal:
+        data_type: text
+        nullable: true
+      secretary_of_state_granted:
+        data_type: text
+        nullable: true
+      planning_permission_expired:
+        data_type: text
+        nullable: true
+      under_construction:
+        data_type: text
+        nullable: true
+      operational:
+        data_type: text
+        nullable: true
+      heat_network_ref:
+        data_type: text
+        nullable: true
+      solar_site_area_sqmx:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+      _dlt_id:
+        nullable: false
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
+    file_format: parquet
+    x-merge-strategy: scd2
+    write_disposition: merge
+    resource: desnz_repd__repd
+    x-normalizer:
+      seen-data: true
+  _dlt_pipeline_state:
+    columns:
+      version:
+        data_type: bigint
+        nullable: false
+      engine_version:
+        data_type: bigint
+        nullable: false
+      pipeline_name:
+        data_type: text
+        nullable: false
+      state:
+        data_type: text
+        nullable: false
+      created_at:
+        data_type: timestamp
+        nullable: false
+      version_hash:
+        data_type: text
+        nullable: true
+      _dlt_load_id:
+        data_type: text
+        nullable: false
+        precision: 64
+      _dlt_id:
+        data_type: text
+        nullable: false
+        unique: true
+        row_key: true
+    write_disposition: append
+    file_format: preferred
+    resource: _dlt_pipeline_state
+    x-normalizer:
+      seen-data: true
+settings:
+  detections:
+  - iso_timestamp
+  default_hints:
+    not_null:
+    - _dlt_id
+    - _dlt_root_id
+    - _dlt_parent_id
+    - _dlt_list_idx
+    - _dlt_load_id
+    parent_key:
+    - _dlt_parent_id
+    root_key:
+    - _dlt_root_id
+    unique:
+    - _dlt_id
+    row_key:
+    - _dlt_id
+normalizers:
+  names: snake_case
+  json:
+    module: dlt.common.normalizers.json.relational
+previous_hashes:
+- QVfR1hihKSTntYwu3Ml1W3uYVr3p/uxHRT3EnR9RrAs=
+- CrFeCau/qYIVP7/ngU0byHasSA8OTHc6wq8X1ccEM7U=

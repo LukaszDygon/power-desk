@@ -1,0 +1,50 @@
+# The REPD snapshot typed, one row per project and published version (scd2).
+models:
+  - name: stg_desnz_repd__repd
+    description: |
+      REPD projects typed, one row per project (`Ref ID`) and published version.
+
+      {{ doc('dataset_desnz_repd__repd') }}
+    data_tests:
+      - dlt_unique:
+          name: stg_desnz_repd__repd_unique_version
+          arguments:
+            columns: [site_code, valid_from]
+      - expression_is_true:
+          name: stg_desnz_repd__repd_capacity_not_negative
+          arguments:
+            expression: "installed_capacity_mw is null or installed_capacity_mw >= 0"
+    columns:
+      - name: site_code
+        description: "{{ doc('col_repd_ref_id') }}"
+        data_tests: [not_null]
+      - name: site_name
+        description: "{{ doc('col_repd_site_name') }}"
+      - name: operator_name
+        description: "{{ doc('col_operator_or_applicantx') }}"
+      - name: technology_type
+        description: "{{ doc('col_repd_technology_type') }}"
+      - name: installed_capacity_mw
+        description: "{{ doc('col_installed_capacity_m_welecx') }}"
+      - name: development_status
+        description: "{{ doc('col_development_status') }}"
+      - name: development_status_short
+        description: "{{ doc('col_development_status_shortx') }}"
+      - name: country
+        description: "{{ doc('col_repd_country') }}"
+      - name: region
+        description: "{{ doc('col_repd_region') }}"
+      - name: x_coordinate
+        description: "{{ doc('col_repd_x_coordinate') }}"
+      - name: y_coordinate
+        description: "{{ doc('col_repd_y_coordinate') }}"
+      - name: operational_date
+        description: "{{ doc('col_repd_operational') }}"
+      - name: valid_from
+        description: "{{ doc('col_valid_from') }}"
+      - name: valid_to
+        description: "{{ doc('col_valid_to') }}"
+      - name: is_current
+        description: "{{ doc('col_is_current') }}"
+      - name: _dlt_load_id
+        description: "{{ doc('col__dlt_load_id') }}"

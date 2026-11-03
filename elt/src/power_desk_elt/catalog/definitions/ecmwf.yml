@@ -1,0 +1,154 @@
+# Source `ecmwf` (ECMWF open data): dbt source, raw tables and GRIB fields.
+# Wording is quoted from ECMWF's open-data page, the ecCodes edition-independent key reference and the
+# ECMWF Parameter Database.
+links:
+  ecmwf_open_data:
+    title: ECMWF Open Data
+    url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+  eccodes_time:
+    title: Edition independent ecCodes keys, time
+    url: https://codes.ecmwf.int/grib/format/edition-independent/2/
+  eccodes_parameter:
+    title: Edition independent ecCodes keys, parameter
+    url: https://codes.ecmwf.int/grib/format/edition-independent/7/
+  eccodes_vertical:
+    title: Edition independent ecCodes keys, vertical
+    url: https://codes.ecmwf.int/grib/format/edition-independent/3/
+  eccodes_data:
+    title: Edition independent ecCodes keys, data related keys
+    url: https://codes.ecmwf.int/grib/format/edition-independent/
+  eccodes_packing:
+    title: ecCodes GRIB edition 2 keys, data representation template 5.0 (grid point data, simple packing)
+    url: https://codes.ecmwf.int/grib/format/grib2/templates/5/0/
+  eccodes_nearest:
+    title: ecCodes Python API, codes_grib_find_nearest
+    url: https://confluence.ecmwf.int/display/ECC/Python+3+interface+for+ecCodes
+  param_2t:
+    title: ECMWF Parameter Database, 167 2 metre temperature
+    url: https://codes.ecmwf.int/grib/param-db/167
+  param_10u:
+    title: ECMWF Parameter Database, 165 10 metre U wind component
+    url: https://codes.ecmwf.int/grib/param-db/165
+  param_10v:
+    title: ECMWF Parameter Database, 166 10 metre V wind component
+    url: https://codes.ecmwf.int/grib/param-db/166
+  param_100u:
+    title: ECMWF Parameter Database, 228246 100 metre U wind component
+    url: https://codes.ecmwf.int/grib/param-db/228246
+  param_100v:
+    title: ECMWF Parameter Database, 228247 100 metre V wind component
+    url: https://codes.ecmwf.int/grib/param-db/228247
+  param_ssrd:
+    title: ECMWF Parameter Database, 169 Surface short-wave (solar) radiation downwards
+    url: https://codes.ecmwf.int/grib/param-db/169
+  param_tcc:
+    title: ECMWF Parameter Database, 164 Total cloud cover
+    url: https://codes.ecmwf.int/grib/param-db/164
+  param_tp:
+    title: ECMWF Parameter Database, 228 Total precipitation
+    url: https://codes.ecmwf.int/grib/param-db/228
+
+sources:
+  ecmwf:
+    description: >-
+      ECMWF open data, loaded by the `ecmwf` dlt pipeline from the open-data portal: eight surface
+      fields of each forecast run at the grid points nearest to the operational wind and solar sites of
+      at least 50 MW in the REPD (`desnz_repd`), as published; each table keeps the versions of its rows
+      (scd2) merged on the natural key (run, step, parameter and grid point).
+tables:
+  ecmwf__ifs_oper:
+    title: ECMWF IFS medium-range forecast (atmosphere), 0.25°
+    description: >-
+      "A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the
+      public free of charge", from "real-time forecast data on a rolling archive basis" of "the four daily
+      IFS and AIFS cycles (00, 06, 12 and 18 UTC)". This table holds the IFS medium-range forecast
+      (atmosphere, `stream=oper`, `type=fc`) at 0.25°, "produced from the same high-resolution (~9 km)
+      forecast" as the 0.1° data, for the 00z and 12z runs: "0 to 144 by 3, 150 to 360 by 6" hours.
+    url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+    links: [ecmwf_open_data]
+    freshness: forecast_runs
+    columns: {units: grib_units, level: grib_level, latitude: grid_latitude, longitude: grid_longitude,
+              value: field_value}
+
+columns:
+  data_date:
+    description: Reference date (YYYYMMDD) of the forecast run; the ingest cursor.
+    links: [{link: eccodes_time, section: dataDate}]
+  data_time:
+    description: Reference time (HHMM, UTC) of the forecast run.
+    links: [{link: eccodes_time, section: dataTime}]
+  step_range:
+    description: >-
+      startStep-endStep, in hours from the reference time: the forecast step of an instantaneous field
+      (`24`), the forecast interval of an accumulated one (`0-24`).
+    links: [{link: eccodes_time, section: stepRange}]
+  step_type:
+    description: How the field relates to its step, e.g. `instant` or `accum` (accumulated over the step range).
+    links: [{link: eccodes_time, section: stepType}]
+  short_name:
+    description: >-
+      Parameter short name ("Not unique. Different parameters can have the same short name."): use
+      `param_id` to identify the parameter.
+    links: [{link: eccodes_parameter, section: shortName}]
+  param_id:
+    description: >-
+      "Unique identifier of the parameter. A parameter in different formats (grib1/grib2) is identified
+      by the same ID." Loaded: 167 2 metre temperature, 165 / 166 10 metre U / V wind component,
+      228246 / 228247 100 metre U / V wind component, 169 surface short-wave (solar) radiation downwards,
+      164 total cloud cover, 228 total precipitation.
+    links: [{link: eccodes_parameter, section: paramId}, param_2t, param_10u, param_10v, param_100u, param_100v,
+            param_ssrd, param_tcc, param_tp]
+  grib_units:
+    description: Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `(0 - 1)`).
+    links: [{link: eccodes_parameter, section: units}]
+  type_of_level:
+    description: Type of level, e.g. `surface`, `heightAboveGround`, `entireAtmosphere`.
+    links: [{link: eccodes_vertical, section: typeOfLevel}]
+  grib_level:
+    description: Level of the field within its type of level (e.g. `2`, `10`, `100` metres above ground).
+    links: [{link: eccodes_vertical, section: level}]
+  grid_latitude:
+    description: >-
+      Latitude (degrees) of the grid point, the nearest grid point to a REPD site as ecCodes finds it
+      (`codes_grib_find_nearest`).
+    links: [eccodes_nearest]
+  grid_longitude:
+    description: >-
+      Longitude (degrees, -180 to 180) of the grid point, the nearest grid point to a REPD site as
+      ecCodes finds it (`codes_grib_find_nearest`).
+    links: [eccodes_nearest]
+  field_value:
+    description: Data value of the field at the grid point, in `grib_units`.
+    links: [{link: eccodes_data, section: values}]
+  binary_scale_factor:
+    description: >-
+      "Binary scale factor (E)" of the field's packing. With the decimal scale factor (D), a packed
+      value is a whole number of steps of 2^E x 10^-D (WMO FM 92 GRIB: Y x 10^D = R + X x 2^E).
+    links: [{link: eccodes_packing, section: binaryScaleFactor}]
+  decimal_scale_factor:
+    description: >-
+      "Decimal scale factor (D)" of the field's packing; see `binary_scale_factor`.
+    links: [{link: eccodes_packing, section: decimalScaleFactor}]
+  packing_uncertainty:
+    description: >-
+      How far `interval_value` can be from the model's value because of GRIB packing, in `grib_units`:
+      half the field's packing step (2^E x 10^-D) for an instantaneous field, the larger of the two
+      fields' steps for an accumulation's difference.
+    links: [{link: eccodes_packing, section: binaryScaleFactor / decimalScaleFactor}]
+  forecast_run_time_utc:
+    description: >-
+      Reference date and time of the forecast run (`dataDate`, `dataTime`), UTC: the run's publish time.
+      ECMWF runs "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)".
+    links: [{link: eccodes_time, section: dataDate / dataTime}, ecmwf_open_data]
+  step_hours:
+    description: >-
+      The field's published step: "End of the forecast interval or value of the forecast step"
+      (`endStep`), in hours from the run's reference time.
+    links: [{link: eccodes_time, section: endStep}]
+  interval_value:
+    description: >-
+      The field over the forecast interval, in `grib_units`: an instantaneous field (`step_type`
+      instant) at the start of the interval (its step); an accumulated one ("accumulated over a
+      particular time period", here from the run's start) as the difference between the interval's end
+      and start steps.
+    links: [{link: eccodes_time, section: stepType}, param_ssrd, param_tp]
