@@ -35,6 +35,41 @@ def test_ifs_runs_are_00z_and_12z_with_85_steps_to_360_hours():
     assert (IFS.steps[0][:2], IFS.steps[0][48:50], IFS.steps[0][-1]) == ((0, 3), (144, 150), 360)
 
 
+AIFS = next(dataset for dataset in ecmwf.DATASETS if dataset.resource == "ecmwf__aifs_single")
+
+
+def test_aifs_file_url_follows_the_portal_layout():
+    # as listed on the portal on 2026-11-02
+    assert AIFS.file_url(datetime(2026, 11, 2, 12, tzinfo=UTC), 24, "grib2") == (
+        "https://data.ecmwf.int/forecasts/20261102/12z/aifs-single/0p25/oper/20261102120000-24h-oper-fc.grib2"
+    )
+
+
+def test_aifs_runs_every_6_hours_with_61_steps_to_360_hours():
+    runs = list(ecmwf.run_times(AIFS, DateRange(date(2026, 11, 2), date(2026, 11, 2))))
+    assert [ecmwf.run_stamp(run) for run in runs] == ["2026110200", "2026110206", "2026110212", "2026110218"]
+    assert all(steps == tuple(range(0, 361, 6)) for steps in AIFS.steps.values())
+
+
+def test_field_ranges_read_an_aifs_index():
+    # lines of the AIFS Single 2026-11-02 12z step 24 index (`class` ai, `model` aifs-single)
+    head = (
+        '{"domain": "g", "date": "20261102", "time": "1200", "expver": "0001", "class": "ai", "type": "fc",'
+        ' "stream": "oper"'
+    )
+    index = "\n".join(
+        (
+            head + ', "step": "24", "levelist": "50", "levtype": "pl", "param": "z", "model": "aifs-single",'
+            ' "_offset": 0, "_length": 772388}',
+            head + ', "levtype": "sfc", "step": "24", "param": "tp", "model": "aifs-single",'
+            ' "_offset": 12935931, "_length": 364098}',
+            head + ', "step": "24", "levtype": "sfc", "param": "2t", "model": "aifs-single",'
+            ' "_offset": 55919092, "_length": 248836}',
+        )
+    )
+    assert ecmwf.field_ranges(index) == [(12935931, 13300028), (55919092, 56167927)]
+
+
 def test_field_ranges_keep_the_surface_fields_read_in_byte_order():
     index = "\n".join(
         json.dumps(entry)
@@ -157,3 +192,22 @@ def test_field_rows_hold_the_grib_keys_and_the_nearest_grid_point_value():
     assert row["value"] == pytest.approx(synthetic._field_values("2t", RUN, 24)[row_index, column_index], abs=0.01)
     (accumulated,) = ecmwf.field_rows(message("ssrd"), sites, grids)
     assert (accumulated["stepType"], accumulated["stepRange"], accumulated["units"]) == ("accum", "0-24", "J m**-2")
+
+
+def test_aifs_seed_files_carry_the_aifs_parameters_and_units():
+    # AIFS Single publishes tcc as 228164 in % and tp as 228228 in kg m-2, where IFS has 164 (0 - 1) and 228 m
+    sites = [{"ref_id": "a", "latitude": 51.4, "longitude": -3.4}]
+    rows = {}
+    for model in ("ifs", "aifs-single"):
+        index, content = synthetic.ecmwf_step_file("oper", RUN, 24, model)
+        for entry in map(json.loads, index.splitlines()):
+            if entry["param"] in ("tcc", "tp"):
+                message = content[entry["_offset"] : entry["_offset"] + entry["_length"]]
+                (rows[model, entry["param"]],) = ecmwf.field_rows(message, sites, {})
+    keys = lambda row: (row["shortName"], row["paramId"], row["units"], row["stepType"])  # noqa: E731
+    assert keys(rows["ifs", "tcc"]) == ("tcc", 164, "(0 - 1)", "instant")
+    assert keys(rows["ifs", "tp"]) == ("tp", 228, "m", "accum")
+    assert keys(rows["aifs-single", "tcc"]) == ("tcc", 228164, "%", "instant")
+    assert keys(rows["aifs-single", "tp"]) == ("tp", 228228, "kg m**-2", "accum")
+    assert rows["aifs-single", "tcc"]["value"] == pytest.approx(100 * rows["ifs", "tcc"]["value"], rel=0.01)
+    assert rows["aifs-single", "tp"]["value"] == pytest.approx(1000 * rows["ifs", "tp"]["value"], rel=0.01)

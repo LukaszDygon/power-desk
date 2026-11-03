@@ -22,13 +22,15 @@ schema:
   physicalName: ods_weather_forecast
   physicalType: table
   logicalType: object
-  description: 'Weather forecasts per site, run and forecast interval: ECMWF IFS (00z and 12z runs) at the nearest
+  description: 'Weather forecasts per site, run and forecast interval: ECMWF IFS (00z and 12z runs) and AIFS Single
 
-    0.25° grid point of each REPD operational wind and solar site of at least 50 MW. An interval runs
+    (00z, 06z, 12z and 18z runs) at the nearest 0.25° grid point of each REPD operational wind and solar
 
-    from one published step to the next (3 hours to 144 hours ahead, 6 hours after); accumulated fields
+    site of at least 50 MW. An interval runs from one published step to the next (IFS: 3 hours to 144
 
-    (solar radiation, precipitation) cover the interval, the instantaneous ones are its start.
+    hours ahead, 6 hours after; AIFS Single: 6 hours throughout); accumulated fields (solar radiation,
+
+    precipitation) cover the interval, the instantaneous ones are its start.
 
 
     **ECMWF IFS medium-range forecast (atmosphere), 0.25°**
@@ -37,7 +39,17 @@ schema:
     "A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the public free of charge",
     from "real-time forecast data on a rolling archive basis" of "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)".
     This table holds the IFS medium-range forecast (atmosphere, `stream=oper`, `type=fc`) at 0.25°, "produced from the same
-    high-resolution (~9 km) forecast" as the 0.1° data, for the 00z and 12z runs: "0 to 144 by 3, 150 to 360 by 6" hours.'
+    high-resolution (~9 km) forecast" as the 0.1° data, for the 00z and 12z runs: "0 to 144 by 3, 150 to 360 by 6" hours.
+
+
+    **ECMWF AIFS Single forecast (atmosphere), 0.25°**
+
+
+    "A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the public free of charge",
+    from "real-time forecast data on a rolling archive basis" of "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)".
+    This table holds the AIFS Single forecast (atmosphere, `model=aifs-single`, `stream=oper`, `type=fc`) at 0.25° ("the AIFS
+    streams remain 0.25° only"), for "4 forecast runs per day (00/06/12/18)" with "6 hourly steps to 360 (15 days)". "AIFS
+    data are released as soon as the data are produced."'
   dataGranularityDescription: One row per timestamp_utc, site_code, publish_time_utc, source_dataset.
   authoritativeDefinitions:
   - url: https://www.ecmwf.int/en/forecasts/datasets/open-data
@@ -46,6 +58,9 @@ schema:
   - url: https://www.ecmwf.int/en/forecasts/datasets/open-data
     type: businessDefinition
     description: ECMWF Open Data
+  - url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+    type: businessDefinition
+    description: ECMWF AIFS Single forecast (atmosphere), 0.25°
   context:
     instructions: 'Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One entity
       holds every resolution and republication published, so intervals can overlap; for hourly or summed series, query the
@@ -56,6 +71,8 @@ schema:
         levels (bidding zone, control area, country). Filter on a `dim_area` role (e.g. `is_bidding_zone`) or roll up with
         `bridge_area_hierarchy`.'
     - constraint: Every run is kept (`publish_time_utc`); one run per query, or the hourly mart for the latest.
+    - constraint: Two forecast models cover the same sites and hours (`source_dataset` `ECMWF_IFS_OPER` and `ECMWF_AIFS_SINGLE`,
+        with runs at different times and steps); filter on one, never average or sum across them.
     - constraint: Instantaneous measures (temperature, wind, cloud cover) are the value at the start of the interval (`timestamp_utc`),
         not a mean over it; solar radiation is the mean and precipitation the total over the interval.
     - constraint: Solar radiation and precipitation are differences of accumulations ECMWF packs to a precision that follows
@@ -316,11 +333,15 @@ schema:
     logicalType: number
     physicalType: DOUBLE
     description: 'Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by cloud"; "Cloud
-      fractions vary from 0 to 1."'
+      fractions vary from 0 to 1." AIFS Single publishes it as 228164 in % ("See 228164 for the equivalent parameter in "%""),
+      divided by 100.'
     authoritativeDefinitions:
     - url: https://codes.ecmwf.int/grib/param-db/164
       type: businessDefinition
       description: ECMWF Parameter Database, 164 Total cloud cover
+    - url: https://codes.ecmwf.int/grib/param-db/228164
+      type: businessDefinition
+      description: ECMWF Parameter Database, 228164 Total Cloud Cover
     customProperties:
     - property: unit
       value: fraction
@@ -331,11 +352,15 @@ schema:
     physicalType: DOUBLE
     description: 'Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and frozen water,
       comprising rain and snow, that falls to the Earth''s surface", in "depth in metres of water equivalent" (x 1000 for
-      mm).'
+      mm). AIFS Single publishes it as 228228 in kg m**-2 ("See 228 for the equivalent parameter in "m""), which is mm of
+      water.'
     authoritativeDefinitions:
     - url: https://codes.ecmwf.int/grib/param-db/228
       type: businessDefinition
       description: ECMWF Parameter Database, 228 Total precipitation
+    - url: https://codes.ecmwf.int/grib/param-db/228228
+      type: businessDefinition
+      description: ECMWF Parameter Database, 228228 Total Precipitation
     customProperties:
     - property: unit
       value: mm

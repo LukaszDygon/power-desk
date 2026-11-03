@@ -323,6 +323,10 @@ ECMWF_FIELDS = {  # shortName -> accumulated
     "ssrd": True,
     "tp": True,
 }
+# fields a model publishes under another parameter than IFS: shortName -> (paramId, factor from the IFS units)
+ECMWF_MODEL_PARAMS = {
+    "aifs-single": {"tcc": (228164, 100.0), "tp": (228228, 1000.0)},  # tcc in %, tp in kg m-2 (= mm)
+}
 
 
 def _grid() -> tuple[np.ndarray, np.ndarray]:
@@ -353,7 +357,8 @@ def _field_values(short_name: str, run: datetime, step: int) -> np.ndarray:
     return 0.0002 * step * (1.0 + (lon + 11.0) / 14.0)  # tp, m
 
 
-def _grib_message(short_name: str, accumulated: bool, run: datetime, step: int) -> bytes:
+def _grib_message(short_name: str, accumulated: bool, run: datetime, step: int, model: str) -> bytes:
+    param_id, factor = ECMWF_MODEL_PARAMS.get(model, {}).get(short_name, (None, 1.0))
     handle = eccodes.codes_grib_new_from_samples("GRIB2")
     try:
         lat, _ = _grid()
@@ -373,31 +378,34 @@ def _grib_message(short_name: str, accumulated: bool, run: datetime, step: int) 
             eccodes.codes_set(handle, key, value)
         if accumulated:
             eccodes.codes_set(handle, "productDefinitionTemplateNumber", 8)
-        eccodes.codes_set(handle, "shortName", short_name)
+        if param_id is None:
+            eccodes.codes_set(handle, "shortName", short_name)
+        else:
+            eccodes.codes_set(handle, "paramId", param_id)
         if accumulated:
             eccodes.codes_set(handle, "stepType", "accum")
             eccodes.codes_set(handle, "stepRange", f"0-{step}" if step else "0")
         else:
             eccodes.codes_set(handle, "stepRange", str(step))
-        eccodes.codes_set_values(handle, np.ravel(_field_values(short_name, run, step)))
+        eccodes.codes_set_values(handle, np.ravel(_field_values(short_name, run, step) * factor))
         return eccodes.codes_get_message(handle)
     finally:
         eccodes.codes_release(handle)
 
 
 @cache
-def ecmwf_step_file(stream: str, run: datetime, step: int) -> tuple[str, bytes]:
-    """A step file's JSON-lines index and GRIB2 content, as the open-data portal lays them out."""
+def ecmwf_step_file(stream: str, run: datetime, step: int, model: str = "ifs") -> tuple[str, bytes]:
+    """A step file's JSON-lines index and GRIB2 content, as the open-data portal lays them out for `model`."""
     content, index = b"", []
     for short_name, accumulated in ECMWF_FIELDS.items():
-        message = _grib_message(short_name, accumulated, run, step)
+        message = _grib_message(short_name, accumulated, run, step, model)
         index.append(
             {
                 "domain": "g",
                 "date": f"{run:%Y%m%d}",
                 "time": f"{run:%H}00",
                 "expver": "0001",
-                "class": "od",
+                "class": "ai" if model.startswith("aifs") else "od",
                 "type": "fc",
                 "stream": stream,
                 "step": str(step),

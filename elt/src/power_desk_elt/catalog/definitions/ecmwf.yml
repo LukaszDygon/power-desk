@@ -47,6 +47,12 @@ links:
   param_tp:
     title: ECMWF Parameter Database, 228 Total precipitation
     url: https://codes.ecmwf.int/grib/param-db/228
+  param_tcc_percent:
+    title: ECMWF Parameter Database, 228164 Total Cloud Cover
+    url: https://codes.ecmwf.int/grib/param-db/228164
+  param_tp_kg:
+    title: ECMWF Parameter Database, 228228 Total Precipitation
+    url: https://codes.ecmwf.int/grib/param-db/228228
 
 sources:
   ecmwf:
@@ -67,6 +73,20 @@ tables:
     url: https://www.ecmwf.int/en/forecasts/datasets/open-data
     links: [ecmwf_open_data]
     freshness: forecast_runs
+    columns: {units: grib_units, level: grib_level, latitude: grid_latitude, longitude: grid_longitude,
+              value: field_value}
+  ecmwf__aifs_single:
+    title: ECMWF AIFS Single forecast (atmosphere), 0.25°
+    description: >-
+      "A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the
+      public free of charge", from "real-time forecast data on a rolling archive basis" of "the four daily
+      IFS and AIFS cycles (00, 06, 12 and 18 UTC)". This table holds the AIFS Single forecast (atmosphere,
+      `model=aifs-single`, `stream=oper`, `type=fc`) at 0.25° ("the AIFS streams remain 0.25° only"), for
+      "4 forecast runs per day (00/06/12/18)" with "6 hourly steps to 360 (15 days)". "AIFS data are
+      released as soon as the data are produced."
+    url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+    links: [ecmwf_open_data]
+    freshness: forecast_runs_6h
     columns: {units: grib_units, level: grib_level, latitude: grid_latitude, longitude: grid_longitude,
               value: field_value}
 
@@ -95,11 +115,13 @@ columns:
       "Unique identifier of the parameter. A parameter in different formats (grib1/grib2) is identified
       by the same ID." Loaded: 167 2 metre temperature, 165 / 166 10 metre U / V wind component,
       228246 / 228247 100 metre U / V wind component, 169 surface short-wave (solar) radiation downwards,
-      164 total cloud cover, 228 total precipitation.
+      164 total cloud cover, 228 total precipitation; AIFS Single publishes 228164 Total Cloud Cover ("See
+      164 for the equivalent parameter in "(0-1)"") and 228228 Total Precipitation ("See 228 for the
+      equivalent parameter in "m"") instead.
     links: [{link: eccodes_parameter, section: paramId}, param_2t, param_10u, param_10v, param_100u, param_100v,
-            param_ssrd, param_tcc, param_tp]
+            param_ssrd, param_tcc, param_tp, param_tcc_percent, param_tp_kg]
   grib_units:
-    description: Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `(0 - 1)`).
+    description: Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `kg m**-2`, `(0 - 1)`, `%`).
     links: [{link: eccodes_parameter, section: units}]
   type_of_level:
     description: Type of level, e.g. `surface`, `heightAboveGround`, `entireAtmosphere`.

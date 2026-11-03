@@ -85,9 +85,10 @@ where start_step_hours is not null and end_step_hours is not null
 {#
   The measures of an entity row from the staged fields of one (run, interval, grid point), in the units
   of `dims.metrics`, by parameter id (short names are not unique: IFS `tp` is 228 in m, AIFS `tp` is
-  228228 in kg m-2). Conversions follow the ECMWF Parameter Database: K - 273.15 = °C; an accumulated
-  J m-2 divided by the accumulation period in seconds = W m-2; precipitation m x 1000 = mm, and
-  kg m-2 of water = mm. Wind speed combines the U and V components.
+  228228 in kg m-2; IFS `tcc` is 164 in (0 - 1), AIFS `tcc` is 228164 in %). Conversions follow the ECMWF
+  Parameter Database: K - 273.15 = °C; an accumulated J m-2 divided by the accumulation period in
+  seconds = W m-2; precipitation m x 1000 = mm, and kg m-2 of water = mm; cloud cover % / 100 = (0 - 1).
+  Wind speed combines the U and V components.
 #}
 {% macro ecmwf_measures() -%}
     max(interval_value) filter (where param_id = 167) - 273.15 as temperature_2m_c,
@@ -100,7 +101,10 @@ where start_step_hours is not null and end_step_hours is not null
     sqrt(max(interval_value) filter (where param_id = 228246) ^ 2 + max(interval_value) filter (where param_id = 228247) ^ 2)
         as wind_speed_100m_ms,
     max(interval_value) filter (where param_id = 169) / (any_value(interval_minutes) * 60) as solar_radiation_wm2,
-    max(interval_value) filter (where param_id = 164) as cloud_cover_fraction,
+    coalesce(
+        max(interval_value) filter (where param_id = 164),
+        max(interval_value) filter (where param_id = 228164) / 100
+    ) as cloud_cover_fraction,
     coalesce(
         max(interval_value) filter (where param_id = 228) * 1000,
         max(interval_value) filter (where param_id = 228228)
@@ -110,5 +114,5 @@ where start_step_hours is not null and end_step_hours is not null
 {# The (parameter id, units) pairs `ecmwf_measures` converts; any other pair fails staging's tests. #}
 {% macro ecmwf_known_units() -%}
     ((167, 'K'), (165, 'm s**-1'), (166, 'm s**-1'), (228246, 'm s**-1'), (228247, 'm s**-1'),
-     (169, 'J m**-2'), (164, '(0 - 1)'), (228, 'm'), (228228, 'kg m**-2'))
+     (169, 'J m**-2'), (164, '(0 - 1)'), (228164, '%'), (228, 'm'), (228228, 'kg m**-2'))
 {%- endmacro %}

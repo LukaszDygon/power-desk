@@ -119,7 +119,7 @@ class SeedPublishers:
         run = datetime.strptime(match["run"], "%Y%m%d%H").replace(tzinfo=UTC)
         if run not in self.ecmwf_runs:
             return None
-        index, content = synthetic.ecmwf_step_file(match["stream"], run, int(match["step"]))
+        index, content = synthetic.ecmwf_step_file(match["stream"], run, int(match["step"]), match["model"])
         if match["ext"] == "index":
             return index.encode()
         return content[byte_range[0] : byte_range[1] + 1] if byte_range else content

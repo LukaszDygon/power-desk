@@ -4,17 +4,21 @@
 models:
   - name: ods_weather_forecast
     description: |
-      Weather forecasts per site, run and forecast interval: ECMWF IFS (00z and 12z runs) at the nearest
-      0.25° grid point of each REPD operational wind and solar site of at least 50 MW. An interval runs
-      from one published step to the next (3 hours to 144 hours ahead, 6 hours after); accumulated fields
-      (solar radiation, precipitation) cover the interval, the instantaneous ones are its start.
+      Weather forecasts per site, run and forecast interval: ECMWF IFS (00z and 12z runs) and AIFS Single
+      (00z, 06z, 12z and 18z runs) at the nearest 0.25° grid point of each REPD operational wind and solar
+      site of at least 50 MW. An interval runs from one published step to the next (IFS: 3 hours to 144
+      hours ahead, 6 hours after; AIFS Single: 6 hours throughout); accumulated fields (solar radiation,
+      precipitation) cover the interval, the instantaneous ones are its start.
 
       {{ doc('dataset_ecmwf__ifs_oper') }}
+
+      {{ doc('dataset_ecmwf__aifs_single') }}
     config:
       meta:
         context:
           constraints:
             - Every run is kept (`publish_time_utc`); one run per query, or the hourly mart for the latest.
+            - Two forecast models cover the same sites and hours (`source_dataset` `ECMWF_IFS_OPER` and `ECMWF_AIFS_SINGLE`, with runs at different times and steps); filter on one, never average or sum across them.
             - Instantaneous measures (temperature, wind, cloud cover) are the value at the start of the interval (`timestamp_utc`), not a mean over it; solar radiation is the mean and precipitation the total over the interval.
             - Solar radiation and precipitation are differences of accumulations ECMWF packs to a precision that follows each field's range (from 20 Oct 2026), so each is uncertain by one packing step (on the acceptance run up to about 24 W/m² and 0.25 mm, larger for larger fields; `stg_ecmwf__*.packing_uncertainty`) and can be slightly negative; do not read a value within that step as a signal, and floor at zero before summing.
     data_tests:

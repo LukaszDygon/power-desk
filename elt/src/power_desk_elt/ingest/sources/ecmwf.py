@@ -70,6 +70,7 @@ SITE_MIN_CAPACITY_MW = 50.0
 BRITISH_NATIONAL_GRID = "EPSG:27700"  # REPD coordinates, Northern Ireland included (REPD Definition Sheet)
 
 IFS_STEPS = (*range(0, 145, 3), *range(150, 361, 6))  # 00z and 12z runs
+AIFS_STEPS = tuple(range(0, 361, 6))  # every run (00z, 06z, 12z, 18z)
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,10 @@ class Dataset:
         )
 
 
-DATASETS = (Dataset("ecmwf__ifs_oper", "ifs", "0p25", "oper", "fc", {0: IFS_STEPS, 12: IFS_STEPS}),)
+DATASETS = (
+    Dataset("ecmwf__ifs_oper", "ifs", "0p25", "oper", "fc", {0: IFS_STEPS, 12: IFS_STEPS}),
+    Dataset("ecmwf__aifs_single", "aifs-single", "0p25", "oper", "fc", {h: AIFS_STEPS for h in (0, 6, 12, 18)}),
+)
 
 
 @dataclass(frozen=True)

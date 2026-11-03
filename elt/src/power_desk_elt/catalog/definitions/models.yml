@@ -244,14 +244,16 @@ columns:
   cloud_cover_fraction:
     description: >-
       Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by
-      cloud"; "Cloud fractions vary from 0 to 1."
-    links: [param_tcc]
+      cloud"; "Cloud fractions vary from 0 to 1." AIFS Single publishes it as 228164 in % ("See 228164 for
+      the equivalent parameter in "%""), divided by 100.
+    links: [param_tcc, param_tcc_percent]
   precipitation_mm:
     description: >-
       Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and
       frozen water, comprising rain and snow, that falls to the Earth's surface", in "depth in metres of
-      water equivalent" (x 1000 for mm).
-    links: [param_tp]
+      water equivalent" (x 1000 for mm). AIFS Single publishes it as 228228 in kg m**-2 ("See 228 for the
+      equivalent parameter in "m""), which is mm of water.
+    links: [param_tp, param_tp_kg]
   coverage:
     description: Fraction of the hour (0.0-1.0) holding data from the series' source. Means are over those
       minutes; multiply by `coverage` for the mean over the whole hour with missing minutes as zero.

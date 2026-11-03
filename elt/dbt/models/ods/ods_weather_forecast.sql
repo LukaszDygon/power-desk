@@ -18,6 +18,20 @@ with fields as (
         max(_dlt_load_id) as _dlt_load_id
     from {{ pending_partitions(ref('stg_ecmwf__ifs_oper')) }}
     group by timestamp_utc, interval_minutes, publish_time_utc, grid_latitude, grid_longitude
+
+    union all
+
+    select
+        timestamp_utc,
+        interval_minutes,
+        publish_time_utc,
+        grid_latitude,
+        grid_longitude,
+        'ECMWF_AIFS_SINGLE' as source_dataset,
+        {{ ecmwf_measures() }},
+        max(_dlt_load_id) as _dlt_load_id
+    from {{ pending_partitions(ref('stg_ecmwf__aifs_single')) }}
+    group by timestamp_utc, interval_minutes, publish_time_utc, grid_latitude, grid_longitude
 ),
 
 grid_points as (

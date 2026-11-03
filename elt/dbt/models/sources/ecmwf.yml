@@ -149,6 +149,242 @@ sources:
             url: https://codes.ecmwf.int/grib/param-db/164
           - title: ECMWF Parameter Database, 228 Total precipitation
             url: https://codes.ecmwf.int/grib/param-db/228
+          - title: ECMWF Parameter Database, 228164 Total Cloud Cover
+            url: https://codes.ecmwf.int/grib/param-db/228164
+          - title: ECMWF Parameter Database, 228228 Total Precipitation
+            url: https://codes.ecmwf.int/grib/param-db/228228
+    - name: units
+      description: '{{ doc(''col_grib_units'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Edition independent ecCodes keys, parameter
+            url: https://codes.ecmwf.int/grib/format/edition-independent/7/
+            section: units
+    - name: type_of_level
+      description: '{{ doc(''col_type_of_level'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Edition independent ecCodes keys, vertical
+            url: https://codes.ecmwf.int/grib/format/edition-independent/3/
+            section: typeOfLevel
+    - name: level
+      description: '{{ doc(''col_grib_level'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: Edition independent ecCodes keys, vertical
+            url: https://codes.ecmwf.int/grib/format/edition-independent/3/
+            section: level
+    - name: binary_scale_factor
+      description: '{{ doc(''col_binary_scale_factor'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: ecCodes GRIB edition 2 keys, data representation template 5.0 (grid point data, simple packing)
+            url: https://codes.ecmwf.int/grib/format/grib2/templates/5/0/
+            section: binaryScaleFactor
+    - name: decimal_scale_factor
+      description: '{{ doc(''col_decimal_scale_factor'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: ecCodes GRIB edition 2 keys, data representation template 5.0 (grid point data, simple packing)
+            url: https://codes.ecmwf.int/grib/format/grib2/templates/5/0/
+            section: decimalScaleFactor
+    - name: latitude
+      description: '{{ doc(''col_grid_latitude'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ecCodes Python API, codes_grib_find_nearest
+            url: https://confluence.ecmwf.int/display/ECC/Python+3+interface+for+ecCodes
+      data_tests:
+      - not_null
+    - name: longitude
+      description: '{{ doc(''col_grid_longitude'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: ecCodes Python API, codes_grib_find_nearest
+            url: https://confluence.ecmwf.int/display/ECC/Python+3+interface+for+ecCodes
+      data_tests:
+      - not_null
+    - name: value
+      description: '{{ doc(''col_field_value'') }}'
+      config:
+        meta:
+          dlt_data_type: DOUBLE
+          references:
+          - title: Edition independent ecCodes keys, data related keys
+            url: https://codes.ecmwf.int/grib/format/edition-independent/
+            section: values
+    - name: _dlt_load_id
+      description: '{{ doc(''col__dlt_load_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+      data_tests:
+      - not_null
+    - name: _dlt_id
+      description: '{{ doc(''col__dlt_id'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+  - name: ecmwf__aifs_single
+    description: '{{ doc(''dataset_ecmwf__aifs_single'') }}'
+    config:
+      meta:
+        dagster:
+          asset_key:
+          - raw
+          - ecmwf__aifs_single
+        dlt:
+          pipeline: ecmwf
+          resource: ecmwf__aifs_single
+          write_disposition: merge
+          merge_strategy: scd2
+          primary_key:
+          - data_date
+          - data_time
+          - step_range
+          - short_name
+          - latitude
+          - longitude
+          cursor_column: data_date
+        dlt_recent_column: _dlt_load_id
+        references:
+        - title: "ECMWF AIFS Single forecast (atmosphere), 0.25\xB0"
+          url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+        - title: ECMWF Open Data
+          url: https://www.ecmwf.int/en/forecasts/datasets/open-data
+      loaded_at_field: to_timestamp(cast(_dlt_load_id as double))
+      freshness:
+        warn_after:
+          count: 8
+          period: hour
+        error_after:
+          count: 14
+          period: hour
+    data_tests:
+    - dlt_unique:
+        name: ecmwf__aifs_single_unique_natural_key
+        arguments:
+          columns:
+          - data_date
+          - data_time
+          - step_range
+          - short_name
+          - latitude
+          - longitude
+          - _dlt_valid_to
+    - dlt_unique:
+        name: ecmwf__aifs_single_unique_row_version
+        arguments:
+          columns:
+          - _dlt_id
+          - _dlt_valid_from
+    columns:
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: data_date
+      description: '{{ doc(''col_data_date'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: Edition independent ecCodes keys, time
+            url: https://codes.ecmwf.int/grib/format/edition-independent/2/
+            section: dataDate
+      data_tests:
+      - not_null
+    - name: data_time
+      description: '{{ doc(''col_data_time'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: Edition independent ecCodes keys, time
+            url: https://codes.ecmwf.int/grib/format/edition-independent/2/
+            section: dataTime
+      data_tests:
+      - not_null
+    - name: step_range
+      description: '{{ doc(''col_step_range'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Edition independent ecCodes keys, time
+            url: https://codes.ecmwf.int/grib/format/edition-independent/2/
+            section: stepRange
+      data_tests:
+      - not_null
+    - name: step_type
+      description: '{{ doc(''col_step_type'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Edition independent ecCodes keys, time
+            url: https://codes.ecmwf.int/grib/format/edition-independent/2/
+            section: stepType
+    - name: short_name
+      description: '{{ doc(''col_short_name'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: Edition independent ecCodes keys, parameter
+            url: https://codes.ecmwf.int/grib/format/edition-independent/7/
+            section: shortName
+      data_tests:
+      - not_null
+    - name: param_id
+      description: '{{ doc(''col_param_id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: Edition independent ecCodes keys, parameter
+            url: https://codes.ecmwf.int/grib/format/edition-independent/7/
+            section: paramId
+          - title: ECMWF Parameter Database, 167 2 metre temperature
+            url: https://codes.ecmwf.int/grib/param-db/167
+          - title: ECMWF Parameter Database, 165 10 metre U wind component
+            url: https://codes.ecmwf.int/grib/param-db/165
+          - title: ECMWF Parameter Database, 166 10 metre V wind component
+            url: https://codes.ecmwf.int/grib/param-db/166
+          - title: ECMWF Parameter Database, 228246 100 metre U wind component
+            url: https://codes.ecmwf.int/grib/param-db/228246
+          - title: ECMWF Parameter Database, 228247 100 metre V wind component
+            url: https://codes.ecmwf.int/grib/param-db/228247
+          - title: ECMWF Parameter Database, 169 Surface short-wave (solar) radiation downwards
+            url: https://codes.ecmwf.int/grib/param-db/169
+          - title: ECMWF Parameter Database, 164 Total cloud cover
+            url: https://codes.ecmwf.int/grib/param-db/164
+          - title: ECMWF Parameter Database, 228 Total precipitation
+            url: https://codes.ecmwf.int/grib/param-db/228
+          - title: ECMWF Parameter Database, 228164 Total Cloud Cover
+            url: https://codes.ecmwf.int/grib/param-db/228164
+          - title: ECMWF Parameter Database, 228228 Total Precipitation
+            url: https://codes.ecmwf.int/grib/param-db/228228
     - name: units
       description: '{{ doc(''col_grib_units'') }}'
       config:

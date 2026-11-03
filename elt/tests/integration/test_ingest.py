@@ -21,9 +21,9 @@ from tests.support import query
 def ecmwf_rows(publishers: SeedPublishers, dataset: ecmwf.Dataset) -> int:
     """Fields read x grid points nearest to the REPD sites, per step of every served run."""
     sites = ecmwf.select_sites(desnz_repd.parse_extract(publishers.files[REPD_URL]))
-    _, content = synthetic.ecmwf_step_file(dataset.stream, min(publishers.ecmwf_runs), 0)
+    _, content = synthetic.ecmwf_step_file(dataset.stream, min(publishers.ecmwf_runs), 0, dataset.model)
     points = {(row["latitude"], row["longitude"]) for row in ecmwf.field_rows(content, sites, {})}
-    steps = sum(len(dataset.steps[run.hour]) for run in publishers.ecmwf_runs)
+    steps = sum(len(dataset.steps.get(run.hour, ())) for run in publishers.ecmwf_runs)  # runs of any dataset
     return steps * len(ecmwf.PARAMS) * len(points)
 
 
@@ -193,15 +193,17 @@ def test_a_record_the_publisher_repeats_within_a_load_is_stored_once(tmp_path):
     assert query(db, "select count(*) from raw.bmrs__ndf") == [(published,)]
 
 
-def test_forecast_runs_load_once_complete_and_a_reload_changes_nothing(tmp_path):
+@pytest.mark.parametrize("dataset", ecmwf.DATASETS, ids=lambda dataset: dataset.resource)
+def test_forecast_runs_load_once_complete_and_a_reload_changes_nothing(tmp_path, dataset):
     publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
-    resource = ecmwf.DATASETS[0].resource
-    late_run = max(publishers.ecmwf_runs)
+    resource = dataset.resource
+    served = {run for run in publishers.ecmwf_runs if run.hour in dataset.steps}  # this dataset's runs
+    late_run = max(served)
     publishers.ecmwf_runs.discard(late_run)  # not complete yet: its last step is not published
     first = load("ecmwf", db, publishers, max_days=6, resources=[resource])[resource]  # to the late run's day
     runs = f"select count(distinct (data_date, data_time)), count(*) from raw.{resource}"
     [(loaded_runs, rows)] = query(db, runs)
-    assert loaded_runs == len(publishers.ecmwf_runs)
+    assert loaded_runs == len(served) - 1
 
     # the next open-ended run reads only the run published since
     publishers.ecmwf_runs.add(late_run)

@@ -30,6 +30,14 @@ freshness:
     error_after:
       count: 26
       period: hour
+  # forecast runs published four times a day (ECMWF AIFS Single 00z, 06z, 12z and 18z, each complete at run + 7h34m)
+  forecast_runs_6h:
+    warn_after:
+      count: 8
+      period: hour
+    error_after:
+      count: 14
+      period: hour
   # published only where a restriction applies: some interconnectors go two weeks without an upload
   capacity_restrictions:
     warn_after:

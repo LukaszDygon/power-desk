@@ -252,11 +252,15 @@ schema:
     logicalType: number
     physicalType: DOUBLE
     description: 'Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by cloud"; "Cloud
-      fractions vary from 0 to 1."'
+      fractions vary from 0 to 1." AIFS Single publishes it as 228164 in % ("See 228164 for the equivalent parameter in "%""),
+      divided by 100.'
     authoritativeDefinitions:
     - url: https://codes.ecmwf.int/grib/param-db/164
       type: businessDefinition
       description: ECMWF Parameter Database, 164 Total cloud cover
+    - url: https://codes.ecmwf.int/grib/param-db/228164
+      type: businessDefinition
+      description: ECMWF Parameter Database, 228164 Total Cloud Cover
     customProperties:
     - property: unit
       value: fraction
@@ -267,11 +271,15 @@ schema:
     physicalType: DOUBLE
     description: 'Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and frozen water,
       comprising rain and snow, that falls to the Earth''s surface", in "depth in metres of water equivalent" (x 1000 for
-      mm).'
+      mm). AIFS Single publishes it as 228228 in kg m**-2 ("See 228 for the equivalent parameter in "m""), which is mm of
+      water.'
     authoritativeDefinitions:
     - url: https://codes.ecmwf.int/grib/param-db/228
       type: businessDefinition
       description: ECMWF Parameter Database, 228 Total precipitation
+    - url: https://codes.ecmwf.int/grib/param-db/228228
+      type: businessDefinition
+      description: ECMWF Parameter Database, 228228 Total Precipitation
     customProperties:
     - property: unit
       value: mm

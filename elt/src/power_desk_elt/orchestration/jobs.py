@@ -73,6 +73,14 @@ INGEST_JOBS = (
         description="Weather forecast runs: ECMWF IFS 00z and 12z, each complete on the portal at run + 7h34m UTC.",
     ),
     IngestJob(
+        "ingest_forecast_runs_6h",
+        "forecast_runs_6h",
+        "25 2,8,14,20 * * *",  # 10 min after the IFS job, which shares the 08:15 / 20:15 slots
+        ("ecmwf__aifs_single",),
+        description="Weather forecast runs: ECMWF AIFS Single 00z, 06z, 12z and 18z, each complete on the portal at "
+        "run + 7h34m UTC.",
+    ),
+    IngestJob(
         "refresh_reference",
         "reference_daily",
         "0 6 * * *",

@@ -115,6 +115,12 @@ A current list of BM units held by Elexon, with their registered identifiers, le
 "A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the public free of charge", from "real-time forecast data on a rolling archive basis" of "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)". This table holds the IFS medium-range forecast (atmosphere, `stream=oper`, `type=fc`) at 0.25°, "produced from the same high-resolution (~9 km) forecast" as the 0.1° data, for the 00z and 12z runs: "0 to 144 by 3, 150 to 360 by 6" hours.
 {% enddocs %}
 
+{% docs dataset_ecmwf__aifs_single %}
+**ECMWF AIFS Single forecast (atmosphere), 0.25°**
+
+"A subset of ECMWF real-time forecast data from the IFS and AIFS models is made available to the public free of charge", from "real-time forecast data on a rolling archive basis" of "the four daily IFS and AIFS cycles (00, 06, 12 and 18 UTC)". This table holds the AIFS Single forecast (atmosphere, `model=aifs-single`, `stream=oper`, `type=fc`) at 0.25° ("the AIFS streams remain 0.25° only"), for "4 forecast runs per day (00/06/12/18)" with "6 hourly steps to 360 (15 days)". "AIFS data are released as soon as the data are produced."
+{% enddocs %}
+
 {% docs dataset_entsoe__actual_total_load %}
 **Actual total load per bidding zone per market time unit**
 
@@ -940,11 +946,11 @@ Parameter short name ("Not unique. Different parameters can have the same short 
 {% enddocs %}
 
 {% docs col_param_id %}
-"Unique identifier of the parameter. A parameter in different formats (grib1/grib2) is identified by the same ID." Loaded: 167 2 metre temperature, 165 / 166 10 metre U / V wind component, 228246 / 228247 100 metre U / V wind component, 169 surface short-wave (solar) radiation downwards, 164 total cloud cover, 228 total precipitation.
+"Unique identifier of the parameter. A parameter in different formats (grib1/grib2) is identified by the same ID." Loaded: 167 2 metre temperature, 165 / 166 10 metre U / V wind component, 228246 / 228247 100 metre U / V wind component, 169 surface short-wave (solar) radiation downwards, 164 total cloud cover, 228 total precipitation; AIFS Single publishes 228164 Total Cloud Cover ("See 164 for the equivalent parameter in "(0-1)"") and 228228 Total Precipitation ("See 228 for the equivalent parameter in "m"") instead.
 {% enddocs %}
 
 {% docs col_grib_units %}
-Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `(0 - 1)`).
+Units of the parameter, as encoded (e.g. `K`, `m s**-1`, `J m**-2`, `m`, `kg m**-2`, `(0 - 1)`, `%`).
 {% enddocs %}
 
 {% docs col_type_of_level %}
@@ -1444,11 +1450,11 @@ Surface short-wave (solar) radiation downwards, mean over the interval in W/m²:
 {% enddocs %}
 
 {% docs col_cloud_cover_fraction %}
-Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by cloud"; "Cloud fractions vary from 0 to 1."
+Total cloud cover at the start of the interval, 0-1: "the proportion of a grid box covered by cloud"; "Cloud fractions vary from 0 to 1." AIFS Single publishes it as 228164 in % ("See 228164 for the equivalent parameter in "%""), divided by 100.
 {% enddocs %}
 
 {% docs col_precipitation_mm %}
-Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and frozen water, comprising rain and snow, that falls to the Earth's surface", in "depth in metres of water equivalent" (x 1000 for mm).
+Total precipitation over the interval, in mm of water equivalent: "the accumulated liquid and frozen water, comprising rain and snow, that falls to the Earth's surface", in "depth in metres of water equivalent" (x 1000 for mm). AIFS Single publishes it as 228228 in kg m**-2 ("See 228 for the equivalent parameter in "m""), which is mm of water.
 {% enddocs %}
 
 {% docs col_coverage %}
