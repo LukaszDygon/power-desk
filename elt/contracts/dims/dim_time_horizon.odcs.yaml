@@ -24,7 +24,9 @@ schema:
   logicalType: object
   description: 'Time horizons shared by forecasts, prices and capacities: day-, week-, month- and year-ahead,
 
-    intraday (ENTSO-E process types) and the current forecast.'
+    intraday (ENTSO-E process types) and the current forecast. Publisher codes map onto them in
+
+    `map_time_horizon`.'
   dataGranularityDescription: One row per time_horizon.
   context:
     instructions: Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published version

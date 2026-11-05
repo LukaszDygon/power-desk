@@ -1,0 +1,17 @@
+source_dataset,source_code,time_horizon,notes
+ENTSOE_CONTRACT_TYPE,Day-ahead,day_ahead,ENTSO-E contract type as the Transparency Platform exports it (prices and transfer capacities)
+ENTSOE_CONTRACT_TYPE,Intraday,intraday,
+ENTSOE_CONTRACT_TYPE,Week-ahead,week_ahead,
+ENTSOE_CONTRACT_TYPE,Month-ahead,month_ahead,
+ENTSOE_CONTRACT_TYPE,Year-ahead,year_ahead,
+ENTSOE_14.1.D,Day-ahead,day_ahead,The export's day-ahead generation forecast column
+ENTSOE_14.1.D,Intraday,intraday,The export's intraday generation forecast column
+ENTSOE_14.1.D,Current,current,The export's current generation forecast column
+NESO_AUCTION_TYPE,Day Ahead,day_ahead,NESO auction type
+NESO_AUCTION_TYPE,Intraday 1,intraday,
+NESO_AUCTION_TYPE,Intraday 2,intraday,
+NESO_AUCTION_TYPE,Intraday 3,intraday,
+NESO_AUCTION_TYPE,Intraday 4,intraday,
+ENTSOE_6.1.B,*,day_ahead,Day-ahead total load forecast
+NDF,*,day_ahead,National Demand Forecast
+WINDFOR,*,current,Latest published revision of the wind generation forecast

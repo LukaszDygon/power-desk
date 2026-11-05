@@ -22,9 +22,11 @@ schema:
   physicalName: dim_metric
   physicalType: table
   logicalType: object
-  description: 'Measures of the hourly marts: unit, and the hourly aggregation (`hourly_series`): `mean`, the
+  description: 'Measures of the entities and hourly marts: unit, and the hourly aggregation, which `hourly_series`
 
-    time-weighted mean over the minutes holding data; `sum`, the volume pro-rated into the hour.'
+    applies to every entity column listed here: `mean`, the time-weighted mean over the minutes holding
+
+    data; `sum`, the volume pro-rated into the hour.'
   dataGranularityDescription: One row per metric.
   context:
     instructions: Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published version
@@ -49,6 +51,14 @@ schema:
     physicalType: VARCHAR
     description: 'How `hourly_series` aggregates the measure into an hour: `mean`, the time-weighted mean over the minutes
       holding data (power, prices, capacities); `sum`, the published volume pro-rated by its minutes in the hour (energy volumes).'
+    quality:
+    - name: accepted_values_dim_metric_hourly_aggregation__mean__sum
+      description: one of mean, sum
+      type: custom
+      engine: dbt
+      implementation: accepted_values_dim_metric_hourly_aggregation__mean__sum
+      dimension: conformity
+      severity: error
   quality:
   - name: dim_metric_unique
     description: unique on (metric)

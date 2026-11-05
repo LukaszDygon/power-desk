@@ -95,7 +95,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     required: true
     relationships:
     - to: dim_technology.technology_code

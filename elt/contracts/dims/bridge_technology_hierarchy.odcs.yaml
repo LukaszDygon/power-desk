@@ -35,7 +35,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     primaryKey: true
     primaryKeyPosition: 1
   - name: ancestor_technology_code

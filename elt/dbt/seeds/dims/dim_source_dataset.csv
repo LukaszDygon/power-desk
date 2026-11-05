@@ -7,6 +7,7 @@ NDF,bmrs,dataset,Elexon,demand_forecast,30,10YGB----------A
 WINDFOR,bmrs,dataset,Elexon,generation_forecast,60,10YGB----------A
 MID,bmrs,dataset,Elexon,energy_price,30,10YGB----------A
 ENTSOE_PSR,entsoe,code_list,ENTSO-E,,,
+ENTSOE_CONTRACT_TYPE,entsoe,code_list,ENTSO-E,,,
 ENTSOE_6.1.A,entsoe,dataset,ENTSO-E,demand_actual,,
 ENTSOE_6.1.B,entsoe,dataset,ENTSO-E,demand_forecast,,
 ENTSOE_14.1.D,entsoe,dataset,ENTSO-E,generation_forecast,,
@@ -19,6 +20,7 @@ NESO_ELECLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_NEMOLINK,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_NSL,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
 NESO_VIKING,neso,dataset,NESO,transfer_capacity,60,10YGB----------A
+NESO_AUCTION_TYPE,neso,code_list,NESO,,,
 REMIT,bmrs,dataset,Elexon,unavailability,,10YGB----------A
 BMUNITS,bmrs,code_list,Elexon,,,
 ECMWF_IFS_OPER,ecmwf,dataset,ECMWF,weather_forecast,180,10YGB----------A
