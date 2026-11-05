@@ -1,7 +1,9 @@
 """Sheffield Solar PVLive: GB national solar generation outturn (PES region 0), as a stream.
 
-One row per half hour, keyed on the half-hour *ending* time `datetime_gmt` (the cursor).
-Settlement dates downstream are UK-local, so requested date ranges are padded by a day.
+One row per half hour, keyed on the half-hour *ending* time `datetime_gmt` (the cursor), with the
+column names the response lists (`meta`). The table keeps the versions of its rows (`scd2`) merged on
+the key, so a re-estimated half hour loaded again closes its previous version. Settlement dates
+downstream are UK-local, so requested date ranges are padded by a day.
 """
 
 from __future__ import annotations
@@ -11,11 +13,10 @@ import logging
 from typing import Any
 
 import dlt
-from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk_elt.ingest import http
-from power_desk_elt.ingest.spec import RunWindow, SourceSpec
+from power_desk_elt.ingest.spec import SCD2, RunWindow, SourceSpec
 from power_desk_elt.ingest.windows import DateRange, day_after, incremental_window
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,7 @@ logger = logging.getLogger(__name__)
 API_URL = "https://api.pvlive.uk/pvlive/api/v4/pes/0"
 MAX_DAYS_PER_RUN = 31
 DAYS_PER_REQUEST = 7
-# one row per primary key: dlt drops repeats within a load
-DELETE_INSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
+NATURAL_KEY = ["pes_id", "datetime_gmt"]  # the merge key
 
 
 def fetch_half_hours(days: DateRange) -> list[dict[str, Any]]:
@@ -37,8 +37,7 @@ def fetch_half_hours(days: DateRange) -> list[dict[str, Any]]:
             "end": f"{day_after(days.last)}T00:00:00Z",
         },
     )
-    columns = payload.get("meta", ["pes_id", "datetime_gmt", "generation_mw"])
-    return [dict(zip(columns, row, strict=False)) for row in payload.get("data", [])]
+    return [dict(zip(payload["meta"], row, strict=True)) for row in payload["data"]]
 
 
 @dlt.source(name="pvlive")
@@ -49,8 +48,9 @@ def pvlive_source(window: RunWindow) -> DltResource:
 
     @dlt.resource(
         name="pvlive__solar",
-        write_disposition=DELETE_INSERT,
-        primary_key=["pes_id", "datetime_gmt"],
+        write_disposition=SCD2,
+        primary_key=NATURAL_KEY,
+        merge_key=NATURAL_KEY,
         file_format="parquet",
     )
     def solar(

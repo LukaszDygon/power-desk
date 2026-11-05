@@ -22,19 +22,17 @@ from pathlib import Path
 import tempfile
 
 import dlt
-from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 from dlt.sources.filesystem.helpers import fetch_json
 import duckdb
 
 from power_desk_elt.ingest.sources.entsoe_file_library import ExportFile, FileLibraryClient
-from power_desk_elt.ingest.spec import RunWindow, SourceSpec
+from power_desk_elt.ingest.spec import SCD2, RunWindow, SourceSpec
 from power_desk_elt.ingest.windows import DateRange, LastWindow
 
 logger = logging.getLogger(__name__)
 
-SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
 MAX_DAYS_PER_RUN = 186  # about six monthly files per data item and run
 BATCH_ROWS = 50_000
 UPDATE_TIME = "UpdateTime(UTC)"

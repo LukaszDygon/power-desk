@@ -18,12 +18,6 @@ def fetch_json(url: str, params: dict[str, Any] | None = None) -> Any:
     return response.json()
 
 
-def fetch_text(url: str) -> str:
-    response = requests.get(url, timeout=60, headers={"User-Agent": USER_AGENT})
-    response.raise_for_status()
-    return response.text
-
-
 def fetch_if_changed(
     url: str, etag: str | None = None, encoding: str = "utf-8-sig"
 ) -> tuple[str | None, dict[str, str]]:
@@ -48,3 +42,10 @@ def fetch_bytes(url: str, byte_range: tuple[int, int] | None = None) -> bytes | 
             return None
         raise
     return response.content
+
+
+def post(url: str, headers: dict[str, str] | None = None, **kwargs: Any) -> requests.Response:
+    """A POST (e.g. to an authenticated API); raises on an error status."""
+    response = requests.post(url, headers={"User-Agent": USER_AGENT, **(headers or {})}, **kwargs)
+    response.raise_for_status()
+    return response

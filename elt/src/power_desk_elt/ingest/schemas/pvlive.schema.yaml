@@ -1,5 +1,5 @@
 version: 2
-version_hash: TpPLOeEoPVaCWFcNYluCJ6Eh/mhBHDavQgVfZxiwdhA=
+version_hash: YqFfddwuX8DL1qC7JLJZaZSF0vMymlr5VAV6RGIEVQo=
 engine_version: 11
 name: pvlive
 tables:
@@ -49,13 +49,24 @@ tables:
     description: Created by DLT. Tracks completed loads
   pvlive__solar:
     columns:
+      _dlt_valid_from:
+        data_type: timestamp
+        nullable: true
+        x-valid-from: true
+      _dlt_valid_to:
+        data_type: timestamp
+        nullable: true
+        x-valid-to: true
+        x-active-record-timestamp: null
       pes_id:
         nullable: false
         primary_key: true
+        merge_key: true
         data_type: bigint
       datetime_gmt:
         nullable: false
         primary_key: true
+        merge_key: true
         incremental: true
         data_type: timestamp
       generation_mw:
@@ -65,12 +76,13 @@ tables:
         data_type: text
         nullable: false
       _dlt_id:
-        data_type: text
         nullable: false
-        unique: true
-        row_key: true
+        x-row-version: true
+        unique: false
+        row_key: false
+        data_type: text
     file_format: parquet
-    x-merge-strategy: delete-insert
+    x-merge-strategy: scd2
     write_disposition: merge
     resource: pvlive__solar
     x-normalizer:
@@ -131,12 +143,6 @@ normalizers:
   names: snake_case
   json:
     module: dlt.common.normalizers.json.relational
-    config:
-      propagation:
-        tables:
-          pvlive__solar:
-            _dlt_id: _dlt_root_id
 previous_hashes:
-- W+4X3GcCJhebB2cQkzCVZKOSt4HGoJUsCGBLEe56Q9A=
-- yQJEhNSsW5ibmV6lIo+DJPG1l0IUm9wj6ZTwY5/ciBw=
-- BdLJTBqynIGr2NAgQv4j7tig7teXKToJPOYD3u0tvVs=
+- 7GG96L9JH0RDCuSJb9Nz63KPBmbyEVTFfforAut9bv8=
+- HKHBzQ9CX5XQ2ZbvP1d2croSyOMQv5/qfVDaXalYrXw=

@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 from power_desk_elt.catalog import CatalogError
-from power_desk_elt.ingest.http import fetch_json, fetch_text
+from power_desk_elt.ingest.http import fetch_if_changed, fetch_json
 
 NAME = "elexon"
 LABELS = {"datasets": "Elexon Insights API", "glossary": "Elexon BSC Glossary"}
@@ -97,9 +97,10 @@ def glossary_term(slug: str) -> dict[str, str]:
         raise CatalogError(f"BSC glossary has no term with slug {slug!r}")
     entry = matches[0]
     title = html.unescape(entry["title"]["rendered"])
+    page, _ = fetch_if_changed(entry["link"])
     return {
         "title": title,
-        **parse_glossary_page(fetch_text(entry["link"]), title),
+        **parse_glossary_page(page or "", title),
         "url": entry["link"],
         "modified": entry["modified"][:10],
     }
