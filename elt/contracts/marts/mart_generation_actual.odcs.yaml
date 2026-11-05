@@ -82,7 +82,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     relationships:
     - to: dim_technology.technology_code
     quality:
@@ -124,8 +124,7 @@ schema:
     logicalType: number
     physicalType: DOUBLE
     description: Net generation for the technology over the interval, in MW (mean of the interval). FUELINST 5-minute averages;
-      PVLive half hours spread over their six 5-minute intervals; ENTSO-E aggregated net generation output per market time
-      unit.
+      PVLive half-hourly estimates; ENTSO-E aggregated net generation output per market time unit.
     customProperties:
     - property: unit
       value: MW
@@ -153,7 +152,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   - name: _series_key
     logicalType: integer
     physicalType: UBIGINT

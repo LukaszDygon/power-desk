@@ -49,7 +49,8 @@ models:
           instructions: >-
             Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One
             entity holds every resolution and republication published, so intervals can overlap; for hourly or
-            summed series, query the entity's hourly mart (`mart_<entity>`), which resolves the overlaps.
+            summed series, query the entity's hourly mart (`mart_<entity>`, where it has one), which resolves
+            the overlaps.
           constraints:
             - Do not sum rows of different `interval_minutes` or overlapping intervals; aggregate the hourly mart.
             - >-
@@ -61,7 +62,7 @@ models:
       +schema: dims
       +materialized: table
       +meta:
-        layer_context:
+        layer_context: &dims_layer_context
           instructions: >-
             Dimensions explain the keys of entities and marts. Versioned dimensions keep one row per published
             version (`valid_from`, `valid_to`, `is_current`). `bridge_*_hierarchy` relates each key to itself
@@ -70,46 +71,41 @@ models:
             - >-
               Do not join a versioned dimension on its key alone, which repeats the row per version: add
               `is_current` (or the version valid at the row's time).
+    # marts/: one hourly table per time-series entity across sources and areas (values, coverage, dimension
+    # keys, provenance), each built by hourly_series and rebuilt for the (series, hour) pairs pending loads
+    # touch (macros/time/hourly_series.sql)
     marts:
       +schema: marts
-      # marts/combined/: one hourly table per entity across sources and areas (values, coverage, dimension
-      # keys, provenance), rebuilt for the (series, hour) pairs pending loads touch (macros/time/hourly_series.sql)
-      combined:
-        +materialized: incremental
-        +incremental_strategy: delete+insert
-        +meta:
-          dlt_tracked: true
-          dlt_recent_column: _last_dlt_load_id
-          layer_context:
-            instructions: >-
-              One row per series and hour holding data: `timestamp_utc` is the UTC hour start, the series every
-              dimension key plus `source_dataset` and `source_code`. Each measure is aggregated into the hour as
-              its `hourlyAggregation` says (`mean`: time-weighted over the minutes holding data; `sum`: pro-rated
-              into the hour); `coverage` is the fraction of the hour holding data. Filter time with
-              `timestamp_utc >= <start> and timestamp_utc < <end>`.
-            constraints:
-              - >-
-                Do not sum or average across `area_eic_code` before choosing one area level: areas are published
-                at several levels (bidding zone, control area, country). Filter on a `dim_area` role (e.g.
-                `is_bidding_zone`) or roll up with `bridge_area_hierarchy`.
-              - >-
-                Do not add up rows of different `source_dataset` for the same quantity, area and hour: sources
-                overlap (e.g. GB from Elexon and from ENTSO-E) and their definitions differ. Keep one source per
-                quantity and area.
-              - Do not read a missing hour or a null measure as zero; zero is a published value.
-      # marts/<scope>/: incremental business tables, rebuilt for the grains pending loads touch
-      gb:
-        +materialized: incremental
-        +incremental_strategy: delete+insert
-        +meta:
-          dlt_tracked: true
-          dlt_recent_column: _last_dlt_load_id
+      +materialized: incremental
+      +incremental_strategy: delete+insert
+      +meta:
+        dlt_tracked: true
+        dlt_recent_column: _last_dlt_load_id
+        layer_context:
+          instructions: >-
+            One row per series and hour holding data: `timestamp_utc` is the UTC hour start, the series every
+            dimension key plus `source_dataset` and `source_code`. Each measure is aggregated into the hour as
+            its `hourlyAggregation` says (`mean`: time-weighted over the minutes holding data; `sum`: pro-rated
+            into the hour); `coverage` is the fraction of the hour holding data. Filter time with
+            `timestamp_utc >= <start> and timestamp_utc < <end>`.
+          constraints:
+            - >-
+              Do not sum or average across `area_eic_code` before choosing one area level: areas are published
+              at several levels (bidding zone, control area, country). Filter on a `dim_area` role (e.g.
+              `is_bidding_zone`) or roll up with `bridge_area_hierarchy`.
+            - >-
+              Do not add up rows of different `source_dataset` for the same quantity, area and hour: sources
+              overlap (e.g. GB from Elexon and from ENTSO-E) and their definitions differ. Keep one source per
+              quantity and area.
+            - Do not read a missing hour or a null measure as zero; zero is a published value.
 
 # Curated dimensions (seeds/dims) and publisher-code mappings (seeds/mappings) live in the
-# same schema as the published dimensions they extend.
+# same schema as the published dimensions they extend; a `dim_*` seed is itself a dimension.
 seeds:
   power_desk:
     +schema: dims
+    +meta:
+      layer_context: *dims_layer_context
 
 data_tests:
   power_desk:

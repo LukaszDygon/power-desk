@@ -207,7 +207,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   - name: _series_key
     logicalType: integer
     physicalType: UBIGINT

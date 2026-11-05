@@ -1,7 +1,7 @@
 """Describe the queryable relations from the dbt manifest.
 
     uv run python -m power_desk_elt.catalog.describe                 # list relations by layer
-    uv run python -m power_desk_elt.catalog.describe mart_gb_generation_mix   # columns of one relation
+    uv run python -m power_desk_elt.catalog.describe mart_generation_actual   # columns of one relation
 
 Reads `elt/dbt/target/manifest.json` (refresh with `dbt parse` or `dbt build`).
 """
@@ -43,7 +43,7 @@ def print_layers(rels: dict[str, dict]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").partition("\n")[0])
-    parser.add_argument("relation", nargs="?", help="relation name, e.g. mart_gb_generation_mix")
+    parser.add_argument("relation", nargs="?", help="relation name, e.g. mart_generation_actual")
     args = parser.parse_args()
 
     path = dbt_manifest_path()

@@ -28,9 +28,9 @@ schema:
 
     per `message_id` and `interval_index`. An event (`mrid`) is revised by new messages; only its latest
 
-    revision (`is_latest_revision`) applies. Intervals start and end at any second (`interval_minutes` may
+    revision (`is_latest_revision`) applies. An open-ended event has no `interval_minutes`. REMIT has no
 
-    be fractional), and an open-ended event has no `interval_minutes`.
+    hourly mart: combine it with the data it concerns in the query.
 
 
     **REMIT messages (urgent market messages)**
@@ -56,11 +56,12 @@ schema:
   context:
     instructions: 'Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One entity
       holds every resolution and republication published, so intervals can overlap; for hourly or summed series, query the
-      entity''s hourly mart (`mart_<entity>`), which resolves the overlaps.
+      entity''s hourly mart (`mart_<entity>`, where it has one), which resolves the overlaps.
 
 
       For the unavailability as currently known, filter `is_latest_revision`; for what was known at a time T, take each event''s
-      latest revision with `publish_time_utc` <= T. For hourly figures, query `mart_unavailability` or `mart_gb_generation_unavailability`.'
+      latest revision with `publish_time_utc` <= T. An interval ends at `timestamp_utc + interval_minutes`; for hourly figures,
+      split the intervals across the hours they overlap in the query.'
     constraints:
     - constraint: Do not sum rows of different `interval_minutes` or overlapping intervals; aggregate the hourly mart.
     - constraint: 'Do not sum or average across `area_eic_code` before choosing one area level: areas are published at several
@@ -92,8 +93,8 @@ schema:
       dimension: completeness
       severity: error
   - name: interval_minutes
-    logicalType: number
-    physicalType: DOUBLE
+    logicalType: integer
+    physicalType: INTEGER
     description: Length of the row's interval in minutes (the publisher's resolution, e.g. the market time unit). Several
       resolutions coexist across areas and over time.
   - name: area_eic_code
@@ -119,7 +120,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     relationships:
     - to: dim_technology.technology_code
     quality:
@@ -390,7 +391,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
     required: true
     quality:
     - name: not_null_ods_unavailability_publish_time_utc

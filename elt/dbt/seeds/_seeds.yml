@@ -1,13 +1,15 @@
+# Curated reference data. A seed named `dim_*` is itself a conformed dimension (no model copies it); the
+# others are inputs of the dimension models (seeds/dims) or mappings of publisher codes (seeds/mappings).
 seeds:
-  - name: technologies
+  - name: dim_technology
     description: |
-      Canonical technology tree.
+      Canonical technologies, a tree from broad groups to specific technologies.
     config:
       column_types:
         is_zero_carbon: boolean
     data_tests:
       - dlt_unique:
-          name: technologies_unique
+          name: dim_technology_unique
           arguments:
             columns: [technology_code]
     columns:
@@ -17,15 +19,23 @@ seeds:
         description: "{{ doc('col_name') }}"
       - name: parent_technology_code
         description: "{{ doc('col_parent_technology_code') }}"
+        data_tests:
+          - relationships:
+              name: dim_technology_known_parent
+              arguments:
+                to: ref('dim_technology')
+                field: technology_code
       - name: is_zero_carbon
         description: "{{ doc('col_is_zero_carbon') }}"
 
-  - name: time_horizons
+  - name: dim_time_horizon
     description: |
-      Time horizons shared by forecasts, prices and capacities, with their ENTSO-E process type.
+      Time horizons shared by forecasts, prices and capacities: day-, week-, month- and year-ahead,
+      intraday (ENTSO-E process types) and the current forecast. Publisher codes map onto them in
+      `map_time_horizon`.
     data_tests:
       - dlt_unique:
-          name: time_horizons_unique
+          name: dim_time_horizon_unique
           arguments:
             columns: [time_horizon]
     columns:
@@ -38,12 +48,14 @@ seeds:
       - name: description
         description: "{{ doc('col_description') }}"
 
-  - name: metrics
+  - name: dim_metric
     description: |
-      Measures of the hourly marts, with their unit and how an hour aggregates them.
+      Measures of the entities and hourly marts: unit, and the hourly aggregation, which `hourly_series`
+      applies to every entity column listed here: `mean`, the time-weighted mean over the minutes holding
+      data; `sum`, the volume pro-rated into the hour.
     data_tests:
       - dlt_unique:
-          name: metrics_unique
+          name: dim_metric_unique
           arguments:
             columns: [metric]
     columns:
@@ -111,7 +123,7 @@ seeds:
           - relationships:
               name: nonconforming_eic_codes_known_dataset
               arguments:
-                to: ref('source_datasets')
+                to: ref('dim_source_dataset')
                 field: source_dataset
       - name: nonconformity
         description: "{{ doc('col_nonconformity') }}"
@@ -186,12 +198,12 @@ seeds:
       - name: is_hvdc
         description: "{{ doc('col_is_hvdc') }}"
 
-  - name: source_datasets
+  - name: dim_source_dataset
     description: |
-      Datasets and code lists known to the warehouse.
+      Published datasets and code lists, with the entity they feed, native grain and default area.
     data_tests:
       - dlt_unique:
-          name: source_datasets_unique
+          name: dim_source_dataset_unique
           arguments:
             columns: [source_dataset]
     columns:
@@ -209,6 +221,12 @@ seeds:
         description: "{{ doc('col_native_interval_minutes') }}"
       - name: default_area_eic_code
         description: "{{ doc('col_default_area_eic_code') }}"
+        data_tests:
+          - relationships:
+              name: dim_source_dataset_known_area
+              arguments:
+                to: ref('dim_area')
+                field: area_eic_code
 
   - name: map_technology
     description: |
@@ -225,7 +243,7 @@ seeds:
           - relationships:
               name: map_technology_known_dataset
               arguments:
-                to: ref('source_datasets')
+                to: ref('dim_source_dataset')
                 field: source_dataset
       - name: source_code
         description: "{{ doc('col_source_code') }}"
@@ -235,10 +253,41 @@ seeds:
           - relationships:
               name: map_technology_known_technology
               arguments:
-                to: ref('technologies')
+                to: ref('dim_technology')
                 field: technology_code
       - name: expected_every_period
         description: "{{ doc('col_expected_every_period') }}"
+      - name: notes
+        description: "{{ doc('col_notes') }}"
+
+  - name: map_time_horizon
+    description: |
+      Publisher time-horizon codes (ENTSO-E contract types, NESO auction types, ENTSO-E forecast columns)
+      mapped onto time horizons; `*`: every row of a dataset published for one horizon.
+    data_tests:
+      - dlt_unique:
+          name: map_time_horizon_unique
+          arguments:
+            columns: [source_dataset, source_code]
+    columns:
+      - name: source_dataset
+        description: "{{ doc('col_source_dataset') }}"
+        data_tests:
+          - relationships:
+              name: map_time_horizon_known_dataset
+              arguments:
+                to: ref('dim_source_dataset')
+                field: source_dataset
+      - name: source_code
+        description: "{{ doc('col_source_code') }}"
+      - name: time_horizon
+        description: "{{ doc('col_time_horizon') }}"
+        data_tests:
+          - relationships:
+              name: map_time_horizon_known_horizon
+              arguments:
+                to: ref('dim_time_horizon')
+                field: time_horizon
       - name: notes
         description: "{{ doc('col_notes') }}"
 
@@ -257,7 +306,7 @@ seeds:
           - relationships:
               name: map_border_known_dataset
               arguments:
-                to: ref('source_datasets')
+                to: ref('dim_source_dataset')
                 field: source_dataset
       - name: source_code
         description: "{{ doc('col_source_code') }}"
@@ -287,7 +336,7 @@ seeds:
           - relationships:
               name: map_area_known_dataset
               arguments:
-                to: ref('source_datasets')
+                to: ref('dim_source_dataset')
                 field: source_dataset
       - name: source_code
         description: "{{ doc('col_source_code') }}"
@@ -306,7 +355,7 @@ seeds:
     description: |
       ENTSO-E PsrType code list (production types): the name the Transparency Platform displays and
       the code list definition. Translates published production type names into the codes that
-      `map_technology` maps (`source_dataset = 'ENTSOE_PSR'`).
+      `map_technology` maps (`source_dataset = 'ENTSOE_PSR'`), through the macro `entsoe_psr_type`.
     data_tests:
       - dlt_unique:
           name: entsoe_psr_types_unique_code

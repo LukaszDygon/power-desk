@@ -36,7 +36,6 @@ def test_lineage_runs_from_publisher_to_widget(client):
     assert {
         ("api_bmrs__fuelinst", "bmrs__fuelinst"),
         ("stg_bmrs__fuelinst", "ods_generation_actual"),
-        ("ods_generation_actual", "mart_gb_generation_mix"),
         ("ods_generation_actual", "mart_generation_actual"),
         ("mart_generation_actual", "widget_market"),
     } <= edges

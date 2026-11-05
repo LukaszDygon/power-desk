@@ -3,8 +3,8 @@
 columns:
   generation_mw:
     description: Net generation for the technology over the interval, in MW (mean of the interval).
-      FUELINST 5-minute averages; PVLive half hours spread over their six 5-minute intervals; ENTSO-E
-      aggregated net generation output per market time unit.
+      FUELINST 5-minute averages; PVLive half-hourly estimates; ENTSO-E aggregated net generation output
+      per market time unit.
   consumption_mw:
     description: Power absorbed over the interval, in MW, where published separately (ENTSO-E pumped
       storage and energy storage); null otherwise. Total load already deducts it.
@@ -67,111 +67,6 @@ columns:
     refs:
     - elexon:glossary/wind-generation-forecast
     links: [entsoe_ddd]
-  wind_mw:
-    description: FUELINST fuel type `WIND`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  solar_mw:
-    description: PVLive `generation_mw` for GB (PES region 0), in MW.
-  nuclear_mw:
-    description: FUELINST fuel type `NUCLEAR`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  ccgt_gas_mw:
-    description: FUELINST fuel type `CCGT`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  ocgt_gas_mw:
-    description: FUELINST fuel type `OCGT`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  oil_mw:
-    description: FUELINST fuel type `OIL`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  coal_mw:
-    description: FUELINST fuel type `COAL`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  biomass_mw:
-    description: FUELINST fuel type `BIOMASS`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  hydro_mw:
-    description: FUELINST fuel type `NPSHYD`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  pumped_storage_mw:
-    description: FUELINST fuel type `PS`, in MW; negative while pumping.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  other_mw:
-    description: FUELINST fuel type `OTHER`, in MW.
-    refs:
-    - elexon:glossary/fuel-type
-    - elexon:datasets/FUELINST
-  imports_mw:
-    description: Net interconnector flow, the sum of the FUELINST `INT*` fuel types, in MW; negative when GB
-      exports.
-    refs:
-    - elexon:glossary/interconnector
-    - elexon:datasets/FUELINST
-  total_generation_mw:
-    description: 'NESO GENERATION: "Sum of gas, coal, nuclear, wind, wind embedded, hydro, imports, biomass,
-      others, solar and storage." Here: every FUELINST fuel type plus PVLive solar, counting interconnector
-      imports and storage output only (exports and pumping are not generation), in MW. FUELINST has no
-      embedded wind.'
-    links: [neso_historic_generation_mix]
-  zero_carbon_mw:
-    description: 'NESO ZERO_CARBON: "Zero carbon generation e.g. wind, solar, hydro, nuclear". Here: generation
-      from technologies with `is_zero_carbon` in `dim_technology`, in MW.'
-    links: [neso_historic_generation_mix]
-  zero_carbon_share_pct:
-    description: 'NESO ZERO_CARBON_perc: "Fuel Type as a percentage for zero carbon generation e.g. wind, solar,
-      hydro, nuclear". `zero_carbon_mw` / `total_generation_mw` x 100.'
-    links: [neso_historic_generation_mix]
-  actual_demand_mw:
-    description: Initial National Demand Outturn for the settlement period, in MW.
-    refs:
-    - elexon:glossary/initial-national-demand-out-turn
-  delta_mw:
-    description: Actual minus forecast national demand, in MW (positive = demand above forecast).
-  absolute_error_pct:
-    description: Absolute forecast error as a percentage of actual national demand.
-  hour_utc:
-    description: Start of the hour (UTC).
-  date_utc:
-    description: UTC calendar date of the hour.
-  avg_demand_mw:
-    description: Hourly mean of actual national demand (INDO), in MW.
-  avg_forecast_demand_mw:
-    description: Hourly mean of forecast national demand (NDF), in MW.
-  avg_generation_mw:
-    description: Hourly mean of total generation, in MW.
-  avg_wind_mw:
-    description: Hourly mean of wind generation, in MW.
-  avg_solar_mw:
-    description: Hourly mean of solar generation, in MW.
-  avg_nuclear_mw:
-    description: Hourly mean of nuclear generation, in MW.
-  avg_gas_mw:
-    description: Hourly mean of CCGT generation, in MW.
-  avg_zero_carbon_share_pct:
-    description: Hourly mean of `zero_carbon_share_pct`, in percent.
-    links: [neso_historic_generation_mix]
-  peak_demand_mw:
-    description: Highest settlement-period national demand within the hour, in MW.
-  min_demand_mw:
-    description: Lowest settlement-period national demand within the hour, in MW.
   out_area_eic_code:
     description: EIC of the area flows come out from (the out area of an oriented couple of areas).
     links: [{link: entsoe_brs, section: 7.4.1 Data description, page: 66}]
@@ -286,7 +181,3 @@ columns:
       period (no outage profile published).
     links:
     - {link: acer_remit_mop, section: Data Field No (20) Interval Start, page: 90}
-  events:
-    description: Number of REMIT events (distinct mRID) adding to the row.
-    links:
-    - {link: acer_remit_mop, section: Data Field No (1) Message ID, page: 74}

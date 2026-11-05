@@ -90,18 +90,9 @@ columns:
     description: Time the state version was written.
   version_hash:
     description: Content hash of the stored state.
-  _source_rows:
-    description: Number of upstream rows aggregated into this row (fan-out guard).
-  _fuel_types:
-    description: Distinct fuel types aggregated into this row; equals `_source_rows` unless a fuel is
-      duplicated.
   _last_dlt_load_id:
     description: Latest dlt load id that contributed to this row; drives incremental rebuilds and test
       scoping.
-  _dbt_invocation_id:
-    description: dbt invocation that last (re)built this row; joins to `dlt_meta.dlt_load_audit.dbt_invocation_id`.
-  _dbt_updated_at:
-    description: Time this row was last (re)built.
   timestamp_utc:
     description: Start of the row's interval as a UTC timestamp; the interval length is `interval_minutes`
       where the model has it, else the model's grain (see the model description).
@@ -109,7 +100,7 @@ columns:
     description: Length of the row's interval in minutes (the publisher's resolution, e.g. the market time
       unit). Several resolutions coexist across areas and over time.
   publish_time_utc:
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   source_dataset:
     description: Source feed (dataset code) the row comes from. Entity models union the staging models
       of every source that provides the entity.

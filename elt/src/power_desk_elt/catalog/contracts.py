@@ -1,4 +1,4 @@
-"""Export ODCS data contracts for the queryable relations (`marts`, `ods`, `dims`).
+"""Export ODCS data contracts for the queryable relations (`marts`, `ods`, `dims`, dimension seeds `dim_*`).
 
     uv run python -m power_desk_elt.catalog.contracts [--check]
 
@@ -104,7 +104,8 @@ def units(con: duckdb.DuckDBPyConnection) -> dict[str, dict[str, str]]:
 def raw_descriptions(node: dict[str, Any]) -> tuple[str, dict[str, str]]:
     """The model's and its columns' descriptions as written (with their `{{ doc() }}` references)."""
     path = DBT_PROJECT_DIR / node["patch_path"].partition("://")[2]
-    models = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("models", [])
+    section = "seeds" if node["resource_type"] == "seed" else "models"
+    models = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get(section, [])
     model = next(m for m in models if m["name"] == node["name"])
     return model.get("description", ""), {c["name"]: c.get("description", "") for c in model.get("columns", [])}
 
@@ -142,7 +143,8 @@ def test_rule(test: dict[str, Any], nodes: dict[str, Any]) -> tuple[str, str]:
 
 def relationship_target(test: dict[str, Any], nodes: dict[str, Any]) -> str:
     """`relation.column` a relationships test points at (shorthand reference)."""
-    target = next(n for n in test["depends_on"]["nodes"] if n != test["attached_node"])
+    # the other node, or the attached node itself for a relationship within one relation (a parent key)
+    target = next((n for n in test["depends_on"]["nodes"] if n != test["attached_node"]), test["attached_node"])
     return f"{nodes[target]['name']}.{test['test_metadata']['kwargs']['field']}"
 
 
@@ -271,7 +273,7 @@ def contract(
 
 
 def export(manifest: dict[str, Any], db_path: Path | str | None = None) -> dict[Path, str]:
-    """{path: contract YAML} for every model in `SCHEMAS`."""
+    """{path: contract YAML} for every model in `SCHEMAS`, and every seed that is a dimension (`dim_*`)."""
     nodes = manifest["nodes"]
     catalogue = Catalogue(load_definitions(), load_snapshots())
     version = yaml.safe_load((DBT_PROJECT_DIR / "dbt_project.yml").read_text(encoding="utf-8"))["version"]
@@ -283,9 +285,10 @@ def export(manifest: dict[str, Any], db_path: Path | str | None = None) -> dict[
         columns, metrics = warehouse_columns(con), units(con)
     outputs = {}
     for unique_id, node in sorted(nodes.items()):
-        if node["resource_type"] != "model" or node["schema"] not in SCHEMAS:
-            continue
         name = node["alias"] or node["name"]
+        dimension_seed = node["resource_type"] == "seed" and name.startswith("dim_")
+        if not (node["resource_type"] == "model" or dimension_seed) or node["schema"] not in SCHEMAS:
+            continue
         doc = contract(
             node, columns[node["schema"], name], tests.get(unique_id, []), nodes, catalogue, metrics, version
         )

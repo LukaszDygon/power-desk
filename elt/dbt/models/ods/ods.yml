@@ -1,6 +1,9 @@
 # Entities: every source providing the entity at its published interval, every resolution published
 # (overlaps are resolved by the hourly marts, most recently published first). Columns: keys (time,
 # interval, area, technology, horizon), measures, provenance; GB settlement columns are null elsewhere.
+# Derived fields come one way each: `interval_minutes` (macros/time/intervals.sql), `time_horizon`
+# (map_time_horizon), `technology_code` (map_technology), the dataset's interval and area where the
+# publisher gives none (dim_source_dataset); `publish_time_utc` is null where the publisher gives none.
 models:
   - name: ods_weather_forecast
     description: |
@@ -113,9 +116,9 @@ models:
 
   - name: ods_generation_actual
     description: |
-      Actual generation per area, technology and interval, across sources: GB at 5-minute grain
-      (FUELINST fuel types plus PVLive solar), ENTSO-E areas per market time unit and production type.
-      ENTSO-E publishes the same generation at several area levels.
+      Actual generation per area, technology and interval, across sources, each at its published
+      interval: GB FUELINST fuel types every 5 minutes and PVLive solar per half hour, ENTSO-E areas per
+      market time unit and production type. ENTSO-E publishes the same generation at several area levels.
 
       {{ doc('dataset_bmrs__fuelinst') }}
 
@@ -363,7 +366,7 @@ models:
       - dlt_unique:
           name: ods_transmission_demand_actual_unique_key
           arguments:
-            columns: [timestamp_utc, area_eic_code, source_dataset]
+            columns: [timestamp_utc, interval_minutes, area_eic_code, source_dataset]
     columns:
       - name: timestamp_utc
         description: "{{ doc('col_timestamp_utc') }}"
@@ -556,8 +559,8 @@ models:
       Unavailability of electricity facilities per published REMIT message (every revision) and interval: the
       outage profile's intervals where the message publishes one, else the whole event period. Grain: one row
       per `message_id` and `interval_index`. An event (`mrid`) is revised by new messages; only its latest
-      revision (`is_latest_revision`) applies. Intervals start and end at any second (`interval_minutes` may
-      be fractional), and an open-ended event has no `interval_minutes`.
+      revision (`is_latest_revision`) applies. An open-ended event has no `interval_minutes`. REMIT has no
+      hourly mart: combine it with the data it concerns in the query.
 
       {{ doc('dataset_bmrs__remit') }}
     config:
@@ -565,8 +568,9 @@ models:
         context:
           instructions: >-
             For the unavailability as currently known, filter `is_latest_revision`; for what was known at a
-            time T, take each event's latest revision with `publish_time_utc` <= T. For hourly figures, query
-            `mart_unavailability` or `mart_gb_generation_unavailability`.
+            time T, take each event's latest revision with `publish_time_utc` <= T. An interval ends at
+            `timestamp_utc + interval_minutes`; for hourly figures, split the intervals across the hours they
+            overlap in the query.
           constraints:
             - >-
               Do not sum across revisions of one event (`mrid`): each revision restates the event. Filter

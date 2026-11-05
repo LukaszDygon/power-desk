@@ -1,21 +1,13 @@
-{{ config(
-    incremental_strategy='append',
-    pre_hook="{{ delete_touched('mrid', remit_touched_events(ref('stg_bmrs__remit'))) }}"
-) }}
+{{ config(unique_key=['message_id']) }}
 
 -- Unavailability of electricity facilities from REMIT messages, every revision: one row per message and
--- interval, the outage profile's intervals where the message publishes one, else the event period. A build
--- rebuilds every event (mRID) a pending load touched, all its revisions, since a revision can shorten or
--- withdraw an event (macros/dlt/replace_touched.sql).
-with touched as (
-    select distinct mrid from {{ ref('stg_bmrs__remit') }} where {{ dlt_incremental_filter('_dlt_load_id') }}
-),
-
-messages as (
-    select m.*
-    from {{ ref('stg_bmrs__remit') }} m
-    semi join touched using (mrid)
-    where m.message_type = 'UnavailabilitiesOfElectricityFacilities'
+-- interval, the outage profile's intervals where the message publishes one, else the event period. The
+-- partition is the event (mRID): a build replaces every message of an event a pending load touched, since
+-- a new revision moves `is_latest_revision` off the earlier ones.
+with messages as (
+    select *
+    from {{ pending_partitions(ref('stg_bmrs__remit'), ['mrid'], hourly=false) }}
+    where message_type = 'UnavailabilitiesOfElectricityFacilities'
 ),
 
 profiles as (
@@ -36,7 +28,7 @@ intervals as (
 
 select
     i.start_utc as timestamp_utc,
-    date_diff('second', i.start_utc, i.end_utc) / 60.0 as interval_minutes,
+    {{ interval_minutes('i.start_utc', 'i.end_utc') }} as interval_minutes,
     m.bidding_zone as area_eic_code,
     t.technology_code,
     r.resource_code,

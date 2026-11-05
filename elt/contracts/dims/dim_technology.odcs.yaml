@@ -35,7 +35,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     primaryKey: true
     primaryKeyPosition: 1
   - name: name
@@ -47,10 +47,10 @@ schema:
     physicalType: VARCHAR
     description: Next broader technology in the tree; null for top-level groups.
     relationships:
-    - to: technologies.technology_code
+    - to: dim_technology.technology_code
     quality:
     - name: dim_technology_known_parent
-      description: every value is a key of technologies.technology_code
+      description: every value is a key of dim_technology.technology_code
       type: custom
       engine: dbt
       implementation: dim_technology_known_parent
