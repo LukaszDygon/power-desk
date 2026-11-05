@@ -22,6 +22,9 @@ links:
   neso_datastore_api:
     title: NESO Data Portal API guidance (CKAN datastore)
     url: https://www.neso.energy/data-portal/api-guidance
+  ckan_datastore:
+    title: CKAN DataStore extension (the portal's datastore)
+    url: https://docs.ckan.org/en/latest/maintaining/datastore.html
 
 sources:
   neso:
@@ -89,3 +92,9 @@ columns:
   reason_for_restriction_from_gb:
     description: Reason for the restriction from GB, e.g. `Margin Extremes`; `No Restriction` where none applies.
     links: [neso_nsl]
+  _id:
+    description: The datastore's own row id (CKAN `_id`), unique within the datastore resource.
+    links: [ckan_datastore, neso_datastore_api]
+  _full_text:
+    description: The datastore's own full-text search index of the row (CKAN `_full_text`, a PostgreSQL tsvector).
+    links: [ckan_datastore, neso_datastore_api]

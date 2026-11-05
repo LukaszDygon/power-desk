@@ -14,6 +14,9 @@ import re
 from typing import Any
 from unittest.mock import patch
 
+import duckdb
+import pyarrow as pa
+
 from power_desk_elt.ingest import http
 from power_desk_elt.ingest.seed import synthetic
 from power_desk_elt.ingest.sources import bmrs, desnz_repd, ecmwf, entsoe_eic, neso
@@ -34,10 +37,6 @@ REPD_FILE = "REPD_Publication_seed.csv"
 # a step file on the ECMWF open-data portal (`ecmwf.Dataset.file_url`)
 ECMWF_FILE = re.compile(
     r"/(?P<model>[^/]+)/(?P<resolution>[^/]+)/(?P<stream>[^/]+)/(?P<run>\d{10})0000-(?P<step>\d+)h-[^.]+\.(?P<ext>index|grib2)$"
-)
-# the parts of a NESO upload query (`neso.upload_query`) the replay answers
-NESO_QUERY = re.compile(
-    r"from \"(?P<resource_id>[^\"]+)\" .* >= '(?P<first>[^']+)' .* < '(?P<end>[^']+)' .* offset (?P<offset>\d+)"
 )
 
 
@@ -66,7 +65,7 @@ class SeedPublishers:
             folder = name.split("_", 2)[2].removesuffix(".csv")
             exports.setdefault(folder, {})[name] = ("seed", gzip.decompress(path.read_bytes()))
         files = {url: (seed_dir / name).read_text(encoding="utf-8") for url, name in REFERENCE_FILES.items()}
-        files[REPD_URL] = (seed_dir / "desnz_repd" / REPD_FILE).read_bytes().decode(desnz_repd.ENCODING)
+        files[REPD_URL] = (seed_dir / "desnz_repd" / REPD_FILE).read_bytes().decode(desnz_repd.REPD.encoding)
         first = date.fromisoformat(start_date)
         runs = {
             datetime(day.year, day.month, day.day, hour, tzinfo=UTC)
@@ -98,15 +97,17 @@ class SeedPublishers:
         return {"data": [r for r in self.records[dataset.code] if first <= r[dataset.cursor] <= last]}
 
     def neso_page(self, sql: str) -> list[dict[str, Any]]:
-        query = NESO_QUERY.search(sql)
-        assert query, sql
-        dataset = next(dataset for dataset in neso.DATASETS if dataset.resource_id == query["resource_id"])
-        rows = sorted(
-            (r for r in self.records[dataset.resource] if query["first"] <= r[neso.UPLOAD_TIME] < query["end"]),
-            key=lambda r: r[neso.UPLOAD_TIME],
-        )
-        offset = int(query["offset"])
-        return [{"_id": offset + i, **row} for i, row in enumerate(rows[offset : offset + neso.PAGE_ROWS], 1)]
+        """The source's query run on the datastore resources, each with the datastore's own columns."""
+        with duckdb.connect() as con:
+            for dataset in neso.DATASETS:
+                rows = [
+                    {"_id": n, "_full_text": " ".join(f"'{value}'" for value in row.values()), **row}
+                    for n, row in enumerate(self.records[dataset.resource], 1)
+                ]
+                con.register(dataset.resource_id, pa.Table.from_pylist(rows))
+            result = con.execute(sql)
+            columns = [column[0] for column in result.description or ()]
+            return [dict(zip(columns, row, strict=True)) for row in result.fetchall()]
 
     def fetch_if_changed(
         self, url: str, etag: str | None = None, encoding: str = "utf-8-sig"

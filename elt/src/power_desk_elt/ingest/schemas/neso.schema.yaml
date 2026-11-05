@@ -1,5 +1,5 @@
 version: 2
-version_hash: H7gsSdiGdx9MXUttGzeDDBYsD+ITlQtHxpH2FjHF3Gw=
+version_hash: sue4bn9PiyoyWOCHfqI5hVN7HUQcLZS7XhjcV7J00Yg=
 engine_version: 11
 name: neso
 tables:
@@ -71,6 +71,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -84,6 +87,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -124,6 +130,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -137,6 +146,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -177,6 +189,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -190,6 +205,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -230,6 +248,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -243,6 +264,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -283,6 +307,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -296,6 +323,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -336,6 +366,9 @@ tables:
         primary_key: true
         incremental: true
         data_type: timestamp
+      _full_text:
+        data_type: text
+        nullable: true
       reason_for_restriction_to_gb:
         data_type: text
         nullable: true
@@ -349,6 +382,9 @@ tables:
         data_type: text
       reason_for_restriction_from_gb:
         data_type: text
+        nullable: true
+      _id:
+        data_type: bigint
         nullable: true
       _dlt_load_id:
         data_type: text
@@ -424,4 +460,3 @@ normalizers:
 previous_hashes:
 - XNhNOyQoIiOR4Et/Pq8ofB1TJoayktALVa3TWAZ3Qlk=
 - HfYKLciKPiCfG6SVAG8qxBS8ORI3ihB86ye/yEo7FVo=
-- H7gsSdiGdx9MXUttGzeDDBYsD+ITlQtHxpH2FjHF3Gw=

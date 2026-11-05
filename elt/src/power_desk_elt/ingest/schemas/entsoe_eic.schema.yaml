@@ -1,5 +1,5 @@
 version: 2
-version_hash: 1Hxc2He5rtCYfzWsJyIeX/6L3UjkC89CsLYtGV3pE7g=
+version_hash: r0tlUk8qUePh0EXI7KetjSyzcnGSoihX48eAgOJfktc=
 engine_version: 11
 name: entsoe_eic
 tables:
@@ -178,11 +178,8 @@ tables:
       email:
         data_type: text
         nullable: true
-      electricity:
-        data_type: bool
-        nullable: true
-      gas:
-        data_type: bool
+      operates_in:
+        data_type: text
         nullable: true
       _dlt_load_id:
         data_type: text

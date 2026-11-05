@@ -172,7 +172,7 @@ The permitted functions (roles) of EIC codes. Only a restricted list of function
 {% docs dataset_entsoe_eic__issuing_offices %}
 **EIC Local Issuing Offices**
 
-Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique two-character code that begins every EIC it issues. Parsed from the Local Issuing Offices table on the EIC page.
+Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique two-character code that begins every EIC it issues. The Local Issuing Offices table on the EIC page, one column per header: a cell's text, link address or icon names.
 {% enddocs %}
 
 {% docs dataset_neso__ifa_ntc %}
@@ -1209,6 +1209,10 @@ Issuing office page about EIC codes.
 Contact address of the issuing office.
 {% enddocs %}
 
+{% docs col_operates_in %}
+The sectors the issuing office operates in ("Operates in"), published as icons: `ee-icon-elec` electricity, `ee-icon-gas` gas, `ee-icon-hydrogen` hydrogen, with any note.
+{% enddocs %}
+
 {% docs col_operates_electricity %}
 Issuing office allocates codes for the electricity sector.
 {% enddocs %}
@@ -1511,6 +1515,14 @@ Maximum flow from GB (export), in MW.
 
 {% docs col_reason_for_restriction_from_gb %}
 Reason for the restriction from GB, e.g. `Margin Extremes`; `No Restriction` where none applies.
+{% enddocs %}
+
+{% docs col__id %}
+The datastore's own row id (CKAN `_id`), unique within the datastore resource.
+{% enddocs %}
+
+{% docs col__full_text %}
+The datastore's own full-text search index of the row (CKAN `_full_text`, a PostgreSQL tsvector).
 {% enddocs %}
 
 {% docs col__dlt_load_id %}

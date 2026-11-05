@@ -9,7 +9,7 @@ key; the upload time joins the primary key only, so a resubmission closes every 
 its key, rows not uploaded again stay current, and staging keeps the latest upload. Upload times are
 GMT, so requested date ranges need no padding.
 
-Rows are loaded as published, without the datastore's own columns (`_id`, `_full_text`).
+Rows are loaded as published, the datastore's own columns (`_id`, `_full_text`) included.
 """
 
 from __future__ import annotations
@@ -21,23 +21,20 @@ import logging
 from typing import Any
 
 import dlt
-from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk_elt.ingest import http
-from power_desk_elt.ingest.spec import RunWindow, SourceSpec
+from power_desk_elt.ingest.spec import SCD2, RunWindow, SourceSpec
 from power_desk_elt.ingest.windows import DateRange, day_after, incremental_window
 
 logger = logging.getLogger(__name__)
 
 SQL_URL = "https://api.neso.energy/api/3/action/datastore_search_sql"
-SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
 MAX_DAYS_PER_RUN = 186
 DAYS_PER_REQUEST = 31
 PAGE_ROWS = 10_000
 UPLOAD_TIME = "Data Upload Time GMT"
 NATURAL_KEY = ["Auction Type", "Operational Period Start Date and Time GMT"]  # the merge key
-DATASTORE_COLUMNS = {"_id", "_full_text"}
 
 
 @dataclass(frozen=True)
@@ -73,7 +70,7 @@ def fetch_uploads(dataset: Dataset, days: DateRange) -> Iterator[list[dict[str, 
         payload = http.fetch_json(SQL_URL, params={"sql": upload_query(dataset, days, offset)})
         rows = payload["result"]["records"]
         if rows:
-            yield [{k: v for k, v in row.items() if k not in DATASTORE_COLUMNS} for row in rows]
+            yield rows
         if len(rows) < PAGE_ROWS:
             return
 
