@@ -13,7 +13,8 @@ Rules: `docs/architecture.md`. Ingestion design: [ADR 0001](../../../docs/adr/00
 (keep dlt's defaults); onboarding defaults: [ADR 0003](../../../docs/adr/0003-onboarding-defaults.md). Go stage by
 stage; each check must pass before the next. For a new dataset of an existing source, extend that source's
 table of datasets and skip what already exists. The design comes from the agreed `scope.md`
-(`onboard-dataset`); a change to it is a deviation to report.
+(`onboard-dataset`); a change to it is a deviation to report. **No agreed `scope.md` in your own worktree?**
+Then run `onboard-dataset` from phase 0 (worktree, profile, scope stop) before stage 0 here.
 
 ## 0. Decide before coding
 
@@ -25,6 +26,7 @@ table of datasets and skip what already exists. The design comes from the agreed
 | Stream (API by publication or update time) | [kinds/stream.md](kinds/stream.md) | `neso.py` | `dlt.sources.incremental` + `incremental_window` | `merge_key` = natural key |
 | Snapshot (whole reference file) | [kinds/snapshot.md](kinds/snapshot.md) | `entsoe_eic.py` | ETag / hash in resource state | `primary_key` = natural key, no `merge_key` |
 | File partitions (re-exported periodic files) | [kinds/file-partitions.md](kinds/file-partitions.md) | `entsoe.py` | files + `lastUpdated` in resource state | `merge_key` = `primary_key` = natural key |
+| Gridded forecast runs (GRIB fields, values at points) | [kinds/gridded.md](kinds/gridded.md) | `ecmwf.py` | run date (incremental) | `merge_key` = natural key incl. the run |
 
   Nested payloads, whatever the kind: [kinds/nested.md](kinds/nested.md). Existing Elexon and PVLive streams
   load with `delete-insert` (ADR 0001); a new stream does so only as a confirmed exception.
@@ -52,6 +54,8 @@ functions, a `@dlt.source(window: RunWindow)` and a `SPEC`.
 Serve the publisher offline from `ingest/seed/replay.py` (`SeedPublishers`): recorded files in
 `elt/seed/<source>/` for exports and reference files, synthetic records in `ingest/seed/synthetic.py` for
 API streams.
+- The replay stands in for the fetch function, so it can't show how the real client answers "not published
+  yet" or an error (dlt's client raises on 404). Unit-test those against the real client.
 - Check: `elt/tests/integration/test_ingest.py` loads every published row (add a case for the new table);
   `uv run power-desk-load-seed` builds the dev warehouse.
 
@@ -59,7 +63,9 @@ API streams.
 
 `uv run power-desk-backfill --sources <source> --start-date <d> --end-date <d> --skip-dbt` for a short range
 writes `ingest/schemas/<source>.schema.yaml` (dlt's names: `DateTime(UTC)` becomes `date_time_utcx`).
-Commit it; it defines the dbt source.
+Commit it; it defines the dbt source. This puts real rows into the dev warehouse, and contracts take their
+types from it, so rebuild it from the seed afterwards: `uv run power-desk-load-seed --fresh`. Trial loads go
+into a scratch warehouse file (`make_pipeline(name, path)` keeps dlt state per file).
 
 ## 4. Catalogue and freshness
 
@@ -69,8 +75,10 @@ Commit it; it defines the dbt source.
   `section` / `page`); descriptions hold the definition only.
 - `freshness` names a preset in `platform.yml` (`actuals`, `forecasts`, `daily_exports`, ...; add one for
   a new cadence). It drives dbt source freshness and the Dagster `recently_fetched` / `recent_data` checks.
-- Check: `uv run python -m power_desk_elt.catalog.refresh` (network), then `... catalog.generate`; generation
-  fails on undocumented raw columns.
+- Check: `uv run python -m power_desk_elt.catalog.refresh --provider <yours>` (network; without
+  `--provider` it rewrites every provider's retrieval dates, which conflicts with parallel sessions), then
+  `... catalog.generate` and `uv run dbt parse --project-dir elt/dbt --profiles-dir elt/dbt` (Dagster reads
+  the manifest); generation fails on undocumented raw columns.
 
 ## 5. Schedule
 
@@ -87,6 +95,9 @@ job (schedule and catch-up come with it).
 - File partitions: `incremental`, `delete+insert` on the natural key, `meta={'dlt_tracked': true}`, reading
   `where _dlt_valid_to is null and {{ dlt_incremental_filter('_dlt_load_id') }}`. Snapshots keep validity
   with `{{ scd2_validity() }}`. Streams: plain views.
+- An incremental model's `unique_key` is raw's row-level natural key, never a coarser one (a run, a day):
+  `delete+insert` on a coarse key rewrote whole runs (383 s against 0.9 s keyed by row), and a key that
+  misses a column of raw's left stale rows behind.
 - Describe every column with `{{ doc('col_<key>') }}`; test key uniqueness, ranges and completeness.
 - Check: `uv run dbt build --project-dir elt/dbt --profiles-dir elt/dbt --select staging.<source>`.
 
@@ -123,13 +134,15 @@ The changed entities and marts get their contracts from their dbt tests and `met
 ([data contracts](../../../docs/data-contracts.md)).
 - Give every new dimension key a `relationships` test, and every new rule for querying the data (a new
   area level, an overlapping source, a horizon to pick) a `context` constraint: the `verify-contract` skill.
-- Check: after the build, `uv run python -m power_desk_elt.catalog.contracts`; review `git diff elt/contracts`.
+- Check: on the seed week (`uv run power-desk-load-seed --fresh`), `uv run python -m power_desk_elt.catalog.contracts`;
+  review `git diff elt/contracts`.
 
 ## 11. Verify end to end
 
-`uv run power-desk-accept <source> --start-date <d> --end-date <d>` on the real publisher: a fresh warehouse
-(EIC seed for the dimensions plus the source), then loading, structure, idempotency (the window loaded
-twice), time travel, `dlt.load` events, dbt tests, `dim_source_dataset`, an hourly mart, the schedule budget
+`uv run power-desk-accept <source> --start-date <d> --end-date <d> --resources <new tables>` on the real
+publisher (`--resources` limits it to the datasets being onboarded, so an existing source's other datasets
+are neither fetched nor judged): a fresh warehouse (EIC seed for the dimensions plus the source), then loading,
+structure, idempotency (the last day loaded again), time travel, `dlt.load` events, dbt tests, `dim_source_dataset`, an hourly mart, the schedule budget
 and query time, with a profile and CSV samples of every relation holding the source's rows
 (`data/onboarding/<source>/acceptance/`). Every criterion passes or is a confirmed exception, and `make check`
 is green.

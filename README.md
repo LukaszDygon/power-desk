@@ -89,26 +89,28 @@ uv run dbt docs serve --project-dir elt/dbt --profiles-dir elt/dbt --target-path
 ## Before pushing
 
 Run `make check` before pushing to main (`make hooks` once makes git do it on every push to main). It
-lints the whole repository (ruff, and the import contracts between projects), then type-checks and tests
-only the projects your branch changes since `origin/main`, committed or not, and their dependents
-(`scripts/affected-projects`):
+lints the whole repository (ruff, the import contracts between projects, unique ADR numbers), then
+type-checks the projects your branch changes since `origin/main`, committed or not, and their dependents,
+and runs only the tests the change can affect (`scripts/affected-projects`):
 
-| Changed | Checked |
+| Changed | Tested |
 |---|---|
-| `libs/logging/` | logging, elt, services |
-| `libs/warehouse/` | warehouse, elt, dashboard |
-| `elt/` (not `bench/`) | elt, dashboard (its tests query the marts the ELT builds) |
+| `elt/dbt/`, `elt/src/power_desk_elt/transform/` | ELT unit tests and the tests that build or read the marts (ELT and dashboard integration), not ingestion |
+| ELT `catalog/`, `contracts/`, `onboarding/`, `orchestration/` | ELT unit tests and that area's integration tests |
+| a test file (a conftest: its directory) | that file, plus its project's unit tests |
+| `elt/` otherwise (ingestion, seed, settings) | every ELT and dashboard test |
+| `libs/logging/`, `libs/warehouse/` | the library and the projects using it |
 | `dashboard/`, `services/`, `infra/openmetadata-duckdb/` | that project (`connector` for the last) |
 | `pyproject.toml`, `uv.lock`, `Makefile`, `scripts/` | every Python project |
-| `docs/`, `infra/` otherwise | lint only |
+| `docs/`, `.agents/`, `infra/` otherwise | lint only |
 
-`make -j check` runs the projects in parallel. The integration tests (ELT and dashboard) build the seed
-week through dlt and dbt and take a few minutes; while iterating, run one project's checks
-(`make check-elt`) or its unit tests (`uv run pytest elt/tests/unit`). `make check-all` runs everything;
-`uv run pyright` type-checks every project in one pass. Tests run per project (each has its own `tests`
-package), so a bare `pytest` at the root stops with these commands.
-The pre-push hook checks the working tree, so commit or stash unrelated changes first; `git push
---no-verify` skips it.
+`make -j check` runs the projects in parallel. A pass on a clean tree is recorded, and the pre-push hook
+skips a tree that already passed. The hook also fails at once when `origin/main` has moved, and refuses a
+working tree that differs from the pushed commit; `git push --no-verify` skips it. The integration tests
+build the seed week through dlt and dbt and take a few minutes; while iterating, run one project's checks
+(`make check-elt`, narrowed with `TESTS_elt=<paths>`) or its unit tests (`uv run pytest elt/tests/unit`).
+`make check-all` runs everything; `uv run pyright` type-checks every project in one pass. Tests run per
+project (each has its own `tests` package), so a bare `pytest` at the root stops with these commands.
 
 ## Agent skills
 

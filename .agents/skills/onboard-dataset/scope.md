@@ -15,7 +15,7 @@ documentation, cited; delete these comments. -->
 - Samples fetched: <periods: recent, oldest, a revision, a DST day> (`samples/`)
 - Contents: <what a row is, measures and units, codes>, profile: `profile.md`
 - Natural key: <columns>, from <documentation reference>; profile: <duplicates, revisions>
-- Time: <value time column, step>, published <cadence>, lag <median, p95>
+- Time: <value time column, step>, published <cadence>, lag <median, p95>, runs ahead <how far into the future>
 - Volume: <rows and MB per day>; available from <date>
 
 ## Design
@@ -29,7 +29,8 @@ documentation, cited; delete these comments. -->
 | Schedule | job `<name>` (`<cron>`), freshness `<preset>` | publication cadence |
 | Entity | `ods_<entity>` (new / extended) | |
 | Mart | `mart_<entity>` hourly; measures with unit and hourly aggregation | |
-| Dimensions | existing keys and mappings (`seeds/mappings/...`) | code lists |
+| Dimensions | existing keys and mappings (`seeds/mappings/...`); unmapped codes with row counts | code lists, reference data |
+| Combined with | <other datasets in the same entity or compared with it, and why they are comparable> | |
 | Contract rules | grain, constraints for querying | |
 
 ## Exceptions (need the user's confirmation)
@@ -38,11 +39,15 @@ documentation, cited; delete these comments. -->
 
 ## Backfill options
 
-| Horizon | Days | Rows | MB to fetch | Load estimate |
-|---|---|---|---|---|
-| All history (default) | | | | |
-| 1 year | | | | |
-| 30 days | | | | |
+| Horizon | Days | Requests | MB downloaded | Rows stored | Load time | Basis |
+|---|---|---|---|---|---|---|
+| All history (default) | | | | | | measured / extrapolated from <what> |
+| 1 year | | | | | | |
+| 30 days | | | | | | |
+
+## Shared with (parallel sessions only)
+
+- <session, its worktree; the owner of each shared file; the agreed names, grain and keys>
 
 ## Open questions
 

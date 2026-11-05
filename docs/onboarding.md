@@ -9,8 +9,8 @@ runs the workflow, and the defaults it applies are in [ADR 0003](adr/0003-onboar
 | 1. Intake | records the request | name the dataset; add what you know (use, latency, history) |
 | 2. Profile and design | fetches documentation and real samples, profiles them (`power-desk-profile`) | |
 | 3. Scope review | proposes the design with the evidence, the backfill options and any exceptions | choose the horizon (default: all history), confirm exceptions |
-| 4. Deliver | builds the pipeline, contracts and tests; benchmarks where unclear; runs an acceptance run (`power-desk-accept`) | |
-| 5. Acceptance | reports criteria, profile, deviations and the backfill command | inspect the sample; accept or ask for revisions |
+| 4. Deliver | builds the pipeline, contracts and tests; benchmarks where unclear; runs an acceptance run of the new datasets (`power-desk-accept --resources`) | |
+| 5. Acceptance | reports criteria, profile, deviations and the backfill command | inspect the sample; accept or ask for revisions; ask for the backfill and the merge |
 
 ## Artefacts
 
@@ -39,3 +39,11 @@ POWER_DESK_DBT_MANIFEST=data/onboarding/<source>/acceptance/target/manifest.json
 
 Each report ends with a retrospective on the workflow itself. Use those notes to improve the skills
 between sessions.
+
+## Parallel sessions
+
+Each session gets its own worktree (`onboard-<source>-<dataset>` when the source already has one). Sessions
+on related datasets agree on an owner for each shared file and record the shared names and grain in their
+`scope.md`. The owner commits the shared code early, so the other session can merge it, and each reviews
+the other's diff before acceptance. Merge `main` in before merging back: the seeds that every onboarding
+appends to merge by union (`.gitattributes`), and `make lint` fails on duplicate ADR numbers.

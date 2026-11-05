@@ -41,6 +41,11 @@ NESO_QUERY = re.compile(
 )
 
 
+# the last days of the seed week serve ECMWF runs: a run is ~56k rows, and a day's runs cover what the tests
+# need (a run loaded, a later one read next, a reload)
+ECMWF_SEED_DAYS = 1
+
+
 @dataclass
 class SeedPublishers:
     """Payloads served per publisher; tests may change them between runs."""
@@ -65,7 +70,7 @@ class SeedPublishers:
         first = date.fromisoformat(start_date)
         runs = {
             datetime(day.year, day.month, day.day, hour, tzinfo=UTC)
-            for day in (first + timedelta(days=n) for n in range(num_days))
+            for day in (first + timedelta(days=n) for n in range(max(0, num_days - ECMWF_SEED_DAYS), num_days))
             for dataset in ecmwf.DATASETS
             for hour in dataset.steps
         }

@@ -1,0 +1,5 @@
+# Seeds that every onboarding appends rows to: a merge keeps both sides' rows (the seeds' uniqueness
+# tests catch a row both sides changed).
+elt/dbt/seeds/dims/source_datasets.csv merge=union
+elt/dbt/seeds/dims/metrics.csv merge=union
+elt/dbt/seeds/mappings/*.csv merge=union

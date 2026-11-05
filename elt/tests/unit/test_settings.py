@@ -20,3 +20,13 @@ def test_unknown_environment_is_rejected(monkeypatch):
     monkeypatch.setenv("POWER_DESK_ENV", "staging")
     with pytest.raises(ValueError, match="POWER_DESK_ENV"):
         environment()
+
+
+def test_each_warehouse_file_keeps_its_own_dlt_state(tmp_path):
+    """A scratch warehouse never inherits the configured warehouse's resource state (e.g. a snapshot's hash)."""
+    from power_desk_elt.ingest.pipeline import working_dir
+
+    assert working_dir() == working_dir(warehouse_path()) == pipelines_dir()
+    scratch = working_dir(tmp_path / "scratch.duckdb")
+    assert scratch.parent == pipelines_dir() and scratch == working_dir(str(tmp_path / "scratch.duckdb"))
+    assert working_dir(tmp_path / "other.duckdb") != scratch

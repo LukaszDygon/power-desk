@@ -45,5 +45,26 @@ Stop for the user after the scope and after the acceptance run.
 
 ## Checks
 
-`make check` lints, then type-checks and tests the projects a change affects. While iterating, use
-`make check-elt` or `uv run pytest elt/tests/unit`, and work on the seed week (`uv run power-desk-load-seed`).
+`make check` lints, then type-checks and tests what a change affects (up to about 5 minutes). While
+iterating, use `uv run pytest elt/tests/unit` and `make format`, and work on the seed week
+(`uv run power-desk-load-seed`; add `--fresh` after raw columns change). Run `make check` once, at the end,
+in the background. Pipe its output only with `set -o pipefail`. A passing run on a clean tree is recorded,
+and the pre-push hook then skips that tree. A dbt exit code of -11 is a DuckDB crash, not noise: compare
+several runs with and without your change.
+
+## Failing checks and runs
+
+Find them in `elt/dbt/target/run_results.json` (or the run's own target), `test_failures.<test>` in the
+warehouse, a backfill's log, or the Dagster run. Classify each before fixing:
+- **orchestration:** what ran or was tested; fix the scope, not the test
+- **the publisher's data:** `verify-contract`
+- **our mapping or model:** fix it, and find out who defines the codes before deciding
+
+## Git and worktrees
+
+- One session per worktree. New work, fixes included, gets its own worktree from `origin/main`, never
+  another session's branch. Never enter a worktree you didn't create; a `locked` one is in use.
+- Never `git stash` (it is shared by all worktrees), and never amend a commit; add one.
+- Before pushing `main`: `git fetch`, merge `origin/main`, then renumber clashing ADRs (`make lint`
+  checks) and regenerate generated files instead of merging them. The pre-push hook fails at once if
+  `main` moved.

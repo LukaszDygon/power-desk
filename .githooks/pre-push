@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
-# Runs `make check` before a push to main (README.md, "Before pushing"); other branches push unchecked.
+# Before a push to main (README.md, "Before pushing"); other branches push unchecked:
+# 1. fails at once if origin/main has moved: merge it first (and renumber clashing ADRs), then push
+# 2. skips the checks when `make check` already passed on the pushed commit's tree (Makefile, RECORD)
+# 3. otherwise runs `make check`, on a clean working tree, so it tests what is pushed
 # Installed by `make hooks`; skip once with `git push --no-verify`.
 set -euo pipefail
 
-while read -r _local_ref _local_sha remote_ref _remote_sha; do
-    if [[ $remote_ref == refs/heads/main ]]; then
-        exec make -j check
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+    [[ $remote_ref == refs/heads/main && $local_sha != 0000000000000000000000000000000000000000 ]] || continue
+    git fetch --quiet origin main
+    if ! git merge-base --is-ancestor FETCH_HEAD "$local_sha"; then
+        echo "pre-push: origin/main has moved; merge it in (git merge origin/main), then push" >&2
+        exit 1
     fi
+    tree=$(git rev-parse "$local_sha^{tree}")
+    if [[ $(cat "$(git rev-parse --git-path power-desk-checked)" 2>/dev/null) == "$tree" ]]; then
+        echo "pre-push: make check passed on this tree already"
+        exit 0
+    fi
+    if [[ $(git rev-parse 'HEAD^{tree}') != "$tree" ]] || ! git diff --quiet HEAD; then
+        echo "pre-push: the working tree isn't the pushed commit; commit or move the changes, then push" >&2
+        exit 1
+    fi
+    exec make -j check
 done

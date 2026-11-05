@@ -29,7 +29,8 @@ Window <start .. end>, <days> days, on the real publisher.
 | Daily aggregate per mart | |
 
 Profile of every relation with the source's rows: `acceptance/acceptance.md`. <the points worth reading:
-nulls, ranges, coverage, unmapped codes>
+nulls, ranges, how far into the future the data runs, coverage, unmapped codes; what it is combined with
+and what any cross-check proves>
 
 ## Deviations from scope
 

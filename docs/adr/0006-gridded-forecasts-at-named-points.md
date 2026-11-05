@@ -1,4 +1,4 @@
-# ADR 0004: Gridded forecasts load as values at named points
+# ADR 0006: Gridded forecasts load as values at named points
 
 - **Status:** accepted, 2026-11-02 (ECMWF onboarding scope review)
 - **Details:** [architecture](../architecture.md#ingestion); evidence in the ECMWF onboarding (`scope.md`)

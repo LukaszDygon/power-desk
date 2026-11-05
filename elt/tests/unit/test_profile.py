@@ -55,5 +55,6 @@ def test_time_steps_publication_lag_and_volume(sample: Path):
     result = run(sample, time="time", published="published")
     assert result["time"]["steps"][0] == {"step": timedelta(minutes=30), "count": 47}
     assert result["lag_hours"]["publications_per_time"] == pytest.approx(58 / 48)
-    assert result["volume"]["horizons"]["year"]["rows"] == pytest.approx(116 / (23.5 / 24) * 365)
+    assert result["volume"]["sampled_days"] == 1  # by publication date
+    assert result["volume"]["horizons"]["year"]["rows"] == 116 * 365
     assert (profile.ONBOARDING_DIR / "pub" / "profile" / "pub__units" / "profile.md").exists()

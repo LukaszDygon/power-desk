@@ -1,14 +1,16 @@
 """Acceptance run of a source: real data through the whole ELT into a fresh warehouse, measured and profiled.
 
-    uv run power-desk-accept <source> --start-date YYYY-MM-DD --end-date YYYY-MM-DD [--label baseline]
+    uv run power-desk-accept <source> --start-date YYYY-MM-DD --end-date YYYY-MM-DD [--resources a,b] [--label baseline]
 
 In `data/onboarding/<source>/acceptance/` (replaced on every run), a warehouse gets the reference data the
-dimensions need (the EIC seed) and the source's data for the window, through its own pipeline. Then:
-- the same window is ingested again: idempotent when no raw table changes (rows, current versions)
+dimensions need (the EIC seed) and the source's data for the window, through its own pipeline (only
+`--resources`, the datasets being onboarded, when given). Then:
+- the window's last day is ingested again: idempotent when no raw table changes (rows, current versions)
 - dbt builds and tests everything over the whole warehouse (`run_results.json`)
 - each ods and mart relation holding the source's rows is profiled, sampled to CSV and timed on a
   daily aggregate; raw tables are profiled and sampled too
-- the scheduled run is projected from the timings and compared with the interval of the source's ingest job
+- the scheduled run is projected from the timings and compared with the shortest interval of the ingest jobs
+  scheduling the loaded tables
 - `dlt.load` events are counted from the run's log (`accept.log`, the log standard as JSON lines)
 
 Writes `acceptance.md` (criteria, timings, profile) and `acceptance.json`, and appends the timings to
@@ -132,7 +134,7 @@ def dbt_results(target: Path) -> dict[str, list[str]]:
     }
 
 
-def accept(source: str, start: date, end: date, label: str = "") -> dict[str, Any]:
+def accept(source: str, start: date, end: date, label: str = "", resources: list[str] | None = None) -> dict[str, Any]:
     out = ONBOARDING_DIR / source / "acceptance"
     shutil.rmtree(out, ignore_errors=True)
     (out / "sample").mkdir(parents=True)
@@ -145,12 +147,12 @@ def accept(source: str, start: date, end: date, label: str = "") -> dict[str, An
                 make_pipeline(required, db, schemas_dir=None),
                 make_source(required, SOURCES[required].window(start, end)),
             )
-        pipeline, window = make_pipeline(source, db, schemas_dir=None), SOURCES[source].window(start, end)
-        _, ingest_s = timed(run, pipeline, make_source(source, window))
+        pipeline, spec = make_pipeline(source, db, schemas_dir=None), SOURCES[source]
+        _, ingest_s = timed(run, pipeline, make_source(source, spec.window(start, end), resources))
         tables = sorted(pipeline.default_schema.data_table_names())
         with duckdb.connect(str(db), read_only=True) as con:
             before = raw_state(con, tables)
-        _, repeat_s = timed(run, pipeline, make_source(source, window))
+        _, repeat_s = timed(run, pipeline, make_source(source, spec.window(end, end), resources))
         run_dbt(["parse"], db, target)
         args = DbtRun(scope="all").args(pending_load_ids(db))
         if unloaded := unloaded_raw_tables(target / "manifest.json", db):
@@ -183,9 +185,11 @@ def accept(source: str, start: date, end: date, label: str = "") -> dict[str, An
             for schema, name in relations_with(con, "source_dataset", ("ods", "marts"))
         }
     relations = {name: info for name, info in relations.items() if info["rows"]}
-    job = next((j for j in INGEST_JOBS if set(j.tables) & set(tables)), None)
+    scheduling = [j for j in INGEST_JOBS if set(j.tables) & set(tables)]
+    jobs = {j.name: get_smallest_cron_interval(j.cron).total_seconds() for j in scheduling}
+    job = min(jobs, key=jobs.__getitem__, default=None)  # the strictest budget
     days = (end - start).days + 1
-    interval_s = get_smallest_cron_interval(job.cron).total_seconds() if job else None
+    interval_s = jobs[job] if job else None
     projected_s = round(ingest_s / days * max(1.0, (interval_s or 0) / 86400) + dbt_s, 1)
     result = {
         "source": source,
@@ -197,7 +201,8 @@ def accept(source: str, start: date, end: date, label: str = "") -> dict[str, An
             "dbt_build_s": dbt_s,
             "projected_run_s": projected_s,
         },
-        "schedule": {"job": job.name if job else None, "cron": job.cron if job else None, "interval_s": interval_s},
+        "resources": resources,
+        "schedule": {"job": job, "interval_s": interval_s},
         "dbt": {"exit_code": dbt_code, **dbt_results(target)},
         "loads_logged": len(loads),
         "source_datasets": datasets,
@@ -276,9 +281,12 @@ def main() -> int:
     parser.add_argument("--start-date", type=date.fromisoformat, required=True)
     parser.add_argument("--end-date", type=date.fromisoformat, required=True, help="inclusive")
     parser.add_argument("--label", default="", help="names the run in timings.jsonl, e.g. a variant and stratum")
+    parser.add_argument(
+        "--resources", type=lambda v: v.split(","), help="only these raw tables (dlt resources), comma-separated"
+    )
     args = parser.parse_args()
     power_desk_logging.configure("accept")
-    result = accept(args.source, args.start_date, args.end_date, args.label)
+    result = accept(args.source, args.start_date, args.end_date, args.label, args.resources)
     print(markdown(result, ONBOARDING_DIR / args.source / "acceptance"))
     return 0 if all(c["passed"] for c in result["criteria"]) else 1
 

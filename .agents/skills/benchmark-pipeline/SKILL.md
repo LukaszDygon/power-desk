@@ -38,7 +38,7 @@ Run each variant × stratum at least 3 times, alternating variants (so the netwo
 them alike). Label each run `<variant>/<stratum>`:
 
 ```bash
-uv run power-desk-accept <source> --start-date <d> --end-date <d> --label <variant>/<stratum>
+uv run power-desk-accept <source> --start-date <d> --end-date <d> --resources <tables> --label <variant>/<stratum>
 ```
 
 Each run appends its timings to `data/onboarding/<source>/timings.jsonl`: ingest, repeat ingest, dbt

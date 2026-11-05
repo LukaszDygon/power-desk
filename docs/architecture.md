@@ -111,7 +111,7 @@ dimensions; the dimension tables explain what each key means and how keys relate
 - **Forecast runs** (ECMWF) are streams of gridded files (GRIB2), one per run and forecast step: the
   cursor is the run date, a run is read once its last step is published, and only the fields and grid
   points named in the source are kept, one row per field and point with its GRIB keys as published
-  ([ADR 0004](adr/0004-gridded-forecasts-at-named-points.md)). They load as scd2 merged on the natural key.
+  ([ADR 0006](adr/0006-gridded-forecasts-at-named-points.md)). They load as scd2 merged on the natural key.
 
 ### Write dispositions
 

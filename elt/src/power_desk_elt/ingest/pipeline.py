@@ -2,12 +2,14 @@
 
 Raw tables (dlt resources) are named `<source>__<dataset>`, like their staging models
 `stg_<source>__<dataset>`. dlt keeps pipeline state in `raw._dlt_pipeline_state` and restores it
-from there, so the local working directory is disposable. Each run exports the dlt schema to
-`ingest/schemas/`, which defines the dbt sources (`POWER_DESK_EXPORT_SCHEMAS=0` disables it).
+from there, so the local working directory is disposable. Each warehouse file other than the default gets
+its own working directory, so a scratch warehouse never inherits another's resource state. Each run exports
+the dlt schema to `ingest/schemas/`, which defines the dbt sources (`POWER_DESK_EXPORT_SCHEMAS=0` disables it).
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from pathlib import Path
@@ -29,6 +31,13 @@ DATASET_NAME = "raw"
 SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
 
 
+def working_dir(db_path: Path | str | None = None) -> Path:
+    """dlt's working directory for a warehouse file: the configured one, a subdirectory of it for other files."""
+    if db_path is None or Path(db_path).resolve() == warehouse_path().resolve():
+        return pipelines_dir()
+    return pipelines_dir() / hashlib.sha1(str(Path(db_path).resolve()).encode()).hexdigest()[:12]
+
+
 def make_pipeline(name: str, db_path: Path | str | None = None, schemas_dir: Path | None = SCHEMAS_DIR) -> dlt.Pipeline:
     """Pipeline `name` into the warehouse; it exports its schema to `schemas_dir` unless that is None."""
     if os.environ.get("POWER_DESK_EXPORT_SCHEMAS", "1") == "0":
@@ -37,7 +46,7 @@ def make_pipeline(name: str, db_path: Path | str | None = None, schemas_dir: Pat
         pipeline_name=name,
         destination=dlt.destinations.duckdb(str(db_path or warehouse_path())),
         dataset_name=DATASET_NAME,
-        pipelines_dir=str(pipelines_dir()),
+        pipelines_dir=str(working_dir(db_path)),
         # dlt annotates this optional parameter as `str`
         export_schema_path=str(schemas_dir) if schemas_dir else None,  # pyright: ignore[reportArgumentType]
     )

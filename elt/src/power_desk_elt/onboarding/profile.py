@@ -8,8 +8,9 @@ schema of `data/onboarding/<source>/profile/<name>/profile.duckdb`, so nested da
 (`<name>__<field>`) as it would in the warehouse. Then writes `profile.md` and `profile.json` there: per
 table, its rows and DuckDB `SUMMARIZE`; on the root table, each candidate `--key` (exact repeats, and keys
 with several distinct rows: revisions), the steps of the `--time` column, the cadence of `--published` and
-its lag to `--time`, and the volume from `--available-from` to today. Column names are dlt's (snake_case),
-as `profile.md` lists them.
+its lag to `--time`, and the volume from `--available-from` to today: rows and bytes per sampled day (the
+distinct UTC dates of `--published`, else of `--time`; so sample whole days). Column names are dlt's
+(snake_case), as `profile.md` lists them.
 """
 
 from __future__ import annotations
@@ -119,11 +120,15 @@ def lag_hours(con: duckdb.DuckDBPyConnection, table: str, time: str, published: 
     return {"p5": p5, "p50": p50, "p95": p95, "publications_per_time": per_time}
 
 
-def volume(rows: int, span: dict[str, Any], input_bytes: int, available_from: date | None) -> dict[str, Any]:
-    """Rows and download size per day of data, and for each backfill horizon."""
-    if not rows or not span["first"] or span["first"] == span["last"]:
+def sampled_days(con: duckdb.DuckDBPyConnection, table: str, column: str) -> int:
+    """Distinct UTC dates of a time column: the days the samples cover."""
+    return first_row(con, f"select count(distinct try_cast({quoted(column)} as timestamptz)::date) from {table}")[0]
+
+
+def volume(rows: int, days: int, input_bytes: int, available_from: date | None) -> dict[str, Any]:
+    """Rows and download size per sampled day, and for each backfill horizon."""
+    if not rows or not days:
         return {}
-    days = (span["last"] - span["first"]).total_seconds() / 86400
     per_day = {"rows": rows / days, "input_bytes": input_bytes / days}
     horizons = dict(HORIZONS)
     if available_from:
@@ -160,9 +165,10 @@ def profile(args: argparse.Namespace) -> dict[str, Any]:
         }
         if args.time:
             result["time"] = steps(con, root, args.time)
+        if cadence := args.published or args.time:
             input_bytes = sum(f.stat().st_size for f in files)
-            rows = result["tables"][args.name]["rows"]
-            result["volume"] = volume(rows, result["time"], input_bytes, args.available_from)
+            rows, days = result["tables"][args.name]["rows"], sampled_days(con, root, cadence)
+            result["volume"] = {"sampled_days": days, **volume(rows, days, input_bytes, args.available_from)}
         if args.published:
             result["published"] = steps(con, root, args.published)
             if args.time:
@@ -200,9 +206,11 @@ def markdown(result: dict[str, Any]) -> str:
             f"- time minus publication, hours: p5 {lag['p5']:.1f}, median {lag['p50']:.1f}, p95 {lag['p95']:.1f}; "
             f"{lag['publications_per_time']:.2f} publications per time value"
         )
+    if days := result.get("volume", {}).get("sampled_days"):
+        lines.append(f"- volume from {days} sampled days (extrapolated to each horizon):")
     for horizon, est in result.get("volume", {}).get("horizons", {}).items():
         lines.append(
-            f"- backfill {horizon} ({est['days']} days): ~{est['rows']:,.0f} rows, "
+            f"  - backfill {horizon} ({est['days']} days): ~{est['rows']:,.0f} rows, "
             f"~{est['input_bytes'] / 1e6:,.1f} MB to fetch"
         )
     return "\n".join(lines) + "\n"

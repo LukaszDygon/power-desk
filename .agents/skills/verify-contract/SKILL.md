@@ -41,6 +41,7 @@ Group by `source_dataset` and `source_code`, so you can see which feed breaks th
 | No violations | Ship the test (step 4) |
 | Our bug (a join fans out, a mapping is missing) | Fix the model or the mapping seed, then ship the test |
 | The publisher's reality (late, gappy, revised, unmapped codes) | Ship it at `severity: warn`, or narrow it with `where:`; say why in the test's name or the column's description |
+| A code that isn't in its registry, or doesn't conform to it (e.g. an EIC code ENTSO-E doesn't list) | Research the issuing body's rules first (issuing offices, check characters). If the code is in genuine use, add it to a reviewed seed beside the registry (`nonconforming_eic_codes`, ADR 0005), cited, rather than a query rule |
 | A rule about how to query, not a property of rows | Write it as `context` (step 5), not as a test |
 | Too costly or not needed by any consumer | Leave it out; the contract stays smaller |
 

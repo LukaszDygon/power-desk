@@ -1,28 +1,83 @@
-#!/usr/bin/env bash
-# The projects whose checks a change needs: those changed since the merge base with $BASE (default
-# origin/main), committed or not, plus their dependents. Prints `make check-<project>` names, one per line.
-#
-#   libs/logging    -> logging, elt, services
-#   libs/warehouse  -> warehouse, elt, dashboard
-#   elt             -> elt, dashboard (its tests query the marts the ELT builds)
-#   workspace files -> every project
-set -euo pipefail
-cd "$(git rev-parse --show-toplevel)"
+#!/usr/bin/env python3
+"""The checks a change needs, as `make` arguments: the projects changed since the merge base with $BASE
+(default origin/main), committed or not, plus their dependents, each with the tests the change can affect.
 
-base=$(git merge-base HEAD "${BASE:-origin/main}")
-changed=$( { git diff --name-only "$base"; git ls-files --others --exclude-standard; } | sort -u)
+    check-elt TESTS_elt='elt/tests/unit elt/tests/integration/test_catalog.py' check-dashboard
 
-affected=()
-for path in $changed; do
-    case $path in
-        libs/logging/*) affected+=(logging elt services) ;;
-        libs/warehouse/*) affected+=(warehouse elt dashboard) ;;
-        elt/bench/*) ;;  # experiments: lint only
-        elt/*) affected+=(elt dashboard) ;;
-        dashboard/*) affected+=(dashboard) ;;
-        services/*) affected+=(services) ;;
-        infra/openmetadata-duckdb/*) affected+=(connector) ;;
-        pyproject.toml | uv.lock | Makefile | scripts/*) affected+=(logging warehouse elt dashboard services) ;;
-    esac
-done
-if ((${#affected[@]})); then printf '%s\n' "${affected[@]}" | sort -u; fi
+A project without `TESTS_<project>` runs all its tests. The first rule whose prefix matches a path decides;
+a path no rule narrows runs every test of its project and its dependents.
+"""
+
+import os
+from pathlib import Path
+import shlex
+import subprocess
+
+ALL = "all"  # every test of the project
+PROJECTS = ("logging", "warehouse", "elt", "dashboard", "services")  # the workspace's (not the connector)
+INTEGRATION = "elt/tests/integration/"
+# the tests that build or read the marts: what a dbt or transform change can break
+MARTS = {
+    "elt": [f"{INTEGRATION}{t}" for t in ("test_transform.py", "test_catalog.py", "test_orchestration.py")]
+    + [f"{INTEGRATION}test_onboarding.py"],
+    "dashboard": ["dashboard/tests/integration"],
+}
+RULES: list[tuple[str, dict[str, list[str] | str]]] = [
+    ("elt/bench/", {}),  # experiments: lint only
+    ("elt/src/power_desk_elt/onboarding/", {"elt": [f"{INTEGRATION}test_onboarding.py"]}),
+    ("elt/src/power_desk_elt/catalog/", {"elt": [f"{INTEGRATION}test_catalog.py"]}),
+    ("elt/contracts/", {"elt": [f"{INTEGRATION}test_catalog.py"]}),
+    (
+        "elt/src/power_desk_elt/orchestration/",
+        {"elt": [f"{INTEGRATION}test_orchestration.py", f"{INTEGRATION}test_onboarding.py"]},
+    ),
+    ("elt/src/power_desk_elt/transform/", MARTS),
+    ("elt/dbt/", MARTS),
+    ("elt/", {"elt": ALL, "dashboard": ALL}),  # ingestion, seed, settings: raw data feeds everything
+    ("dashboard/", {"dashboard": ALL}),
+    ("services/", {"services": ALL}),
+    ("libs/logging/", {"logging": ALL, "elt": ALL, "services": ALL}),
+    ("libs/warehouse/", {"warehouse": ALL, "elt": ALL, "dashboard": ALL}),
+    ("infra/openmetadata-duckdb/", {"connector": ALL}),
+    *((path, dict.fromkeys(PROJECTS, ALL)) for path in ("pyproject.toml", "uv.lock", "Makefile", "scripts/")),
+]
+UNIT = {"elt": "elt/tests/unit", "dashboard": "dashboard/tests/unit"}  # seconds: always run, with any selection
+
+
+def git(*args: str) -> list[str]:
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.split()
+
+
+def tests_for(path: str) -> dict[str, list[str] | str]:
+    """A changed test runs itself (a conftest or helper, its directory); other paths follow the rules."""
+    for project in ("elt", "dashboard"):
+        if path.startswith(f"{project}/tests/"):
+            test = Path(path)
+            return {project: [str(test if test.name.startswith("test_") else test.parent)]}
+    return next((tests for prefix, tests in RULES if path.startswith(prefix)), {})
+
+
+def main() -> None:
+    os.chdir(git("rev-parse", "--show-toplevel")[0])
+    base = git("merge-base", "HEAD", os.environ.get("BASE", "origin/main"))[0]
+    changed = sorted({*git("diff", "--name-only", base), *git("ls-files", "--others", "--exclude-standard")})
+    selected: dict[str, set[str] | str] = {}
+    for path in changed:
+        for project, tests in tests_for(path).items():
+            current = selected.get(project, set())
+            if tests == ALL or current == ALL:
+                selected[project] = ALL
+            else:
+                selected[project] = {*current, *tests}
+    args = []
+    for project, tests in sorted(selected.items()):
+        args.append(f"check-{project}")
+        if tests != ALL:
+            unit = UNIT.get(project)
+            paths = sorted({*(t for t in tests if not (unit and t.startswith(f"{unit}/"))), *([unit] if unit else [])})
+            args.append(f"TESTS_{project}={shlex.quote(' '.join(paths))}")
+    print(" ".join(args))
+
+
+if __name__ == "__main__":
+    main()
