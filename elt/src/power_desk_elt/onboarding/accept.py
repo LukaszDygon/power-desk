@@ -43,8 +43,7 @@ from power_desk_elt.ingest.registry import SOURCES
 from power_desk_elt.ingest.seed.load import load_seed
 from power_desk_elt.onboarding.profile import ONBOARDING_DIR, columns_table, first_row, quoted, summarize
 from power_desk_elt.orchestration.jobs import INGEST_JOBS
-from power_desk_elt.transform.dbt import DbtRun, run_dbt, tests_downstream_of, unloaded_raw_tables
-from power_desk_elt.transform.loads import pending_load_ids
+from power_desk_elt.transform.dbt import DbtRun
 import power_desk_logging
 from power_desk_logging import EVENT_NAME, Formatter
 from power_desk_warehouse import table_names
@@ -153,11 +152,7 @@ def accept(source: str, start: date, end: date, label: str = "", resources: list
         with duckdb.connect(str(db), read_only=True) as con:
             before = raw_state(con, tables)
         _, repeat_s = timed(run, pipeline, make_source(source, spec.window(end, end), resources))
-        run_dbt(["parse"], db, target)
-        args = DbtRun(scope="all").args(pending_load_ids(db))
-        if unloaded := unloaded_raw_tables(target / "manifest.json", db):
-            args += ["--exclude", tests_downstream_of(unloaded)]
-        dbt_code, dbt_s = timed(run_dbt, args, db, target)
+        dbt_code, dbt_s = timed(DbtRun(scope="all").run, db, target)
     loads = [
         r for r in records if getattr(r, EVENT_NAME, None) == "dlt.load" and getattr(r, "dlt.pipeline_name") == source
     ]

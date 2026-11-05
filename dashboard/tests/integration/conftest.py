@@ -24,6 +24,6 @@ def seeded_warehouse(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]
         mp.setenv("POWER_DESK_PIPELINES_DIR", str(root / "pipelines"))
         mp.setenv("POWER_DESK_EXPORT_SCHEMAS", "0")
         load_seed(db)
-        assert DbtRun().run_pending(db, target_path=root / "target") == 0
+        assert DbtRun().run(db, root / "target") == 0
         mp.setenv("POWER_DESK_DBT_MANIFEST", str(root / "target" / "manifest.json"))
         yield db

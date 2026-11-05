@@ -23,7 +23,6 @@ MARTS = {
     "dashboard": ["dashboard/tests/integration"],
 }
 RULES: list[tuple[str, dict[str, list[str] | str]]] = [
-    ("elt/bench/", {}),  # experiments: lint only
     ("elt/src/power_desk_elt/onboarding/", {"elt": [f"{INTEGRATION}test_onboarding.py"]}),
     ("elt/src/power_desk_elt/catalog/", {"elt": [f"{INTEGRATION}test_catalog.py"]}),
     ("elt/contracts/", {"elt": [f"{INTEGRATION}test_catalog.py"]}),

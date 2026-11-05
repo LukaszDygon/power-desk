@@ -1,4 +1,4 @@
-"""Dashboard web app: the page, and JSON endpoints for queries, filters, lineage and widgets."""
+"""Dashboard web app: the page, and read-only JSON endpoints for queries, filters, lineage and widgets."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import uvicorn
 
 from power_desk_dashboard import queries
 from power_desk_dashboard.lineage import lineage
-from power_desk_dashboard.widgets import Widget, load_widgets, remove_widget, upsert_widget
+from power_desk_dashboard.widgets import Widget, load_widgets
 import power_desk_warehouse as warehouse
 
 # the browser side: static assets and the page template, beside the package (dashboard/frontend)
@@ -59,16 +59,6 @@ def lineage_graph() -> dict[str, Any]:
 @app.get("/api/widgets")
 def widgets() -> list[Widget]:
     return load_widgets()
-
-
-@app.post("/api/widgets")
-def save_widget(widget: Widget) -> dict[str, Any]:
-    return {"status": "ok", "widgets": upsert_widget(widget)}
-
-
-@app.delete("/api/widgets/{widget_id}")
-def delete_widget(widget_id: str) -> dict[str, Any]:
-    return {"status": "ok", "widgets": remove_widget(widget_id)}
 
 
 @app.post("/api/query")

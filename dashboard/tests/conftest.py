@@ -1,4 +1,4 @@
-"""Shared fixtures: the widget registry and the warehouse stay out of the repo."""
+"""Shared fixtures: the warehouse stays out of the repo."""
 
 from __future__ import annotations
 
@@ -8,8 +8,5 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def isolated_registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    registry = tmp_path / "widgets.json"
+def isolated_warehouse(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("POWER_DESK_DUCKDB_PATH", str(tmp_path / "unused.duckdb"))
-    monkeypatch.setattr("power_desk_dashboard.widgets.REGISTRY", registry)
-    return registry

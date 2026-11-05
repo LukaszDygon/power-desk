@@ -23,7 +23,6 @@ dependencies = [
 
 [project.scripts]
 power-desk-dagster = "power_desk_elt.cli.dagster:main"
-power-desk-backfill = "power_desk_elt.cli.backfill:main"
 power-desk-load-seed = "power_desk_elt.cli.load_seed:main"
 power-desk-profile = "power_desk_elt.onboarding.profile:main"
 power-desk-accept = "power_desk_elt.onboarding.accept:main"

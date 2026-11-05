@@ -1,7 +1,7 @@
 """Widget registry: dashboard cards, each a SQL query that may use the shared filter parameters (see `queries`);
 a `panels` card stacks several queries' time series on one time axis, each panel toggled by the analyst.
 
-The registry is `data/widgets.json`; without it, the dashboard starts from `default_widgets.json`.
+The registry is `widgets.json` beside this module; `register-widget` adds to it.
 """
 
 from __future__ import annotations
@@ -12,10 +12,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from power_desk_warehouse.settings import DATA_DIR
-
-REGISTRY = DATA_DIR / "widgets.json"
-DEFAULTS = Path(__file__).with_name("default_widgets.json")
+REGISTRY = Path(__file__).with_name("widgets.json")
 WidgetType = Literal["area_map", "panels", "stacked_area", "line", "bar", "donut", "kpi_cards", "table"]
 
 
@@ -57,20 +54,9 @@ class Widget(BaseModel):
 
 def load_widgets(path: Path = REGISTRY) -> list[Widget]:
     """The registry's widgets; an entry that does not match `Widget` fails with the offending field."""
-    entries = json.loads((path if path.exists() else DEFAULTS).read_text(encoding="utf-8"))
-    return [Widget.model_validate(entry) for entry in entries]
+    return [Widget.model_validate(entry) for entry in json.loads(path.read_text(encoding="utf-8"))]
 
 
-def save_widgets(widgets: list[Widget], path: Path = REGISTRY) -> list[Widget]:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps([w.model_dump() for w in widgets], indent=2), encoding="utf-8")
-    return widgets
-
-
-def upsert_widget(widget: Widget, path: Path = REGISTRY) -> list[Widget]:
-    others = [w for w in load_widgets(path) if w.id != widget.id]
-    return save_widgets([*others, widget], path)
-
-
-def remove_widget(widget_id: str, path: Path = REGISTRY) -> list[Widget]:
-    return save_widgets([w for w in load_widgets(path) if w.id != widget_id], path)
+def upsert_widget(widget: Widget, path: Path = REGISTRY) -> None:
+    widgets = [*(w for w in load_widgets(path) if w.id != widget.id), widget]
+    path.write_text(json.dumps([w.model_dump() for w in widgets], indent=2) + "\n", encoding="utf-8")

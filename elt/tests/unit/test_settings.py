@@ -1,19 +1,7 @@
 import pytest
 
-from power_desk_elt.settings import REPO_ROOT, environment, pipelines_dir, warehouse_path
-
-
-def test_environment_selects_warehouse_and_dlt_state(monkeypatch):
-    for name in ("POWER_DESK_DUCKDB_PATH", "POWER_DESK_PIPELINES_DIR", "POWER_DESK_ENV"):
-        monkeypatch.delenv(name, raising=False)
-    assert warehouse_path() == REPO_ROOT / "data" / "warehouse_dev.duckdb"
-    monkeypatch.setenv("POWER_DESK_ENV", "prod")
-    assert (warehouse_path(), pipelines_dir()) == (
-        REPO_ROOT / "data" / "warehouse_prod.duckdb",
-        REPO_ROOT / ".dlt" / "pipelines" / "prod",
-    )
-    monkeypatch.setenv("POWER_DESK_DUCKDB_PATH", "/tmp/explicit.duckdb")
-    assert str(warehouse_path()) == "/tmp/explicit.duckdb"
+from power_desk_elt.ingest.pipeline import working_dir
+from power_desk_elt.settings import environment
 
 
 def test_unknown_environment_is_rejected(monkeypatch):
@@ -24,9 +12,4 @@ def test_unknown_environment_is_rejected(monkeypatch):
 
 def test_each_warehouse_file_keeps_its_own_dlt_state(tmp_path):
     """A scratch warehouse never inherits the configured warehouse's resource state (e.g. a snapshot's hash)."""
-    from power_desk_elt.ingest.pipeline import working_dir
-
-    assert working_dir() == working_dir(warehouse_path()) == pipelines_dir()
-    scratch = working_dir(tmp_path / "scratch.duckdb")
-    assert scratch.parent == pipelines_dir() and scratch == working_dir(str(tmp_path / "scratch.duckdb"))
-    assert working_dir(tmp_path / "other.duckdb") != scratch
+    assert working_dir(tmp_path / "a.duckdb") != working_dir(tmp_path / "b.duckdb") != working_dir()

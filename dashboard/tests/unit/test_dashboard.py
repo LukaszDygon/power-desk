@@ -1,42 +1,14 @@
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 import re
 
 import duckdb
 import pytest
 
-from power_desk_dashboard.lineage import lineage_from_manifest
-from power_desk_dashboard.queries import run_query, time_bucket
-from power_desk_dashboard.widgets import DEFAULTS, Widget, load_widgets
+from power_desk_dashboard.queries import run_query
+from power_desk_dashboard.widgets import load_widgets
 
 STATIC = Path(__file__).parents[2] / "frontend" / "static"
-
-MANIFEST = {
-    "sources": {
-        "source.p.bmrs.bmrs__indo": {
-            "source_name": "bmrs",
-            "name": "bmrs__indo",
-            "description": "INDO",
-            "config": {"meta": {"dlt": {"resource": "bmrs__indo", "write_disposition": "merge"}}},
-        }
-    },
-    "nodes": {
-        "model.p.stg_bmrs__indo": {
-            "resource_type": "model",
-            "name": "stg_bmrs__indo",
-            "schema": "staging",
-            "depends_on": {"nodes": ["source.p.bmrs.bmrs__indo"]},
-            "config": {"materialized": "view"},
-        },
-        "model.p.mart_demand_actual": {
-            "resource_type": "model",
-            "name": "mart_demand_actual",
-            "schema": "marts",
-            "depends_on": {"nodes": ["model.p.stg_bmrs__indo"]},
-            "config": {"materialized": "view"},
-        },
-    },
-}
 
 
 @pytest.fixture
@@ -72,33 +44,12 @@ def test_run_query_binds_the_selected_areas_or_every_bidding_zone(warehouse_file
     assert sorted(run_query(sql, db_path=warehouse_file)["rows"]) == [["10YFR-RTE------C"], ["10YGB----------A"]]
 
 
-def test_time_bucket_coarsens_with_the_date_range(warehouse_file):
-    day = date(2024, 3, 1)
-    assert time_bucket(day, day + timedelta(days=6)) == timedelta(hours=1)
-    assert time_bucket(day, day + timedelta(days=90)) == timedelta(hours=6)
-    assert time_bucket(day, day + timedelta(days=365)) == timedelta(days=1)
-    assert time_bucket(day, day + timedelta(days=1000)) == timedelta(weeks=1)
-    sql = "select time_bucket($bucket, timestamp '2024-03-01 10:40')"
-    assert run_query(sql, start_date=day, end_date=day, db_path=warehouse_file)["rows"] == [["2024-03-01T10:00:00"]]
-
-
 def test_run_query_can_only_read_the_warehouse(warehouse_file, tmp_path):
     with pytest.raises(duckdb.Error):
         run_query("drop table days", db_path=warehouse_file)
     with pytest.raises(duckdb.Error):
         run_query(f"select 1; copy (select 1) to '{tmp_path / 'out.csv'}'", db_path=warehouse_file)
     assert not (tmp_path / "out.csv").exists()
-
-
-def test_lineage_links_publisher_raw_models_and_widgets():
-    widgets = [Widget(id="w", title="W", sql="select * from marts.mart_demand_actual")]
-    graph = lineage_from_manifest(MANIFEST, widgets)
-    assert {(e["source"], e["target"]) for e in graph["edges"]} == {
-        ("api_bmrs__indo", "bmrs__indo"),
-        ("bmrs__indo", "stg_bmrs__indo"),
-        ("stg_bmrs__indo", "mart_demand_actual"),
-        ("mart_demand_actual", "widget_w"),
-    }
 
 
 def palette() -> dict[str, str]:
@@ -112,8 +63,8 @@ def test_palette_keys_read_css_variables_that_exist():
     assert palette() and [var for var in palette().values() if f"{var}:" not in css] == []
 
 
-def test_default_widgets_are_valid_and_name_palette_colours():
-    configs = [config for w in load_widgets(DEFAULTS) for config in [w.config, *(p.config for p in w.panels)]]
+def test_widgets_are_valid_and_name_palette_colours():
+    configs = [config for w in load_widgets() for config in [w.config, *(p.config for p in w.panels)]]
     colours = [
         colour
         for config in configs

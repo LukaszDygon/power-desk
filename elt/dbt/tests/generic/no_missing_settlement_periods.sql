@@ -41,10 +41,11 @@ bounds as (
         {%- else %}
         cast('{{ start }}' as date) as first_day,
         {%- endif %}
-        least(
+        -- null (nothing to check) when the model holds no rows; least() ignores nulls
+        case when exists (select 1 from present) then least(
             (select max({{ settlement_period_to_utc('settlement_date', 'settlement_period') }}) from present),
             cast(now() at time zone 'UTC' as timestamp) - interval 30 minute
-        ) as last_period_start
+        ) end as last_period_start
     {%- if recent %}
     from (select min(cast({{ date_column }} as date)) as recent_min from {{ model }} where {{ recent }})
     {%- endif %}

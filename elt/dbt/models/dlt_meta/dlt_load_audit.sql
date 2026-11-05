@@ -5,6 +5,5 @@ select
     cast(null as varchar) as load_id,
     cast(null as varchar) as model_name,
     cast(null as varchar) as dbt_invocation_id,
-    cast(null as varchar) as orchestrator_run_id,
     cast(null as timestamp with time zone) as processed_at
 where false

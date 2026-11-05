@@ -16,10 +16,9 @@ vars:
   weather_site_status: Operational
   weather_site_technologies: [Wind Onshore, Wind Offshore, Solar Photovoltaics]
   weather_site_min_capacity_mw: 50
-  # Set by the orchestrator (see macros/dlt_loads.sql):
-  #   dlt_load_ids: explicit list of dlt load ids this invocation processes
-  #   dlt_scope: "recent" (default, tests see only pending loads) | "all"
-  #   orchestrator_run_id: Dagster run id, recorded in dlt_meta.dlt_load_audit
+  # Test scope (macros/dlt/test_scope.sql): "recent" tests the rows of pending loads, "all" every row.
+  # Which tests run is dbt's own selection (--select, --exclude).
+  dlt_scope: recent
 
 on-run-end:
   - "{{ dlt_mark_loads_processed(results) }}"

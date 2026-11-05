@@ -34,7 +34,7 @@ def main() -> int:
         shutil.rmtree(working_dir(db_path), ignore_errors=True)
     os.environ.setdefault("POWER_DESK_START_DATE", SEED_START)
     load_seed(db_path)  # logs a `dlt.load` event per load
-    return 0 if args.skip_dbt else DbtRun().run_pending(db_path)
+    return 0 if args.skip_dbt else DbtRun().run(db_path)
 
 
 if __name__ == "__main__":

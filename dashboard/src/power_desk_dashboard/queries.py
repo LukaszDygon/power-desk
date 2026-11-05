@@ -1,4 +1,4 @@
-"""Read-only queries over the warehouse; unqualified names resolve against marts, ods, dims and raw.
+"""Read-only queries over the warehouse; widget SQL reads the marts and their dimensions (unqualified names).
 
 Widget SQL may use the dashboard's shared filter as parameters: `$start_date` / `$end_date` (dates),
 `$areas` (EIC codes of the selected bidding zones, in selection order; every bidding zone when none is
@@ -21,7 +21,7 @@ import duckdb
 import power_desk_warehouse as warehouse
 from power_desk_warehouse.settings import warehouse_path
 
-SEARCH_PATH = "marts,ods,dims,raw,main"
+SEARCH_PATH = "marts,dims"
 SANDBOX = {"enable_external_access": False, "lock_configuration": True}
 DEFAULT_WINDOW_DAYS = 7
 # (longest range in days, bucket): a few hundred points per series at most
@@ -34,12 +34,7 @@ BIDDING_ZONES_SQL = (
     "select area_eic_code, display_name, long_name from dims.dim_area "
     "where is_current and is_bidding_zone order by display_name"
 )
-COUNTED_TABLES = (
-    ("raw", "bmrs__fuelinst"),
-    ("raw", "bmrs__indo"),
-    ("ods", "ods_generation_actual"),
-    ("marts", "mart_gb_generation_mix"),
-)
+COUNTED_TABLES = (("raw", "bmrs__fuelinst"),)  # the page header's warehouse size
 
 
 def run_query(

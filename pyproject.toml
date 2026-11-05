@@ -39,10 +39,6 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "B", "UP", "SIM"]
 
-[tool.ruff.lint.per-file-ignores]
-# experiment scripts: long one-off expressions; their stage closures run immediately inside the loop
-"elt/bench/**" = ["E501", "E741", "B023"]
-
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
 known-first-party = [
@@ -59,7 +55,7 @@ known-first-party = [
 extend-immutable-calls = ["dlt.sources.incremental"]
 
 # `uv run pyright`: every project in one pass, each resolving its own `tests` package; `make check-<project>`
-# checks one project with its own settings. Not covered: elt/bench (experiments) and the connector (own env).
+# checks one project with its own settings. Not covered: the connector (own env).
 [tool.pyright]
 include = [
     "dashboard/src",

@@ -21,10 +21,10 @@
     {%- if done | length == 0 -%}{{ return('') }}{%- endif -%}
     {%- do log('dlt: marking pending loads processed for ' ~ (done | join(', ')), info=true) -%}
 
-    insert into {{ audit }} (load_id, model_name, dbt_invocation_id, orchestrator_run_id, processed_at)
+    insert into {{ audit }} (load_id, model_name, dbt_invocation_id, processed_at)
     {% for model_name in done %}
-    select p.load_id, '{{ model_name }}', '{{ invocation_id }}', '{{ var("orchestrator_run_id", "") }}', now()
-    from ({{ dlt_pending_load_ids_sql(model_name, use_ref=false) }}) p
+    select p.load_id, '{{ model_name }}', '{{ invocation_id }}', now()
+    from ({{ dlt_pending_load_ids_sql(model_name) }}) p
     where p.load_id not in (select load_id from {{ audit }} where model_name = '{{ model_name }}')
     {% if not loop.last %}union all{% endif %}
     {% endfor %}

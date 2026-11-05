@@ -38,10 +38,11 @@ bounds as (
         {%- else %}
         cast('{{ start }}' as timestamp) as first_bucket,
         {%- endif %}
-        least(
+        -- null (nothing to check) when the model holds no rows; least() ignores nulls
+        case when exists (select 1 from present) then least(
             (select max(bucket) from present),
             time_bucket(interval '{{ interval }}', cast(now() at time zone 'UTC' as timestamp)) - interval '{{ interval }}'
-        ) as last_bucket
+        ) end as last_bucket
     {%- if recent %}
     from (select min({{ bucket }}) as recent_min from {{ model }} where {{ recent }})
     {%- endif %}

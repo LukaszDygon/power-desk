@@ -76,8 +76,6 @@ columns:
     description: Tracked dbt model (a mart) that processed the load.
   dbt_invocation_id:
     description: dbt invocation that processed the load.
-  orchestrator_run_id:
-    description: Dagster run that triggered the dbt invocation (empty for manual runs).
   processed_at:
     description: Time the load was marked processed for the model.
   pipeline_name:

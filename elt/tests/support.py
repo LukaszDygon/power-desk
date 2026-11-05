@@ -15,4 +15,4 @@ def query(db: Path, sql: str) -> list[tuple]:
 
 
 def build(db: Path, tmp_path: Path, scope: Literal["recent", "all"] = "recent") -> int:
-    return DbtRun(scope=scope).run_pending(db, tmp_path / "target", orchestrator_run_id="test-run")
+    return DbtRun(scope=scope).run(db, tmp_path / "target")

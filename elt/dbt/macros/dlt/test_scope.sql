@@ -25,7 +25,7 @@
                 {%- set meta = node.config.meta or {} -%}
                 {%- if meta.get('dlt_recent_column') -%}
                     {%- set model_name = (node.alias or node.name) if meta.get('dlt_tracked') else none -%}
-                    {%- set ns.predicate = dlt_recent(meta.get('dlt_recent_column'), model_name, use_ref=false) -%}
+                    {%- set ns.predicate = dlt_recent(meta.get('dlt_recent_column'), model_name) -%}
                 {%- endif -%}
             {%- endif -%}
         {%- endfor -%}
@@ -33,14 +33,23 @@
     {{ return(ns.predicate) }}
 {%- endmacro %}
 
-{# Generic tests on tracked/raw/ods nodes only look at rows from pending loads. #}
+{#
+  dbt's hook for the relation a generic test reads (`where` config): narrowed to the rows of pending loads
+  (`dlt_test_scope_filter`). A raw table before its first load reads as `dlt_source` does, empty, so its tests
+  pass until it is loaded.
+#}
 {% macro get_where_subquery(relation) -%}
     {%- set filters = [] -%}
     {%- set where = config.get('where') -%}
     {%- if where -%}{%- do filters.append(where) -%}{%- endif -%}
     {%- set scope = dlt_test_scope_filter(relation) -%}
     {%- if scope -%}{%- do filters.append(scope) -%}{%- endif -%}
-    {%- if filters -%}
+    {%- set source = (graph.sources.values() | selectattr('identifier', 'equalto', relation.identifier)
+                                             | selectattr('schema', 'equalto', relation.schema) | list | first)
+                     if execute else none -%}
+    {%- if source and load_relation(relation) is none -%}
+        {%- do return('(select * from ' ~ dlt_source(source.source_name, source.name) ~ ') dbt_subquery') -%}
+    {%- elif filters -%}
         {%- set filtered -%}
             (select * from {{ relation }} where {{ filters | join(' and ') }}) dbt_subquery
         {%- endset -%}

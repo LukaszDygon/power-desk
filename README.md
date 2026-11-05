@@ -32,7 +32,6 @@ elt/                 publisher data into the warehouse (power_desk_elt)
   contracts/           data contracts of marts, entities and dimensions (generated, ODCS)
   seed/                recorded publisher payloads for the seed week
   tests/               unit/: logic in isolation; integration/: pipelines, dbt and jobs on the seed
-  bench/               ingestion experiments (docs/ingestion-study.md)
   .dagster/<env>/      Dagster instance configuration
 dashboard/           read-only analyst dashboard (power_desk_dashboard)
   src/…                FastAPI app, queries, lineage, widget registry

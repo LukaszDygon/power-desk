@@ -1561,10 +1561,6 @@ Tracked dbt model (a mart) that processed the load.
 dbt invocation that processed the load.
 {% enddocs %}
 
-{% docs col_orchestrator_run_id %}
-Dagster run that triggered the dbt invocation (empty for manual runs).
-{% enddocs %}
-
 {% docs col_processed_at %}
 Time the load was marked processed for the model.
 {% enddocs %}

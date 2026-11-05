@@ -1,17 +1,29 @@
-"""Ingest jobs: which raw tables are refreshed together, how often, and the Dagster jobs built from them.
+"""The Dagster jobs: scheduled ingest jobs, a manual backfill job per source, and the nightly tests.
 
 Each ingest job materializes its raw tables and then every dbt model (marts process only pending
 loads, so untouched ones are cheap no-ops). Group raw tables by publication cadence; every raw
-table belongs to exactly one ingest job.
+table belongs to exactly one ingest job. A backfill job runs the same assets for one calendar month per
+partition, as a bounded window that leaves the source's cursor untouched; Dagster splits a range of months
+into runs and tracks them.
 """
 
 from dataclasses import dataclass
+from datetime import timedelta
 
-from dagster import AssetKey, AssetSelection, RunConfig, define_asset_job
+from dagster import (
+    AssetKey,
+    AssetSelection,
+    MonthlyPartitionsDefinition,
+    PartitionedConfig,
+    RunConfig,
+    define_asset_job,
+)
 
 from power_desk_elt.ingest.pipeline import DATASET_NAME, make_source
 from power_desk_elt.ingest.registry import SOURCES
+from power_desk_elt.ingest.windows import to_date
 from power_desk_elt.orchestration.dbt_assets import TransformConfig, dbt_models
+from power_desk_elt.settings import backfill_start_date
 
 
 @dataclass(frozen=True)
@@ -123,10 +135,30 @@ dbt_nightly = define_asset_job(
     config=RunConfig(ops={"dbt_models": TransformConfig(scope="all", command="test", docs=True)}),
     description="Every dbt test over the whole warehouse (completeness from the start date), then dbt docs.",
 )
-backfill = define_asset_job(
-    "backfill",
-    selection=AssetSelection.all(),
-    description="Configurable ingest + dbt: ops.<source>_ingest.config.{start_date,end_date,refresh}; "
-    "ops.dbt_models.config.scope=all tests the full range.",
-)
-JOBS = [*ingest_jobs.values(), dbt_nightly, backfill]
+START = to_date(backfill_start_date())
+MONTHS = MonthlyPartitionsDefinition(start_date=START.replace(day=1).isoformat())  # complete months only
+
+
+def month_window(source: str):
+    """Run config of a backfill partition: the month as the source's bounded window, from the start date."""
+
+    def config(partition_key: str) -> dict:
+        month = MONTHS.time_window_for_partition_key(partition_key)
+        first, last = max(START, month.start.date()), month.end.date() - timedelta(days=1)
+        window = {"start_date": first.isoformat(), "end_date": last.isoformat()}
+        return {"ops": {f"{source}_ingest": {"config": window}}}
+
+    return config
+
+
+backfill_jobs = {
+    name: define_asset_job(
+        f"backfill_{name}",
+        selection=AssetSelection.assets(*(AssetKey([DATASET_NAME, t]) for t in make_source(name).resources)) | ALL_DBT,
+        partitions_def=MONTHS,
+        config=PartitionedConfig(partitions_def=MONTHS, run_config_for_partition_key_fn=month_window(name)),
+        description=f"Manual: {name} for each month selected, then dbt, for the pending loads.",
+    )
+    for name in SOURCES
+}
+JOBS = [*ingest_jobs.values(), *backfill_jobs.values(), dbt_nightly]

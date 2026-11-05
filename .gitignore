@@ -58,9 +58,6 @@ elt/.dagster/*/*
 !elt/.dagster/*/dagster.yaml
 
 .env
-# Ingestion experiments (elt/bench/ingestion): downloaded data and run directories
-elt/bench/ingestion/data/
-elt/bench/ingestion/runs/
 
 # Claude Code worktrees (claude -w <name>), one per onboarding session
 .claude/worktrees/
