@@ -1,6 +1,6 @@
 # ADR 0004: REMIT as immutable event messages; resources keyed in each publisher's scheme
 
-- **Status:** accepted, 2026-11-02
+- **Status:** accepted, 2026-11-02; amended 2026-11-05 (no marts)
 - **Details:** [architecture](../architecture.md) (Ingestion, Dimensions)
 
 ## Context
@@ -38,3 +38,7 @@ list, and REMIT's EIC is at times a station, party or interconnector code rather
 - Assets that are not listed BM Units (about 3% of REMIT units) stay unresolved, and their test warns.
   The unregistered `10YGB----------B` zone resolves to GB since [ADR 0005](0005-nonconforming-eic-codes.md).
 - Open-ended events stay in the entity but are not placed on the hourly spine.
+
+**Amendment (2026-11-05):** REMIT messages stay in their entity, combined with the data they concern in
+analytical queries. The hourly and GB marts and `replace_touched.sql` are removed; the entity rebuilds every
+message of an event a pending load touched, like any partition (`pending_partitions`, keyed on the event).

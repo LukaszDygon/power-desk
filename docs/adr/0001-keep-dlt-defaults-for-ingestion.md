@@ -2,7 +2,7 @@
 
 - **Status:** accepted, 2026-10-28; amended 2026-10-28 (streams: `upsert` -> `delete-insert`), 2026-11-05
   (PVLive: `scd2`; Elexon stays `delete-insert`)
-- **Evidence:** [ingestion study](../ingestion-study.md); harness and raw results in `elt/bench/ingestion/`
+- **Evidence:** [ingestion study](evidence/0001-ingestion-study.md)
 
 ## Context
 

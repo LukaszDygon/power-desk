@@ -49,7 +49,7 @@ writes its own JSON logs.
 
 | Attribute | Issued by | Also in |
 |---|---|---|
-| `dagster.run_id` | Dagster, per run | the run's event log; `dlt_meta.dlt_load_audit.orchestrator_run_id`; dbt `metadata.env.DAGSTER_RUN_ID` (artifacts and `dbt.log`) |
+| `dagster.run_id` | Dagster, per run | the run's event log; dbt `metadata.env.DAGSTER_RUN_ID` (artifacts and `dbt.log`) |
 | `dlt.pipeline_name` | dlt pipeline (= source) | `raw._dlt_loads.schema_name`, `raw._dlt_pipeline_state` |
 | `dlt.load_id` | dlt, per load package | `raw._dlt_loads.load_id`, `_dlt_load_id` of every raw row, `dlt_load_audit.load_id`, `_last_dlt_load_id` of mart rows; landing files `<table>/<load_id>.*` |
 | `dbt.invocation_id` | dbt, per invocation | `metadata.invocation_id` of `manifest.json` / `run_results.json`, every `dbt.log` line, `dlt_load_audit.dbt_invocation_id` |
@@ -72,7 +72,7 @@ rows, from dlt's normalize metrics). dbt needs none: its log and artifacts carry
 | Services (`services/`) | stderr, JSON in the image; the cluster collects it |
 | Dagster runs | the run's event log (UI), and JSON lines in `data/logs/<env>/dagster-runs.jsonl` (`orchestration/logs.py`, via `python_logs` in `dagster.yaml`); the console keeps Dagster's format |
 | dbt | `dbt.log` next to the invocation's artifacts: `elt/dbt/target/dbt_models-<run>-<hash>/` in Dagster, `elt/dbt/target/` from the CLIs |
-| CLIs (`power-desk-backfill`, `power-desk-load-seed`) | stderr |
+| CLIs (`power-desk-load-seed`, `power-desk-accept`) | stderr |
 
 On the local cluster, Alloy ships the pods' records and the Dagster run log to Loki, viewed in Grafana and
 filtered by the identifiers above ([infra](../infra/README.md)).

@@ -12,8 +12,7 @@ cursor and pages.
   staging keeps the latest.
 - **Event messages** (immutable messages, a revision being a new message, e.g. Elexon REMIT): key on the
   publisher's message id (`merge_key` = `primary_key`), flag the latest revision in staging, and rebuild
-  whole events downstream (`delete_touched` pre-hook, append): a revision can drop hours, which
-  `delete+insert` and `hourly_series` would keep. Model: `bmrs.py` (`remit`), ADR 0004.
+  whole events in the entity (`pending_partitions` keyed on the event). Model: `bmrs.py` (`remit`), ADR 0004.
 - **Rows as published:** yield the API's records unchanged, its own columns included (NESO's datastore
   `_id`, `_full_text`), with only the column names it lists (PVLive's `meta`), never invented ones.
 - **Paging:** loop until a short page (`itertools.count(0, PAGE_ROWS)`), yield each page as a list.

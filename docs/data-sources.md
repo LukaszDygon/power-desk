@@ -7,8 +7,8 @@ uses the same columns and the tag vocabulary below.
 Each row was checked against the publisher's own pages: Europe on **2026-11-01**, and the forecasting
 services and global sections on **2026-11-02**. Terms change often, so re-check the Docs link before you
 build a source. **(unv.)** marks a point that could not be confirmed on a primary page, because the page
-rendered only with JavaScript, returned 403, or did not state it. **●** marks a source power-desk already
-ingests (`elt/src/power_desk_elt/ingest/sources/`).
+rendered only with JavaScript, returned 403, or did not state it. The sources power-desk ingests are those in
+`elt/src/power_desk_elt/ingest/registry.py`.
 
 **Contents**
 1. [Tags](#tags)
@@ -129,7 +129,7 @@ ingests (`elt/src/power_desk_elt/ingest/sources/`).
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
-| ● **ENTSO-E Transparency Platform** (ENTSO-E) | `Europe` all ENTSO-E bidding zones | `Transparency` | load, load forecast, generation, capacity, outages, flows, transfer capacity, DA prices, balancing, imbalance prices | API (XML) · Push (subscriptions) · Download (File Library) · Web | `Account` (email transparency@entsoe.eu, then token) | Reuse terms (unv.). File Library replaces SFTP (SFTP shutdown planned Sep 2025, unv.). The quoted 400 req/min limit has no official source | [Platform](https://www.entsoe.eu/data/transparency-platform/) · [Support and API docs](https://transparencyplatform.zendesk.com) |
+| **ENTSO-E Transparency Platform** (ENTSO-E) | `Europe` all ENTSO-E bidding zones | `Transparency` | load, load forecast, generation, capacity, outages, flows, transfer capacity, DA prices, balancing, imbalance prices | API (XML) · Push (subscriptions) · Download (File Library) · Web | `Account` (email transparency@entsoe.eu, then token) | Reuse terms (unv.). File Library replaces SFTP (SFTP shutdown planned Sep 2025, unv.). The quoted 400 req/min limit has no official source | [Platform](https://www.entsoe.eu/data/transparency-platform/) · [Support and API docs](https://transparencyplatform.zendesk.com) |
 | **ENTSOG Transparency Platform** (ENTSOG) | `Europe` gas interconnection points, balancing zones | `Transparency` `Gas` | gas flows, capacity, outages | API (XML/CSV/XLSX/JSON) · Web | `Free` | No key in the API manual v3.0 (Oct 2025); filters are mandatory | [Platform](https://transparency.entsog.eu) |
 | **ACER / REMIT** (ACER) | `Europe` EU | `Transparency` | outages, news | Web · Download (AEGIS/CHEST, CSV) | `Free` | No transaction data is public. The Inside Information Access Point and the REMIT Data Reference Centre opened May 2025 and are in beta | [REMIT](https://www.acer.europa.eu/remit) |
 | **EEX Transparency** (EEX) | `Europe` power 19 countries, gas 12 | `Transparency` | outages, generation, capacity | Web · API (real-time) | `Free` (web) · `Paid` (API) | ACER-approved inside-information platform | [Platform](https://www.eex-transparency.com) |
@@ -139,8 +139,8 @@ ingests (`elt/src/power_desk_elt/ingest/sources/`).
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
-| ● **Elexon Insights (BMRS)** (Elexon) | `GB & Ireland` GB | `Transparency` | balancing, imbalance prices, generation, load, load forecast, outages, flows | API (JSON) · Push (IRIS, AMQP) · Web | `Free` (API, no key) · `Account` (IRIS) | BMRS licence allows commercial use with attribution. Old BMRS API off since 31 May 2024 | [Developer portal](https://developer.data.elexon.co.uk) |
-| ● **NESO Data Portal** (NESO) | `GB & Ireland` GB | `System operator` | load, load forecast, RES forecast, balancing, ancillary services, flows, frequency | API (CKAN, Datastore SQL) · Download (CSV) | `Free` | NESO Open Licence (based on OGL v3), set per dataset. Limits: 1 req/s, 2 req/min for SQL | [API guidance](https://www.neso.energy/data-portal/api-guidance) |
+| **Elexon Insights (BMRS)** (Elexon) | `GB & Ireland` GB | `Transparency` | balancing, imbalance prices, generation, load, load forecast, outages, flows | API (JSON) · Push (IRIS, AMQP) · Web | `Free` (API, no key) · `Account` (IRIS) | BMRS licence allows commercial use with attribution. Old BMRS API off since 31 May 2024 | [Developer portal](https://developer.data.elexon.co.uk) |
+| **NESO Data Portal** (NESO) | `GB & Ireland` GB | `System operator` | load, load forecast, RES forecast, balancing, ancillary services, flows, frequency | API (CKAN, Datastore SQL) · Download (CSV) | `Free` | NESO Open Licence (based on OGL v3), set per dataset. Limits: 1 req/s, 2 req/min for SQL | [API guidance](https://www.neso.energy/data-portal/api-guidance) |
 | **EirGrid / SONI** | `GB & Ireland` IE, NI | `System operator` | load, generation, carbon intensity | Download (XLSX) · Web (Smart Grid Dashboard) | `Free` | Licence (unv.). The dashboard's JSON is undocumented | [EirGrid](https://www.eirgrid.ie) |
 | **SEMO** (EirGrid, SONI) | `GB & Ireland` SEM | `System operator` | balancing, imbalance prices | API (static reports, JSON) · Download | `Free` (unv.) | The API document dates from 2019 | [SEMO](https://www.sem-o.com) |
 
@@ -219,7 +219,7 @@ list.
 | **EEX: EU ETS auctions** (EEX) | `Europe` EU | `Auction` | auction results, emissions | Web (last 45 days) · Download (history 2012–2025) | `Free` | Fees change 1 Sep 2026. ETS2 auctions start 2027 | [EU ETS auctions](https://www.eex.com/en/markets/environmentals/eu-ets1-eu-ets2-auctions/eu-ets1-auctions) |
 | **EEX: Guarantees of Origin** (EEX) | `Western Europe` FR | `Auction` | auction results | Download (XLSX/ZIP) | `Free` (auction results) · `Paid` (GO exchange data, unv.) | Power GO auctions monthly, biogas GO quarterly | [French GO auctions](https://www.eex.com/en/markets/energy-certificates/french-auctions-power) |
 | **regelleistung.net** (German TSOs) | `Western Europe` DE and FCR cooperation | `Auction` | auction results, ancillary services | Web (Datencenter) · Download | `Free` | Formats and API (unv.) | [regelleistung.net](https://www.regelleistung.net) |
-| ● **NESO balancing auctions** (NESO) | `GB & Ireland` GB | `Auction` | auction results, ancillary services | API (CKAN) · Download (CSV) | `Free` | NESO Open Licence. Response and reserve products moved to Enduring Auction Capability (EAC) | [EAC results](https://www.neso.energy/data-portal/eac-auction-results) |
+| **NESO balancing auctions** (NESO) | `GB & Ireland` GB | `Auction` | auction results, ancillary services | API (CKAN) · Download (CSV) | `Free` | NESO Open Licence. Response and reserve products moved to Enduring Auction Capability (EAC) | [EAC results](https://www.neso.energy/data-portal/eac-auction-results) |
 | **EMR Delivery Body: Capacity Market** (NESO) | `GB & Ireland` GB | `Auction` | auction results, capacity | API and Download (NESO portal) · Web | `Free` | Register updated weekly. Latest auction T-4 for 2029/30 (Jun 2026) | [Register](https://www.neso.energy/data-portal/capacity-market-register) |
 | **LCCC / EMR Settlement** | `GB & Ireland` GB | `Auction` | generation, DA prices, auction results | Download (JSON/CSV) · API (unv.) | `Free` | Licence per dataset; some are OGL | [Data portal](https://dp.lowcarboncontracts.uk) |
 
@@ -247,7 +247,7 @@ list.
 | **EUMETSAT and CM SAF** | `Europe` · `Africa` | `Weather` | irradiance, observations | API (Data Store) · Push (EUMETCast broadcast) | `Account` · `Paid` (commercial use under 1 h latency) | Data policy amended Nov 2025 (details unv.). SARAH-3 irradiance | [EUMETSAT](https://www.eumetsat.int) |
 | **NOAA GFS / GEFS** (NCEP) | `Global` | `Weather` | NWP, ensembles | Download (NOMADS, AWS S3) · Push (SNS) | `Free` | US public domain. 0.25°, out to 384 h | [Registry](https://registry.opendata.aws/noaa-gfs-bdp-pds/) |
 | **NASA POWER** | `Global` | `Weather` | irradiance, reanalysis | API · Download (AWS) | `Free` | Covers 1981 onwards | [POWER](https://power.larc.nasa.gov) |
-| ● **PV_Live** (Sheffield Solar) | `GB & Ireland` GB | `Weather` | generation | API (no key) | `Free` | CC BY 4.0. National, GSP and PES-region PV outturn estimates. A PV_Live_EU service also exists | [PV_Live](https://www.solar.sheffield.ac.uk/pvlive/) |
+| **PV_Live** (Sheffield Solar) | `GB & Ireland` GB | `Weather` | generation | API (no key) | `Free` | CC BY 4.0. National, GSP and PES-region PV outturn estimates. A PV_Live_EU service also exists | [PV_Live](https://www.solar.sheffield.ac.uk/pvlive/) |
 | **PVGIS** (EC JRC) | `Global` (Europe, Africa, Asia, Americas) | `Weather` | irradiance, capacity factors | API (v5.3, 30 calls/s) | `Free` | Licence not stated | [API](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en) |
 | **Renewables.ninja** | `Global` | `Weather` | capacity factors | API (token) · Download | `Account` | Non-commercial (unv.) | [API docs](https://www.renewables.ninja/documentation/api) |
 | **Open-Meteo** | `Global` | `Weather` `Aggregator` | NWP, ensembles, reanalysis | API · Download (S3) | `Free` (non-commercial, under 10k calls/day) · `Paid` | Data CC BY 4.0. Aggregates IFS/AIFS, ICON, GFS, AROME, UKMO, HARMONIE | [Terms](https://open-meteo.com/en/terms) |

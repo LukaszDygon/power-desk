@@ -21,8 +21,6 @@ models:
       - name: timestamp_utc
         description: "{{ doc('col_operational_period_start_date_and_time_gmt') }}"
         data_tests: [not_null]
-      - name: interval_minutes
-        description: "{{ doc('col_interval_minutes') }}"
       - name: auction_type
         description: "{{ doc('col_auction_type') }}"
         data_tests:

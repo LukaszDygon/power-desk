@@ -28,8 +28,8 @@ Then run `onboard-dataset` from phase 0 (worktree, profile, scope stop) before s
 | File partitions (re-exported periodic files) | [kinds/file-partitions.md](kinds/file-partitions.md) | `entsoe.py` | files + `lastUpdated` in resource state | `merge_key` = `primary_key` = natural key |
 | Gridded forecast runs (GRIB fields, values at points) | [kinds/gridded.md](kinds/gridded.md) | `ecmwf.py` | run date (incremental) | `merge_key` = natural key incl. the run |
 
-  Nested payloads, whatever the kind: [kinds/nested.md](kinds/nested.md). Existing Elexon and PVLive streams
-  load with `delete-insert` (ADR 0001); a new stream does so only as a confirmed exception.
+  Nested payloads, whatever the kind: [kinds/nested.md](kinds/nested.md). Elexon's streams load with
+  `delete-insert` (docs/deviations.md); a new stream does so only as a confirmed exception.
 
 - **Natural key and definitions** come from the publisher's documentation, never invented; cite it.
 - **Entity:** which `ods_<entity>` the data feeds, or whether it is a new one.
@@ -96,7 +96,9 @@ job (schedule and catch-up come with it).
   grain, rename dlt's names, keep `_dlt_load_id`.
 - File partitions: `incremental`, `delete+insert` on the natural key, `meta={'dlt_tracked': true}`, reading
   `where _dlt_valid_to is null and {{ dlt_incremental_filter('_dlt_load_id') }}`. Snapshots keep validity
-  with `{{ scd2_validity() }}`. Streams: plain views.
+  with `{{ scd2_validity() }}`. Other `scd2` tables: views of the current version (`_dlt_valid_to is null`).
+- Derived fields use the shared macros (`macros/time/intervals.sql` for `interval_minutes`); a value the
+  publisher does not give is null.
 - An incremental model's `unique_key` is raw's row-level natural key, never a coarser one (a run, a day):
   `delete+insert` on a coarse key rewrote whole runs (383 s against 0.9 s keyed by row), and a key that
   misses a column of raw's left stale rows behind.
@@ -106,28 +108,27 @@ job (schedule and catch-up come with it).
 ## 7. Dimensions
 
 Map the publisher's codes onto dimension keys in `elt/dbt/seeds/mappings/`, register the dataset in
-`seeds/dims/source_datasets.csv`, and extend a dimension only for a genuinely new concept (with an
+`seeds/dims/dim_source_dataset.csv`, and extend a dimension only for a genuinely new concept (with an
 authoritative definition).
 - Check: the mapping integrity tests pass.
 
 ## 8. Entity
 
-Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, plus its hourly mart in
-`marts/combined/` built with `hourly_series`).
-- Conform units and dimension keys (horizons from `dim_time_horizon`); keep the published interval,
+Add a branch to the matching `ods_<entity>`, or create a new entity (`ods.yml`, plus its mart in `marts/`:
+`hourly_series` over the entity, when it is a time series).
+- Conform units and dimension keys (horizons through `map_time_horizon`); keep the published interval,
   `publish_time_utc`, `source_dataset`, the source code and `_dlt_load_id`, in the column order of
   `docs/architecture.md` (Naming). Keep every resolution published: the hourly mart resolves overlaps
   (most recently published wins) and records `coverage`.
-- Name each measure in `seeds/dims/metrics.csv` with its hourly aggregation (`mean` for MW, prices and
-  capacities; `sum` for volumes), and pass it to `hourly_series` the same way.
+- Name each measure in `seeds/dims/dim_metric.csv` with its hourly aggregation (`mean` for MW, prices and
+  capacities; `sum` for volumes); `hourly_series` reads it from there.
 - Read each staging model through `pending_partitions(ref(...), [area key])`, so an incremental build
   transforms only the (area, hour) partitions pending loads touch.
 - Check: `dbt build` and `make check-elt`, including the warehouse column-coverage test.
 
 ## 9. Marts and dashboard
 
-- Business marts (`mart_<scope>_<subject>`) are incremental on pending loads (Load-id contract); add or
-  extend one only when the data answers a new question, with grain and business-rule tests.
+- Marts are `hourly_series` over their entity only; analyses belong in queries and widgets.
 - Cards: the `create-widget` skill.
 
 ## 10. Data contracts
