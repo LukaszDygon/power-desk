@@ -1,3 +1,4 @@
+-- the dataset's interval and area (dim_source_dataset): ITSDO publishes neither
 select
     s.timestamp_utc,
     ds.native_interval_minutes as interval_minutes,
@@ -9,4 +10,4 @@ select
     s.publish_time_utc,
     s._dlt_load_id
 from {{ pending_partitions(ref('stg_bmrs__itsdo')) }} s
-join {{ ref('source_datasets') }} ds on ds.source_dataset = 'ITSDO'
+join {{ ref('dim_source_dataset') }} ds on ds.source_dataset = 'ITSDO'

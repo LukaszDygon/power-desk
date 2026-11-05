@@ -1,7 +1,8 @@
 {#
   Staging of a NESO net transfer capacity table (`neso__<interconnector>_ntc`): the current versions
   (scd2) under each (operational period, auction) pending loads wrote; where NESO appended a
-  resubmission as a further row, the latest upload.
+  resubmission as a further row, the latest upload. The hourly period's length is the dataset's
+  (`dim_source_dataset.native_interval_minutes`), joined by the entity.
 #}
 {% macro stg_neso_ntc(table_name) -%}
 with current_rows as (
@@ -17,7 +18,6 @@ touched as (
 
 select
     cast(c.operational_period_start_date_and_time_gmt at time zone 'UTC' as timestamp) as timestamp_utc,
-    60 as interval_minutes,
     c.auction_type,
     cast(c.flow_in_mw_to_gb as double) as to_gb_mw,
     c.reason_for_restriction_to_gb as to_gb_restriction_reason,

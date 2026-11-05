@@ -145,7 +145,7 @@ columns:
     links: [eic_implementation_guide]
   # --- technology ---------------------------------------------------------------------------
   technology_code:
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
   ancestor_technology_code:
     description: A technology group containing `technology_code` (itself at depth 0).
   parent_technology_code:

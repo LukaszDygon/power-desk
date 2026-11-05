@@ -38,7 +38,7 @@ COUNTED_TABLES = (
     ("raw", "bmrs__fuelinst"),
     ("raw", "bmrs__indo"),
     ("ods", "ods_generation_actual"),
-    ("marts", "mart_gb_generation_mix"),
+    ("marts", "mart_generation_actual"),
 )
 
 

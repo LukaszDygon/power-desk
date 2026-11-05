@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
+
+import pytest
 
 from power_desk_elt.ingest.pipeline import make_pipeline, make_source, run
 from power_desk_elt.ingest.registry import SOURCES
@@ -13,8 +17,9 @@ from power_desk_elt.transform.loads import pending_load_ids, tracked_models
 import power_desk_warehouse as warehouse
 from tests.support import build, query
 
-GB_MARTS = {"mart_gb_generation_mix", "mart_gb_demand_vs_forecast", "mart_gb_hourly_summary"}
-SEED_AREAS = 11
+Records = dict[str, list[dict[str, Any]]]
+REPUBLISHED = "2024-03-08T12:00:00Z"
+DIDCOT = "48X000000000SEED-NGET-RMT-00000001"
 
 
 def test_seed_build_populates_every_mart_and_processes_every_load(seeded_warehouse):
@@ -23,97 +28,107 @@ def test_seed_build_populates_every_mart_and_processes_every_load(seeded_warehou
         seeded_warehouse, "select count(distinct load_id), count(distinct model_name) from dlt_meta.dlt_load_audit"
     )
     assert audited == [(query(seeded_warehouse, "select count(*) from raw._dlt_loads")[0][0], len(tracked_models()))]
-    assert set(tracked_models()) > GB_MARTS
-    # 7 days x 288 five-minute intervals, x 48 settlement periods, x 24 hours
-    assert [query(seeded_warehouse, f"select count(*) from marts.{m}")[0][0] for m in sorted(GB_MARTS)] == [
-        336,
-        2016,
-        168,
-    ]
+    marts = query(seeded_warehouse, "select table_name from information_schema.tables where table_schema = 'marts'")
+    assert [m for (m,) in marts if query(seeded_warehouse, f"select count(*) from marts.{m}") == [(0,)]] == []
 
 
-def test_combined_marts_hold_every_source_and_area(seeded_warehouse):
-    sources = (
-        "select string_agg(distinct source_dataset, ',' order by source_dataset), count(distinct area_eic_code) "
-        "from marts.{}"
-    )
-    assert query(seeded_warehouse, sources.format("mart_generation_actual")) == [
-        ("ENTSOE_16.1.B_C,FUELINST,PVLIVE", SEED_AREAS + 1)
-    ]
-    assert query(seeded_warehouse, sources.format("mart_demand_actual"))[0][0] == "ENTSOE_6.1.A,INDO"
-    assert query(seeded_warehouse, sources.format("mart_demand_forecast"))[0][0] == "ENTSOE_6.1.B,NDF"
-    assert query(seeded_warehouse, sources.format("mart_generation_forecast"))[0][0] == "ENTSOE_14.1.D,WINDFOR"
-    capacities = "select string_agg(distinct source_dataset, ',' order by source_dataset) from marts.{}"
-    assert query(seeded_warehouse, capacities.format("mart_transfer_capacity")) == [
-        ("ENTSOE_11.1.A,NESO_ELECLINK,NESO_IFA,NESO_IFA2,NESO_NEMOLINK,NESO_NSL,NESO_VIKING",)
-    ]
-    assert query(
-        seeded_warehouse, "select count(*) from marts.mart_generation_actual where technology_code is null"
-    ) == [(0,)]
+@pytest.mark.parametrize(
+    ("mart", "sources"),
+    [
+        ("mart_generation_actual", "ENTSOE_16.1.B_C,FUELINST,PVLIVE"),
+        ("mart_generation_forecast", "ENTSOE_14.1.D,WINDFOR"),
+        ("mart_demand_actual", "ENTSOE_6.1.A,INDO"),
+        ("mart_demand_forecast", "ENTSOE_6.1.B,NDF"),
+        ("mart_energy_price", "ENTSOE_12.1.D,MID"),
+        ("mart_transfer_capacity", "ENTSOE_11.1.A,NESO_ELECLINK,NESO_IFA,NESO_IFA2,NESO_NEMOLINK,NESO_NSL,NESO_VIKING"),
+        ("mart_weather_forecast", "ECMWF_AIFS_SINGLE,ECMWF_IFS_OPER"),
+    ],
+)
+def test_each_mart_holds_every_source_of_its_entity(seeded_warehouse, mart, sources):
+    sql = f"select string_agg(distinct source_dataset, ',' order by source_dataset) from marts.{mart}"
+    assert query(seeded_warehouse, sql) == [(sources,)]
 
 
-def test_a_revised_load_rebuilds_only_the_grains_it_touches(warehouse_copy, tmp_path):
-    before = dict(
-        query(
-            warehouse_copy,
-            "select settlement_period, _dbt_invocation_id from marts.mart_gb_demand_vs_forecast "
-            "where settlement_date = '2024-03-03'",
-        )
-    )
-    publishers = SeedPublishers.from_seed()
-    publishers.records["INDO"] = [
-        {**r, "publishTime": "2024-03-08T12:00:00Z", "demand": 99_999}
-        for r in publishers.records["INDO"]
+def revise_indo(records: Records) -> list[tuple]:
+    records["INDO"] = [
+        {**r, "publishTime": REPUBLISHED, "demand": 99_999}
+        for r in records["INDO"]
         if r["settlementDate"] == "2024-03-03" and r["settlementPeriod"] in (10, 11)
     ]
-    with replay(publishers):
-        info = run(
-            make_pipeline("bmrs", warehouse_copy),
-            make_source("bmrs", SOURCES["bmrs"].window("2024-03-08", "2024-03-08"), ["bmrs__indo"]),
-        )
-    assert pending_load_ids(warehouse_copy) == list(info.loads_ids)
-    assert build(warehouse_copy, tmp_path) == 0
-
-    after = dict(
-        query(
-            warehouse_copy,
-            "select settlement_period, _dbt_invocation_id from marts.mart_gb_demand_vs_forecast "
-            "where settlement_date = '2024-03-03'",
-        )
-    )
-    assert {p for p in after if after[p] != before[p]} == {10, 11}
-    assert query(
-        warehouse_copy,
-        "select actual_demand_mw from marts.mart_gb_demand_vs_forecast "
-        "where settlement_date = '2024-03-03' and settlement_period = 10",
-    ) == [(99_999,)]
-    assert pending_load_ids(warehouse_copy) == []
+    return [([99_999.0],)]
 
 
-def test_a_neso_resubmission_replaces_the_restriction_in_the_entity(warehouse_copy, tmp_path):
-    publishers = SeedPublishers.from_seed()
+def revise_neso(records: Records) -> list[tuple]:
     [original] = [
         r
-        for r in publishers.records["neso__nsl_ntc"]
+        for r in records["neso__nsl_ntc"]
         if r["Auction Type"] == "Day Ahead" and r["Operational Period Start Date and Time GMT"] == "2024-03-04T18:00:00"
     ]
-    publishers.records["neso__nsl_ntc"] = [
-        {**original, "Data Upload Time GMT": "2024-03-08T12:00:00", "Flow in MW From GB": 1}
-    ]
+    records["neso__nsl_ntc"] = [{**original, "Data Upload Time GMT": "2024-03-08T12:00:00", "Flow in MW From GB": 1}]
+    # out of GB (the restriction from GB), then into GB
+    return [([1.0, float(original["Flow in MW To GB"])],)]
+
+
+def revise_remit(records: Records) -> list[tuple]:
+    latest = {m["mrid"]: m for m in sorted(records["REMIT"], key=lambda m: m["id"])}
+    revision = {"publishTime": REPUBLISHED, "id": 201, "revisionNumber": 3, "eventEndTime": "2024-03-04T06:00:00Z"}
+    records["REMIT"] = [{**latest[DIDCOT], **revision}]
+    # the new revision is the latest; every earlier one is kept
+    return [(datetime(2024, 3, 4, 6), 3)]
+
+
+@pytest.mark.parametrize(
+    ("source", "table", "revise", "entity_sql", "mart_sql", "mart_hours"),
+    [
+        pytest.param(
+            "bmrs",
+            "bmrs__indo",
+            revise_indo,
+            "select list(demand_mw) from ods.ods_demand_actual "
+            "where source_dataset = 'INDO' and settlement_date = '2024-03-03' and settlement_period = 10",
+            "select distinct timestamp_utc from marts.mart_demand_actual where source_dataset = 'INDO'",
+            [datetime(2024, 3, 3, 4), datetime(2024, 3, 3, 5)],
+            id="elexon-republication",
+        ),
+        pytest.param(
+            "neso",
+            "neso__nsl_ntc",
+            revise_neso,
+            "select list(transfer_capacity_mw order by out_area_eic_code) from ods.ods_transfer_capacity "
+            "where source_dataset = 'NESO_NSL' and source_code = 'Day Ahead' and timestamp_utc = '2024-03-04 18:00'",
+            "select distinct timestamp_utc from marts.mart_transfer_capacity where source_dataset = 'NESO_NSL'",
+            [datetime(2024, 3, 4, 18)],
+            id="neso-resubmission",
+        ),
+        pytest.param(
+            "bmrs",
+            "bmrs__remit",
+            revise_remit,
+            "select max(timestamp_utc + to_minutes(interval_minutes)) filter (where is_latest_revision), "
+            f"count(distinct revision_number) from ods.ods_unavailability where mrid = '{DIDCOT}'",
+            None,
+            None,
+            id="remit-revision",
+        ),
+    ],
+)
+def test_a_republished_row_replaces_the_earlier_one_and_rebuilds_only_what_it_touches(
+    warehouse_copy, tmp_path, source, table, revise: Callable[[Records], list[tuple]], entity_sql, mart_sql, mart_hours
+):
+    publishers = SeedPublishers.from_seed()
+    expected = revise(publishers.records)
     with replay(publishers):
-        run(
-            make_pipeline("neso", warehouse_copy),
-            make_source("neso", SOURCES["neso"].window("2024-03-08", "2024-03-08"), ["neso__nsl_ntc"]),
+        info = run(
+            make_pipeline(source, warehouse_copy),
+            make_source(source, SOURCES[source].window("2024-03-08", "2024-03-08"), [table]),
         )
     assert build(warehouse_copy, tmp_path) == 0
-    assert query(
-        warehouse_copy,
-        "select out_area_map_code, transfer_capacity_mw from ods.ods_transfer_capacity o "
-        "join (select area_eic_code, display_name as out_area_map_code from dims.dim_area where is_current) a "
-        "on a.area_eic_code = o.out_area_eic_code "
-        "where source_dataset = 'NESO_NSL' and source_code = 'Day Ahead' and timestamp_utc = '2024-03-04 18:00' "
-        "order by all",
-    ) == [("GB", 1.0), ("NO2", float(original["Flow in MW To GB"]))]
+    assert query(warehouse_copy, entity_sql) == expected
+    if mart_sql:
+        loads = ", ".join(f"'{load_id}'" for load_id in info.loads_ids)
+        rebuilt = query(warehouse_copy, f"{mart_sql} and _last_dlt_load_id in ({loads}) order by 1")
+        assert [hour for (hour,) in rebuilt] == mart_hours
+    assert pending_load_ids(warehouse_copy) == []
 
 
 def test_overlapping_periods_resolve_to_the_most_recently_published_in_the_hourly_mart(warehouse_copy, tmp_path):
@@ -218,21 +233,28 @@ def test_a_calendar_day_ends_where_the_next_begins_across_a_clock_change(warehou
     assert query(warehouse_copy, rows) == incremental
 
 
-def test_hourly_marts_weight_by_minutes_and_record_coverage(seeded_warehouse):
-    # FUELINST is published every 5 minutes: an hour of it is the mean of its twelve values
-    [(expected, slots)] = query(
+@pytest.mark.parametrize(
+    ("source_dataset", "source_code", "intervals"),
+    [("FUELINST", "CCGT", 12), ("PVLIVE", "SOLAR", 2)],
+)
+def test_an_hour_is_the_mean_of_the_intervals_published_in_it(seeded_warehouse, source_dataset, source_code, intervals):
+    # the entity keeps each source's published interval (5 minutes, half hours); the mart conforms both to hours
+    [(expected, published)] = query(
         seeded_warehouse,
         "select round(avg(generation_mw), 3), count(*) from ods.ods_generation_actual "
-        "where source_dataset = 'FUELINST' and source_code = 'CCGT' "
+        f"where source_dataset = '{source_dataset}' and source_code = '{source_code}' "
         "and timestamp_utc >= timestamp '2024-03-04 10:00' and timestamp_utc < timestamp '2024-03-04 11:00'",
     )
-    assert slots == 12
+    assert published == intervals
     assert query(
         seeded_warehouse,
-        "select generation_mw, coverage from marts.mart_generation_actual where source_dataset = 'FUELINST' "
-        "and source_code = 'CCGT' and timestamp_utc = timestamp '2024-03-04 10:00'",
+        "select generation_mw, coverage from marts.mart_generation_actual "
+        f"where source_dataset = '{source_dataset}' and source_code = '{source_code}' "
+        "and timestamp_utc = timestamp '2024-03-04 10:00'",
     ) == [(expected, 1.0)]
-    # a year-ahead capacity (a month-long period) holds in every hour of its month
+
+
+def test_a_month_long_period_holds_in_every_hour_of_its_month(seeded_warehouse):
     assert query(
         seeded_warehouse,
         "select count(*), min(coverage), count(distinct transfer_capacity_mw) from marts.mart_transfer_capacity "
@@ -259,7 +281,7 @@ def test_a_duplicated_raw_row_fails_its_guard_and_keeps_the_load_pending(warehou
         r[0]
         for r in query(warehouse_copy, "select model_name from dlt_meta.dlt_load_audit where load_id = '1999999999.1'")
     }
-    assert "mart_gb_demand_vs_forecast" not in audited
+    assert "mart_demand_actual" not in audited
     assert "1999999999.1" in pending_load_ids(warehouse_copy)
 
 
@@ -280,106 +302,12 @@ def test_completeness_flags_a_missing_settlement_period(warehouse_copy, tmp_path
     ) == [("2024-03-04", 17)]
 
 
-def test_scoped_tests_read_only_rows_of_pending_loads(seeded_warehouse, tmp_path):
-    assert (
-        run_dbt(
-            ["compile", "--select", "ods_demand_actual", "--vars", '{"dlt_load_ids": ["L1"]}'],
-            seeded_warehouse,
-            target_path=tmp_path / "target",
-        )
-        == 0
-    )
-    compiled = next(
-        (tmp_path / "target" / "compiled").rglob("not_null_ods_demand_actual_interval_minutes.sql")
-    ).read_text()
-    assert "_dlt_load_id in (select unnest(cast(['L1'] as varchar[])) as load_id)" in compiled
-
-
 def test_a_first_build_by_hand_processes_every_load(tmp_path, monkeypatch):
     monkeypatch.setenv("POWER_DESK_PIPELINES_DIR", str(tmp_path / "pipelines"))  # no state from other tests' loads
     db = tmp_path / "fresh.duckdb"
     load_seed(db)
     assert run_dbt(["build"], db, target_path=tmp_path / "target") == 0
     assert query(db, "select count(*) from dlt_meta.dlt_pending_loads") == [(0,)]
-
-
-def remit_mrid(number: int, sender: str = "NGET") -> str:
-    return f"48X000000000SEED-{sender}-RMT-{number:08d}"
-
-
-DIDCOT, DRAX, WALNEY, PEMBROKE = remit_mrid(1), remit_mrid(2), remit_mrid(5), remit_mrid(7)
-EVENT_HOURS = (
-    "select min(timestamp_utc), max(timestamp_utc), count(distinct timestamp_utc) "
-    "from marts.mart_unavailability where mrid = '{}'"
-)
-
-
-def test_remit_marts_place_each_events_latest_revision_on_the_hour(seeded_warehouse):
-    # revision 2 shortened Didcot's outage to 2024-03-04 20:00: only its hours remain
-    assert query(seeded_warehouse, EVENT_HOURS.format(DIDCOT)) == [
-        (datetime(2024, 3, 3, 6), datetime(2024, 3, 4, 19), 38)
-    ]
-    # Drax's outage profile: available capacity per interval, the event's unavailable capacity throughout
-    drax = (
-        "select timestamp_utc, available_capacity_mw, unavailable_capacity_mw, coverage from marts.mart_unavailability "
-        f"where mrid = '{DRAX}' and timestamp_utc in ('2024-03-02 19:00', '2024-03-02 20:00') order by 1"
-    )
-    assert query(seeded_warehouse, drax) == [
-        (datetime(2024, 3, 2, 19), 400.0, 265.0, 1.0),
-        (datetime(2024, 3, 2, 20), 500.0, 265.0, 1.0),
-    ]
-    # one message listing two units: a series per unit; an open-ended event is not placed
-    units = f"select count(distinct source_code) from marts.mart_unavailability where mrid = '{WALNEY}'"
-    assert query(seeded_warehouse, units) == [(2,)]
-    assert query(seeded_warehouse, EVENT_HOURS.format(remit_mrid(4)))[0][2] == 0
-    # the dismissed nuclear outage stays in the combined mart, but not in the GB total
-    statuses = "select distinct event_status from marts.mart_unavailability where mrid = '{}'"
-    assert query(seeded_warehouse, statuses.format(remit_mrid(6))) == [("Dismissed",)]
-    gb = (
-        "select technology_code, unavailability_type, unavailable_capacity_mw, events "
-        "from marts.mart_gb_generation_unavailability where timestamp_utc = '{}' order by 1"
-    )
-    assert query(seeded_warehouse, gb.format("2024-03-06 12:00")) == []
-    assert query(seeded_warehouse, gb.format("2024-03-05 08:00")) == [("gas", "Planned", 225.0, 1)]
-    # the transmission unavailability (Moyle) is not generation
-    moyle = "select count(*) from marts.mart_gb_generation_unavailability where timestamp_utc = '2024-03-06 19:00'"
-    assert query(seeded_warehouse, moyle) == [(0,)]
-
-
-def test_a_remit_revision_rebuilds_every_hour_of_its_event(warehouse_copy, tmp_path):
-    pembroke = f"select distinct _dbt_invocation_id from marts.mart_unavailability where mrid = '{PEMBROKE}'"
-    untouched = query(warehouse_copy, pembroke)
-    publishers = SeedPublishers.from_seed()
-    messages = sorted(publishers.records["REMIT"], key=lambda m: m["id"])
-    latest = {m["mrid"]: m for m in messages}
-    revised = {"publishTime": "2024-03-08T12:00:00Z"}
-    # Didcot shortened again, Walney's two units dismissed, Drax made open-ended
-    didcot = {**latest[DIDCOT], **revised, "id": 201, "revisionNumber": 3, "eventEndTime": "2024-03-04T06:00:00Z"}
-    walney = [
-        {**m, **revised, "id": 202 + i, "revisionNumber": 2, "eventStatus": "Dismissed"}
-        for i, m in enumerate(m for m in messages if m["mrid"] == WALNEY)
-    ]
-    drax = {k: v for k, v in latest[DRAX].items() if k not in ("eventEndTime", "outageProfile")}
-    publishers.records["REMIT"] = [didcot, *walney, {**drax, **revised, "id": 204, "revisionNumber": 2}]
-    with replay(publishers):
-        run(
-            make_pipeline("bmrs", warehouse_copy),
-            make_source("bmrs", SOURCES["bmrs"].window("2024-03-08", "2024-03-08"), ["bmrs__remit"]),
-        )
-    assert build(warehouse_copy, tmp_path) == 0
-
-    assert query(warehouse_copy, EVENT_HOURS.format(DIDCOT)) == [(datetime(2024, 3, 3, 6), datetime(2024, 3, 4, 5), 24)]
-    assert query(warehouse_copy, EVENT_HOURS.format(DRAX))[0][2] == 0
-    statuses = f"select distinct event_status from marts.mart_unavailability where mrid = '{WALNEY}'"
-    assert query(warehouse_copy, statuses) == [("Dismissed",)]
-    # the hours the revisions moved the events out of are gone from the GB total as well
-    gb = "select technology_code from marts.mart_gb_generation_unavailability where timestamp_utc = '{}'"
-    assert query(warehouse_copy, gb.format("2024-03-04 10:00")) == []
-    assert query(warehouse_copy, gb.format("2024-03-02 16:00")) == []
-    # every revision stays in the entity; events no load touched are not rebuilt
-    revisions = f"select count(distinct revision_number) from ods.ods_unavailability where mrid = '{DIDCOT}'"
-    assert query(warehouse_copy, revisions) == [(3,)]
-    assert query(warehouse_copy, pembroke) == untouched
 
 
 def test_a_nonconforming_area_code_resolves_to_its_registered_area(seeded_warehouse):

@@ -131,7 +131,7 @@ schema:
   context:
     instructions: 'Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One entity
       holds every resolution and republication published, so intervals can overlap; for hourly or summed series, query the
-      entity''s hourly mart (`mart_<entity>`), which resolves the overlaps.'
+      entity''s hourly mart (`mart_<entity>`, where it has one), which resolves the overlaps.'
     constraints:
     - constraint: Do not sum rows of different `interval_minutes` or overlapping intervals; aggregate the hourly mart.
     - constraint: 'Do not sum or average across `area_eic_code` before choosing one area level: areas are published at several
@@ -363,7 +363,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   - name: _dlt_load_id
     logicalType: string
     physicalType: VARCHAR

@@ -23,7 +23,7 @@ with messages as (
         m.affected_area,
         m.bidding_zone,
         m.fuel_type,
-        p.psr_type,
+        {{ entsoe_psr_type('m.fuel_type') }} as psr_type,
         cast(m.normal_capacity as double) as installed_capacity_mw,
         cast(m.available_capacity as double) as available_capacity_mw,
         cast(m.unavailable_capacity as double) as unavailable_capacity_mw,
@@ -34,7 +34,6 @@ with messages as (
         m.related_information as remarks,
         m._dlt_load_id
     from {{ dlt_source('bmrs', 'bmrs__remit') }} m
-    left join {{ ref('entsoe_psr_types') }} p on p.production_type = m.fuel_type
     where m._dlt_valid_to is null
 )
 

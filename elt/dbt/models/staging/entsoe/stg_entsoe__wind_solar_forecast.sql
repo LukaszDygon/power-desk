@@ -13,12 +13,11 @@ select
     f.area_type_code,
     f.area_map_code,
     f.production_type,
-    p.psr_type,
+    {{ entsoe_psr_type('f.production_type') }} as psr_type,
     f.day_ahead_generation_forecast_mwx as day_ahead_forecast_mw,
     f.intraday_generation_forecast_mwx as intraday_forecast_mw,
     f.current_generation_forecast_mwx as current_forecast_mw,
     cast(f.update_time_utcx at time zone 'UTC' as timestamp) as publish_time_utc,
     f._dlt_load_id
 from {{ dlt_source('entsoe', 'entsoe__wind_solar_forecast') }} f
-left join {{ ref('entsoe_psr_types') }} p on p.production_type = f.production_type
 where f._dlt_valid_to is null and {{ dlt_incremental_filter('f._dlt_load_id') }}

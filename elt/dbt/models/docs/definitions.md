@@ -850,7 +850,7 @@ A resource containing `resource_code` (itself at depth 0), following published E
 {% enddocs %}
 
 {% docs col_technology_code %}
-Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
 {% enddocs %}
 
 {% docs col_ancestor_technology_code %}
@@ -1242,7 +1242,7 @@ BMRS fuel type category (CCGT, OCGT, OIL, COAL, NUCLEAR, WIND, PS, NPSHYD, BIOMA
 {% enddocs %}
 
 {% docs col_generation_mw %}
-Net generation for the technology over the interval, in MW (mean of the interval). FUELINST 5-minute averages; PVLive half hours spread over their six 5-minute intervals; ENTSO-E aggregated net generation output per market time unit.
+Net generation for the technology over the interval, in MW (mean of the interval). FUELINST 5-minute averages; PVLive half-hourly estimates; ENTSO-E aggregated net generation output per market time unit.
 {% enddocs %}
 
 {% docs col_consumption_mw %}
@@ -1279,126 +1279,6 @@ Volume behind the price, in MWh. Elexon MID, the Market Index Volume, zero when 
 
 {% docs col_generation_forecast_mw %}
 Forecast generation for the technology over the interval, in MW.
-{% enddocs %}
-
-{% docs col_wind_mw %}
-FUELINST fuel type `WIND`, in MW.
-{% enddocs %}
-
-{% docs col_solar_mw %}
-PVLive `generation_mw` for GB (PES region 0), in MW.
-{% enddocs %}
-
-{% docs col_nuclear_mw %}
-FUELINST fuel type `NUCLEAR`, in MW.
-{% enddocs %}
-
-{% docs col_ccgt_gas_mw %}
-FUELINST fuel type `CCGT`, in MW.
-{% enddocs %}
-
-{% docs col_ocgt_gas_mw %}
-FUELINST fuel type `OCGT`, in MW.
-{% enddocs %}
-
-{% docs col_oil_mw %}
-FUELINST fuel type `OIL`, in MW.
-{% enddocs %}
-
-{% docs col_coal_mw %}
-FUELINST fuel type `COAL`, in MW.
-{% enddocs %}
-
-{% docs col_biomass_mw %}
-FUELINST fuel type `BIOMASS`, in MW.
-{% enddocs %}
-
-{% docs col_hydro_mw %}
-FUELINST fuel type `NPSHYD`, in MW.
-{% enddocs %}
-
-{% docs col_pumped_storage_mw %}
-FUELINST fuel type `PS`, in MW; negative while pumping.
-{% enddocs %}
-
-{% docs col_other_mw %}
-FUELINST fuel type `OTHER`, in MW.
-{% enddocs %}
-
-{% docs col_imports_mw %}
-Net interconnector flow, the sum of the FUELINST `INT*` fuel types, in MW; negative when GB exports.
-{% enddocs %}
-
-{% docs col_total_generation_mw %}
-NESO GENERATION: "Sum of gas, coal, nuclear, wind, wind embedded, hydro, imports, biomass, others, solar and storage." Here: every FUELINST fuel type plus PVLive solar, counting interconnector imports and storage output only (exports and pumping are not generation), in MW. FUELINST has no embedded wind.
-{% enddocs %}
-
-{% docs col_zero_carbon_mw %}
-NESO ZERO_CARBON: "Zero carbon generation e.g. wind, solar, hydro, nuclear". Here: generation from technologies with `is_zero_carbon` in `dim_technology`, in MW.
-{% enddocs %}
-
-{% docs col_zero_carbon_share_pct %}
-NESO ZERO_CARBON_perc: "Fuel Type as a percentage for zero carbon generation e.g. wind, solar, hydro, nuclear". `zero_carbon_mw` / `total_generation_mw` x 100.
-{% enddocs %}
-
-{% docs col_actual_demand_mw %}
-Initial National Demand Outturn for the settlement period, in MW.
-{% enddocs %}
-
-{% docs col_delta_mw %}
-Actual minus forecast national demand, in MW (positive = demand above forecast).
-{% enddocs %}
-
-{% docs col_absolute_error_pct %}
-Absolute forecast error as a percentage of actual national demand.
-{% enddocs %}
-
-{% docs col_hour_utc %}
-Start of the hour (UTC).
-{% enddocs %}
-
-{% docs col_date_utc %}
-UTC calendar date of the hour.
-{% enddocs %}
-
-{% docs col_avg_demand_mw %}
-Hourly mean of actual national demand (INDO), in MW.
-{% enddocs %}
-
-{% docs col_avg_forecast_demand_mw %}
-Hourly mean of forecast national demand (NDF), in MW.
-{% enddocs %}
-
-{% docs col_avg_generation_mw %}
-Hourly mean of total generation, in MW.
-{% enddocs %}
-
-{% docs col_avg_wind_mw %}
-Hourly mean of wind generation, in MW.
-{% enddocs %}
-
-{% docs col_avg_solar_mw %}
-Hourly mean of solar generation, in MW.
-{% enddocs %}
-
-{% docs col_avg_nuclear_mw %}
-Hourly mean of nuclear generation, in MW.
-{% enddocs %}
-
-{% docs col_avg_gas_mw %}
-Hourly mean of CCGT generation, in MW.
-{% enddocs %}
-
-{% docs col_avg_zero_carbon_share_pct %}
-Hourly mean of `zero_carbon_share_pct`, in percent.
-{% enddocs %}
-
-{% docs col_peak_demand_mw %}
-Highest settlement-period national demand within the hour, in MW.
-{% enddocs %}
-
-{% docs col_min_demand_mw %}
-Lowest settlement-period national demand within the hour, in MW.
 {% enddocs %}
 
 {% docs col_out_area_eic_code %}
@@ -1479,10 +1359,6 @@ Installed capacity of the facility, in MW: the nominal generating/transmission/c
 
 {% docs col_interval_index %}
 Position of the interval in the message's outage profile; empty where the row is the whole event period (no outage profile published).
-{% enddocs %}
-
-{% docs col_events %}
-Number of REMIT events (distinct mRID) adding to the row.
 {% enddocs %}
 
 {% docs col_data_upload_time_gmt %}
@@ -1593,24 +1469,8 @@ Time the state version was written.
 Content hash of the stored state.
 {% enddocs %}
 
-{% docs col__source_rows %}
-Number of upstream rows aggregated into this row (fan-out guard).
-{% enddocs %}
-
-{% docs col__fuel_types %}
-Distinct fuel types aggregated into this row; equals `_source_rows` unless a fuel is duplicated.
-{% enddocs %}
-
 {% docs col__last_dlt_load_id %}
 Latest dlt load id that contributed to this row; drives incremental rebuilds and test scoping.
-{% enddocs %}
-
-{% docs col__dbt_invocation_id %}
-dbt invocation that last (re)built this row; joins to `dlt_meta.dlt_load_audit.dbt_invocation_id`.
-{% enddocs %}
-
-{% docs col__dbt_updated_at %}
-Time this row was last (re)built.
 {% enddocs %}
 
 {% docs col_timestamp_utc %}
@@ -1622,7 +1482,7 @@ Length of the row's interval in minutes (the publisher's resolution, e.g. the ma
 {% enddocs %}
 
 {% docs col_publish_time_utc %}
-Publication time of the value (UTC); for sources without one, the end of the interval.
+Publication time of the value (UTC) as the publisher gives it; null where it gives none.
 {% enddocs %}
 
 {% docs col_source_dataset %}

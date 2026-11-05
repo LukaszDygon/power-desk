@@ -64,7 +64,8 @@ intervals as (
 
 select
     publish_time_utc + to_hours(start_step_hours) as timestamp_utc,
-    (end_step_hours - start_step_hours) * 60 as interval_minutes,
+    {{ interval_minutes('publish_time_utc + to_hours(start_step_hours)', 'publish_time_utc + to_hours(end_step_hours)') }}
+        as interval_minutes,
     publish_time_utc,
     step_hours,
     param_id,

@@ -38,7 +38,7 @@ schema:
     The ITSDO is made available by the System Operator within 15 minutes after a Settlement Period, based on their operational
     metering. The composition of the Initial Transmission System Demand Out-Turn matches that of the Transmission System Demand
     Forecast and so are comparable.'
-  dataGranularityDescription: One row per timestamp_utc, area_eic_code, source_dataset.
+  dataGranularityDescription: One row per timestamp_utc, interval_minutes, area_eic_code, source_dataset.
   authoritativeDefinitions:
   - url: https://data.elexon.co.uk/bmrs/api/v1/datasets/ITSDO
     type: businessDefinition
@@ -49,7 +49,7 @@ schema:
   context:
     instructions: 'Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One entity
       holds every resolution and republication published, so intervals can overlap; for hourly or summed series, query the
-      entity''s hourly mart (`mart_<entity>`), which resolves the overlaps.'
+      entity''s hourly mart (`mart_<entity>`, where it has one), which resolves the overlaps.'
     constraints:
     - constraint: Do not sum rows of different `interval_minutes` or overlapping intervals; aggregate the hourly mart.
     - constraint: 'Do not sum or average across `area_eic_code` before choosing one area level: areas are published at several
@@ -77,6 +77,8 @@ schema:
     physicalType: INTEGER
     description: Length of the row's interval in minutes (the publisher's resolution, e.g. the market time unit). Several
       resolutions coexist across areas and over time.
+    primaryKey: true
+    primaryKeyPosition: 2
     required: true
     quality:
     - name: not_null_ods_transmission_demand_actual_interval_minutes
@@ -93,7 +95,7 @@ schema:
       production or trade may be determined, at any level from metering grid area to bidding zone, market area or synchronous
       area.'
     primaryKey: true
-    primaryKeyPosition: 2
+    primaryKeyPosition: 3
     required: true
     relationships:
     - to: dim_area.area_eic_code
@@ -145,7 +147,7 @@ schema:
     description: Source feed (dataset code) the row comes from. Entity models union the staging models of every source that
       provides the entity.
     primaryKey: true
-    primaryKeyPosition: 3
+    primaryKeyPosition: 4
   - name: settlement_date
     logicalType: date
     physicalType: DATE
@@ -167,7 +169,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   - name: _dlt_load_id
     logicalType: string
     physicalType: VARCHAR
@@ -175,7 +177,7 @@ schema:
       only rows from pending load ids.
   quality:
   - name: ods_transmission_demand_actual_unique_key
-    description: unique on (timestamp_utc, area_eic_code, source_dataset)
+    description: unique on (timestamp_utc, interval_minutes, area_eic_code, source_dataset)
     type: custom
     engine: dbt
     implementation: ods_transmission_demand_actual_unique_key

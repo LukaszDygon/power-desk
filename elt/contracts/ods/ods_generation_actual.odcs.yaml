@@ -22,11 +22,11 @@ schema:
   physicalName: ods_generation_actual
   physicalType: table
   logicalType: object
-  description: 'Actual generation per area, technology and interval, across sources: GB at 5-minute grain
+  description: 'Actual generation per area, technology and interval, across sources, each at its published
 
-    (FUELINST fuel types plus PVLive solar), ENTSO-E areas per market time unit and production type.
+    interval: GB FUELINST fuel types every 5 minutes and PVLive solar per half hour, ENTSO-E areas per
 
-    ENTSO-E publishes the same generation at several area levels.
+    market time unit and production type. ENTSO-E publishes the same generation at several area levels.
 
 
     **Instantaneous generation outturn by fuel type (FUELINST)**
@@ -82,7 +82,7 @@ schema:
   context:
     instructions: 'Rows at the interval the source published: `timestamp_utc` (UTC start) and `interval_minutes`. One entity
       holds every resolution and republication published, so intervals can overlap; for hourly or summed series, query the
-      entity''s hourly mart (`mart_<entity>`), which resolves the overlaps.'
+      entity''s hourly mart (`mart_<entity>`, where it has one), which resolves the overlaps.'
     constraints:
     - constraint: Do not sum rows of different `interval_minutes` or overlapping intervals; aggregate the hourly mart.
     - constraint: 'Do not sum or average across `area_eic_code` before choosing one area level: areas are published at several
@@ -154,7 +154,7 @@ schema:
   - name: technology_code
     logicalType: string
     physicalType: VARCHAR
-    description: Canonical technology (seed `technologies`); publisher codes map onto the most specific node they support.
+    description: Canonical technology (`dim_technology`); publisher codes map onto the most specific node they support.
     relationships:
     - to: dim_technology.technology_code
     quality:
@@ -194,8 +194,7 @@ schema:
     logicalType: number
     physicalType: DOUBLE
     description: Net generation for the technology over the interval, in MW (mean of the interval). FUELINST 5-minute averages;
-      PVLive half hours spread over their six 5-minute intervals; ENTSO-E aggregated net generation output per market time
-      unit.
+      PVLive half-hourly estimates; ENTSO-E aggregated net generation output per market time unit.
     customProperties:
     - property: unit
       value: MW
@@ -257,7 +256,7 @@ schema:
   - name: publish_time_utc
     logicalType: timestamp
     physicalType: TIMESTAMP
-    description: Publication time of the value (UTC); for sources without one, the end of the interval.
+    description: Publication time of the value (UTC) as the publisher gives it; null where it gives none.
   - name: _dlt_load_id
     logicalType: string
     physicalType: VARCHAR

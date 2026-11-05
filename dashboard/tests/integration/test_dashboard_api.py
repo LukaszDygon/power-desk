@@ -32,7 +32,10 @@ def test_default_widgets_query_the_seeded_week(client, widget):
 
 
 def test_query_binds_dates_and_can_only_read_the_warehouse(client, tmp_path):
-    sql = "select count(*) from mart_gb_hourly_summary where date_utc between $start_date and $end_date"
+    sql = (
+        "select count(distinct timestamp_utc) from mart_demand_actual "
+        "where source_dataset = 'INDO' and timestamp_utc::date between $start_date and $end_date"
+    )
     result = client.post("/api/query", json={"sql": sql, "start_date": "2024-03-01", "end_date": "2024-03-07"}).json()
     assert result["rows"] == [[168]]
     assert client.post("/api/query", json={"sql": sql, "start_date": "x' or 1=1 --"}).status_code == 422
@@ -47,7 +50,6 @@ def test_lineage_runs_from_publisher_to_widget(client):
     assert {
         ("api_bmrs__fuelinst", "bmrs__fuelinst"),
         ("stg_bmrs__fuelinst", "ods_generation_actual"),
-        ("ods_generation_actual", "mart_gb_generation_mix"),
         ("ods_generation_actual", "mart_generation_actual"),
         ("mart_generation_actual", "widget_market"),
     } <= edges
