@@ -40,7 +40,7 @@ import duckdb
 
 from power_desk_elt.ingest.pipeline import DATASET_NAME, make_pipeline, make_source, run
 from power_desk_elt.ingest.registry import SOURCES
-from power_desk_elt.ingest.seed.load import load_seed
+from power_desk_elt.ingest.seed.load import build_references, load_seed
 from power_desk_elt.onboarding.profile import ONBOARDING_DIR, columns_table, first_row, quoted, summarize
 from power_desk_elt.orchestration.jobs import INGEST_JOBS
 from power_desk_elt.transform.dbt import DbtRun, run_dbt, tests_downstream_of, unloaded_raw_tables
@@ -147,6 +147,7 @@ def accept(source: str, start: date, end: date, label: str = "", resources: list
                 make_pipeline(required, db, schemas_dir=None),
                 make_source(required, SOURCES[required].window(start, end)),
             )
+        build_references([source], db)  # the relations the source reads by reference
         pipeline, spec = make_pipeline(source, db, schemas_dir=None), SOURCES[source]
         _, ingest_s = timed(run, pipeline, make_source(source, spec.window(start, end), resources))
         tables = sorted(pipeline.default_schema.data_table_names())

@@ -2,7 +2,7 @@
 sources:
 - name: ecmwf
   description: 'ECMWF open data, loaded by the `ecmwf` dlt pipeline from the open-data portal: eight surface fields of each
-    forecast run at the grid points nearest to the operational wind and solar sites of at least 50 MW in the REPD (`desnz_repd`),
+    forecast run at the grid points nearest to the sites selected in `dim_site` (operational wind and solar sites of the REPD),
     as published; each table keeps the versions of its rows (scd2) merged on the natural key (run, step, parameter and grid
     point).'
   schema: raw

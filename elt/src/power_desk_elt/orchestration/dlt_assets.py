@@ -20,15 +20,17 @@ from power_desk_elt.orchestration.warehouse_lock import WAREHOUSE_POOL, retry_ru
 
 
 class RawTableTranslator(DagsterDltTranslator):
-    """dlt resource -> asset `raw/<resource>`, the key the dbt sources declare (`meta.dagster.asset_key`)."""
+    """dlt resource -> asset `raw/<resource>`, the key the dbt sources declare (`meta.dagster.asset_key`); it
+    depends on the dbt models the source reads by reference (`SourceSpec.references`, asset `<schema>/<model>`)."""
 
     def get_asset_spec(self, data: DltResourceTranslatorData):
         spec = super().get_asset_spec(data)
         source = data.pipeline.pipeline_name if data.pipeline else "api"
+        references = SOURCES[source].references if source in SOURCES else ()
         return spec.replace_attributes(
             key=AssetKey([DATASET_NAME, data.resource.name]),
             group_name=DATASET_NAME,
-            deps=[AssetKey(["api", source, data.resource.name])],
+            deps=[AssetKey(["api", source, data.resource.name]), *(AssetKey(ref.split(".")) for ref in references)],
         )
 
 

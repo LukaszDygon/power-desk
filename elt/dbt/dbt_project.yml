@@ -12,7 +12,7 @@ clean-targets: [target]
 vars:
   # First date the warehouse must cover; completeness tests start here.
   backfill_start_date: "{{ env_var('POWER_DESK_START_DATE', '2024-01-01') }}"
-  # REPD sites the ECMWF source reads weather for; must equal ingest/sources/ecmwf.py (SITE_*)
+  # REPD sites to read weather for (dim_site, which the ECMWF source reads by reference)
   weather_site_status: Operational
   weather_site_technologies: [Wind Onshore, Wind Offshore, Solar Photovoltaics]
   weather_site_min_capacity_mw: 50

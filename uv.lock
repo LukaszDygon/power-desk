@@ -2142,6 +2142,7 @@ dependencies = [
     { name = "power-desk-logging" },
     { name = "power-desk-warehouse" },
     { name = "pyarrow" },
+    { name = "pydantic" },
     { name = "pyyaml" },
     { name = "tenacity" },
 ]
@@ -2161,6 +2162,7 @@ requires-dist = [
     { name = "power-desk-logging", editable = "libs/logging" },
     { name = "power-desk-warehouse", editable = "libs/warehouse" },
     { name = "pyarrow", specifier = ">=18" },
+    { name = "pydantic", specifier = ">=2.13" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "tenacity", specifier = ">=9.1" },
 ]
