@@ -61,8 +61,10 @@ API streams.
 
 ## 3. Export the dlt schema
 
-`uv run power-desk-backfill --sources <source> --start-date <d> --end-date <d> --skip-dbt` for a short range
-writes `ingest/schemas/<source>.schema.yaml` (dlt's names: `DateTime(UTC)` becomes `date_time_utcx`).
+One month of `backfill_<source>` on the real publisher writes `ingest/schemas/<source>.schema.yaml` (dlt's
+names: `DateTime(UTC)` becomes `date_time_utcx`): launch it in the Dagster UI, or in a scratch script,
+`defs.resolve_job_def("backfill_<source>").execute_in_process(partition_key="<yyyy-mm-01>")` with `defs` from
+`power_desk_elt.orchestration.definitions`.
 Commit it; it defines the dbt source. This puts real rows into the dev warehouse, and contracts take their
 types from it, so rebuild it from the seed afterwards: `uv run power-desk-load-seed --fresh`. Trial loads go
 into a scratch warehouse file (`make_pipeline(name, path)` keeps dlt state per file).
@@ -147,7 +149,7 @@ and query time, with a profile and CSV samples of every relation holding the sou
 (`data/onboarding/<source>/acceptance/`). Every criterion passes or is a confirmed exception, and `make check`
 is green.
 
-## Pitfalls (measured, see `docs/ingestion-study.md`)
+## Pitfalls (measured, see `docs/adr/evidence/0001-ingestion-study.md`)
 
 - A `scd2` resource without `merge_key` closes every key missing from a load: right for full snapshots,
   wrong for partial files.

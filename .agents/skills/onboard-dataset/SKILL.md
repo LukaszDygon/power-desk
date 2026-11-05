@@ -17,22 +17,16 @@ Five phases, with two stops for the user: after the scope (phase 3) and after th
 
 ## 0. Own worktree
 
-Every onboarding runs in its own git worktree, so parallel sessions never share code, warehouse or
-dlt state. Do this first, even when the session started from `onboard-source`.
-- Check: `git rev-parse --git-dir` differs from `git rev-parse --git-common-dir`. If it doesn't, you're in
-  the main checkout: create one with EnterWorktree, or ask the user to start the session with
-  `claude -w <name>`. Name it `onboard-<source>`, or `onboard-<source>-<dataset>` when `git worktree list`
-  already shows one for the source (then read "Parallel sessions" below).
-- Never enter or edit a worktree you didn't create. A `locked` worktree belongs to a live session.
-- Then run `uv sync` and `uv run power-desk-load-seed --fresh` (the dev warehouse from the seed week, about a
-  minute). Check that `.env` is present (Claude Code copies it into worktrees, see `.worktreeinclude`).
-  If it's missing, ask the user for the credentials the publisher needs, and never print them.
-- Everything below stays in this worktree: its own `data/` (warehouses, onboarding artefacts) and
-  `.dlt/`. Commit to the worktree's branch, and push or merge only when the user asks. Never `git stash`
-  (all worktrees share the stash list); commit work in progress instead.
-- The worktree's sandbox refuses compound shell commands (heredocs, `$(...)`, `sed -i`, `xargs`): edit
-  files with Edit/Write, and put probes in scripts under `data/onboarding/<source>/scratch/`, never in
-  `samples/`.
+Every onboarding runs in its own worktree (AGENTS.md, Git and worktrees), so parallel sessions never share
+code, warehouse or dlt state. Do this first, even when the session started from `onboard-source`.
+- In the main checkout (`git rev-parse --git-dir` equals `--git-common-dir`), create one with EnterWorktree,
+  named `onboard-<source>`, or `onboard-<source>-<dataset>` when the source already has one (then read
+  "Parallel sessions").
+- Run `uv sync` and `uv run power-desk-load-seed --fresh`. `.env` is copied into the worktree
+  (`.worktreeinclude`); if it is missing, ask the user for the publisher's credentials and never print them.
+- The worktree's sandbox refuses a command it cannot verify stays in the worktree (compound commands,
+  `cd`, inline scripts naming git): run plain commands, edit files with Edit/Write, and keep probes in
+  scripts under `data/onboarding/<source>/scratch/`.
 
 ## Parallel sessions
 
@@ -41,11 +35,10 @@ start, through SendMessage, and record them in both `scope.md` files ("Shared wi
 - **One owner per shared file** (a source module, a macro, a dimension). The other session reads the owner's
   commits only, never its uncommitted files.
 - **Commit the shared skeleton early.** Once its stage checks pass, the owner asks its user for an early
-  commit to its branch, and the other session merges that branch. Waiting for acceptance stalled a
-  session for 20 hours.
+  commit to its branch, and the other session merges that branch.
 - **Names and grain** (raw tables, `source_dataset` codes, staging keys, the interval convention) are in
   `scope.md`, not only in messages.
-- **Review each other's diff** before stop 2. In the ECMWF sessions, this found five real bugs.
+- **Review each other's diff** before stop 2.
 
 ## 1. Intake
 
@@ -56,17 +49,9 @@ gave. Ask only what you can't find out yourself (usually nothing yet).
 ## 2. Profile and design (`profile-dataset` skill)
 
 Fetch real data and the official documentation, profile them (`uv run power-desk-profile`), and derive
-every design decision from that evidence. The defaults, from which any departure is an **exception**
-needing the user's confirmation:
-
-| Decision | Default | Exception (confirm with the user) |
-|---|---|---|
-| History | raw keeps every version: `scd2`, so the data can be read as it was at any time | `delete-insert` (no time travel), e.g. a huge stream the publisher never revises |
-| Idempotency | a reload of any window changes nothing; the natural key comes from the documentation | none: always required |
-| Structure | rows as published; nested data in dlt's child tables (`<table>__<field>`) | JSON columns |
-| Transformation | a time series: entity (`ods_*`) and hourly mart, conformed to existing dimensions | not a time series; a new dimension |
-| Schedule | from the publication cadence (profile) and the user's latency need: an existing `IngestJob` with that cadence, or a new one | a schedule faster than the publisher updates |
-| Backfill | all history the publisher offers | a shorter horizon (the user chooses at the stop) |
+every design decision from that evidence. The defaults are
+[ADR 0003](../../../docs/adr/0003-onboarding-defaults.md); any departure is an **exception** for the user to
+confirm, recorded in `docs/deviations.md` once accepted.
 
 ## 3. Stop: scope review
 
@@ -105,12 +90,8 @@ alike.
   It builds a fresh warehouse (`data/onboarding/<source>/acceptance/`) and checks loading, structure,
   idempotency, time travel, logging, dbt tests, dimension registration, time series, schedule budget
   and query time. Fix and re-run until every criterion passes or is a confirmed exception.
-- Check order, cheapest first:
-  - while building: each stage's check, `uv run pytest elt/tests/unit`, `make format`
-  - once the build passes: the acceptance run, with `make check` in the background next to it (up to about 5 min)
-  - pipe a check's output only with `set -o pipefail`, or a failure passes for success
-- `make check` green (the contracts, integration and coverage tests included). A dbt exit code of -11 is a
-  DuckDB crash. Treat it as a finding: compare several runs with and without your change.
+- Checks as in AGENTS.md: unit tests and `make format` while building; the acceptance run with
+  `make check` in the background once the build passes.
 
 ## 5. Stop: acceptance report
 
@@ -121,8 +102,8 @@ the user its summary. It holds:
 - the profile of the acceptance run: rows, time span (including how far into the future the data
   runs) and the columns of every relation holding the source's rows
 - deviations from the agreed scope, with the reasons
-- the backfill: the exact command for the chosen horizon and its estimated duration (acceptance
-  throughput times the horizon)
+- the backfill: the months of `backfill_<source>` for the chosen horizon and its estimated duration
+  (acceptance throughput times the horizon)
 - how to inspect the data: the CSV samples in `acceptance/sample/`, or the dashboard on the acceptance
   warehouse:
   `POWER_DESK_DUCKDB_PATH=data/onboarding/<source>/acceptance/warehouse.duckdb POWER_DESK_DBT_MANIFEST=data/onboarding/<source>/acceptance/target/manifest.json uv run power-desk`
@@ -132,15 +113,9 @@ they accept, commit to the worktree's branch.
 
 ## After acceptance (when the user asks)
 
-- **Backfill:** the command in `report.md`. It tests only what it loaded.
-- **Merge into `main`:**
-  - `git fetch` and `git merge origin/main` into the worktree's branch.
-  - Renumber any new ADR whose number `main` already has (`make lint` fails on duplicates).
-  - Regenerate generated files rather than resolving their conflicts by hand.
-  - `make check` passes, and records the tree.
-  - Push. The pre-push hook skips a tree that already passed, and fails at once if `main` moved meanwhile.
-- **Leave the worktree:** call ExitWorktree, and tell the user to `git pull` in the main checkout
-  (the worktree's branch has no upstream).
+- **Merge into `main`** as AGENTS.md says (Git and worktrees), with `make check` passing; then ExitWorktree,
+  and tell the user to `git pull` in the main checkout.
+- **Backfill:** the Dagster job `backfill_<source>` over the chosen months (`report.md`).
 
 ## Retrospective
 

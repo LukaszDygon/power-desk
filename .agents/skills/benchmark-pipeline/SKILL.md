@@ -46,15 +46,11 @@ build, projected scheduled run, and per mart a daily aggregate query.
 
 ## 4. Compare
 
-```bash
-uv run python - <<'EOF'
-import duckdb
-print(duckdb.sql("""
-    select label, count(*) as runs, median(ingest_s) as ingest, median(dbt_build_s) as dbt,
-           median(projected_run_s) as projected, max(ingest_s) - min(ingest_s) as spread
-    from read_json('data/onboarding/<source>/timings.jsonl') group by label order by label
-"""))
-EOF
+```sql
+-- in a scratch script under data/onboarding/<source>/scratch/, through duckdb.sql(...)
+select label, count(*) as runs, median(ingest_s) as ingest, median(dbt_build_s) as dbt,
+       median(projected_run_s) as projected, max(ingest_s) - min(ingest_s) as spread
+from read_json('data/onboarding/<source>/timings.jsonl') group by label order by label;
 ```
 
 Decide on the medians. A difference smaller than the spread is noise, so keep the simpler variant.

@@ -38,8 +38,8 @@ and what any cross-check proves>
 
 ## Backfill
 
-`uv run power-desk-backfill --sources <source> --start-date <d> --end-date <d> --chunk-days <n>`, about
-<estimate> (acceptance ingest seconds per day times the horizon).
+The Dagster job `backfill_<source>`, months <first>..<last>, about <estimate> (acceptance ingest seconds
+per day times the horizon).
 
 ## Inspect the data
 

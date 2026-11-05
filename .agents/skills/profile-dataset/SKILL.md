@@ -82,7 +82,7 @@ It reads JSON, CSV and Parquet, in UTF-8. For anything else, convert first, and 
 | Value-time step | native interval of the entity rows (`interval_minutes`) |
 | Publication cadence and lag; the user's latency need | the ingest job (cron), the freshness preset, `max_days_per_run` |
 | Codes in categorical fields | mappings to existing dimension keys; anything new is an exception |
-| Volume per horizon, fetch timings | backfill options and `--chunk-days` |
+| Volume per horizon, fetch timings | backfill options |
 
 Kinds and their dispositions: the `onboard-source` skill (`kinds/`). Fill the evidence and design
-sections of `scope.md`. Mark every departure from the defaults in `onboard-dataset` as an exception.
+sections of `scope.md`. Mark every departure from the defaults (ADR 0003) as an exception.

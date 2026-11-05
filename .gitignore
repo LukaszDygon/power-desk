@@ -33,9 +33,7 @@ ENV/
 *.duckdb.tmp
 *.parquet
 .dlt/
-data/landing/
-data/logs/
-data/onboarding/
+data/
 
 # Testing & Linting
 .pytest_cache/

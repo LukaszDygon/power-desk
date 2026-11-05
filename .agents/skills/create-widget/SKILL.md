@@ -2,13 +2,14 @@
 name: create-widget
 description: >-
   Generates, validates, and registers a new analytical card/widget into the
-  Power Desk GridStack dashboard, backed by a SQL query over the dbt marts / ods models.
+  Power Desk GridStack dashboard, backed by a SQL query over the marts.
 ---
 
 # Create Widget Skill
 
-Each dashboard card is a widget spec (stored in `data/widgets.json`): a DuckDB query plus a
-visual config. Unqualified names resolve against the `marts`, `ods`, `dims` and `raw` schemas.
+Each dashboard card is a widget spec in the registry (`dashboard/src/power_desk_dashboard/widgets.json`): a
+DuckDB query plus a visual config. Widgets read the `marts` and their dimensions (`dims`), which unqualified
+names resolve against.
 
 ## 1. Find the data
 
@@ -24,10 +25,7 @@ cat elt/contracts/<schema>/<relation>.odcs.yaml                 # the contract: 
   `constraints`: they keep a sum or average correct (one area level, one source, one time horizon).
 - If the card needs a guarantee the contract lacks (a key, a non-null measure, a mapped code), add it
   with the `verify-contract` skill rather than coding around it in the query.
-- Prefer `marts`: business marts (incremental, tested), or the `marts/combined` views for any area
-  and source (one area level at a time); then `ods` entities.
-- Avoid `staging` and `raw`: they are source-specific and may change. Data not yet in a mart or entity is
-  onboarded first (the `onboard-source` skill).
+- Read `marts` only. Data not yet in a mart is added to one first (the `onboard-source` skill).
 - Join `dims` tables for labels and roll-ups (e.g. `bridge_*_hierarchy` to aggregate to a broader level).
 - Columns starting with `_` are lineage metadata. Don't chart them.
 
@@ -93,6 +91,6 @@ uv run power-desk-register-widget --json-file <spec.json>
 # or: --id ... --title ... --type ... --sql ... --config '<json>' [--w 6 --h 4]
 ```
 
-The script runs the query over the loaded date range and every bidding zone, and saves the spec only if it
-succeeds. To ship a card to fresh checkouts, copy it into
-`dashboard/src/power_desk_dashboard/default_widgets.json`. The card then appears on the dashboard, and in the lineage view as a consumer of the relations it queries.
+The script runs the query over the loaded date range and every bidding zone, and adds the spec to the
+registry only if it succeeds. Commit the registry; the card then appears on the dashboard, and in the lineage
+view as a consumer of the relations it queries.
