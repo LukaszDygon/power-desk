@@ -361,16 +361,14 @@ sources:
       config:
         meta:
           dlt_data_type: VARCHAR
-    - name: electricity
-      description: '{{ doc(''col_operates_electricity'') }}'
+    - name: operates_in
+      description: '{{ doc(''col_operates_in'') }}'
       config:
         meta:
-          dlt_data_type: BOOLEAN
-    - name: gas
-      description: '{{ doc(''col_operates_gas'') }}'
-      config:
-        meta:
-          dlt_data_type: BOOLEAN
+          dlt_data_type: VARCHAR
+          references:
+          - title: EIC Local Issuing Offices
+            url: https://www.entsoe.eu/data/energy-identification-codes-eic/
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:

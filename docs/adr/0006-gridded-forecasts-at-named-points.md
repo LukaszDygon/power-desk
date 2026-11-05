@@ -1,6 +1,6 @@
 # ADR 0006: Gridded forecasts load as values at named points
 
-- **Status:** accepted, 2026-11-02 (ECMWF onboarding scope review)
+- **Status:** accepted, 2026-11-02 (ECMWF onboarding scope review); amended 2026-11-05 (points by reference)
 - **Details:** [architecture](../architecture.md#ingestion); evidence in the ECMWF onboarding (`scope.md`)
 
 ## Context
@@ -17,9 +17,13 @@ index files give each field's byte range, so single fields can be fetched (about
   at least 50 MW (115 sites, 83 grid points). Values are not interpolated.
 - A row is one field at one grid point, with the field's GRIB keys as published and the point's
   latitude and longitude; dlt names, types and hashes it as for any source.
-- Site coordinates (British National Grid) convert to latitude and longitude with DuckDB's spatial
-  extension, both at ingest and in `dim_site`, so the two agree. The site rule is kept in the source
-  and as dbt vars, held equal by a unit test.
+- The points come from the dimension by reference: the source reads the selected sites' latitude and
+  longitude from `dims.dim_site` (`is_selected`) through its pipeline's destination. The site rule (dbt
+  vars) and the conversion from British National Grid (DuckDB's spatial extension) exist only in dbt.
+  The orchestrator builds `dim_site` before the ECMWF assets (an asset dependency), as do the seed load
+  and the acceptance run (`SourceSpec.references`); while it is not built, a run reads no points.
+- Ingestion decodes GRIB only through a data class owning the parser (`GridValue`), which keeps the keys
+  and values as eccodes reads them.
 - Accumulated fields are differenced per run in staging; units are converted in the entity by
   parameter id (ECMWF Parameter Database), never by short name.
 
@@ -27,7 +31,7 @@ index files give each field's byte range, so single fields can be fetched (about
 
 - About 113k rows a day (00z and 12z), instead of billions; a run loads in 1-6 minutes, depending on the
   portal's response (acceptance run, 2026-11-02).
-- A site added to the REPD gets weather from its first run after the extract that lists it; earlier
-  runs are not re-read (the portal keeps about 12 runs, and no backfill path exists).
+- A site added to the REPD gets weather from its first run after `dim_site` lists it; earlier runs are
+  not re-read (the portal keeps about 12 runs, and no backfill path exists).
 - Area means, other points or a full grid need a new decision: the GRIB files are not kept.
 - `dim_site` is a table, so readers need no spatial extension; dbt loads it (`profiles.yml`).

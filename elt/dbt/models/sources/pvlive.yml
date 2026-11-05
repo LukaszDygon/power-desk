@@ -16,7 +16,7 @@ sources:
           pipeline: pvlive
           resource: pvlive__solar
           write_disposition: merge
-          merge_strategy: delete-insert
+          merge_strategy: scd2
           primary_key:
           - pes_id
           - datetime_gmt
@@ -40,12 +40,24 @@ sources:
           columns:
           - pes_id
           - datetime_gmt
+          - _dlt_valid_to
     - dlt_unique:
-        name: pvlive__solar_unique_dlt_id
+        name: pvlive__solar_unique_row_version
         arguments:
           columns:
           - _dlt_id
+          - _dlt_valid_from
     columns:
+    - name: _dlt_valid_from
+      description: '{{ doc(''col__dlt_valid_from'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
+    - name: _dlt_valid_to
+      description: '{{ doc(''col__dlt_valid_to'') }}'
+      config:
+        meta:
+          dlt_data_type: TIMESTAMP WITH TIME ZONE
     - name: pes_id
       description: '{{ doc(''col_pes_id'') }}'
       config:

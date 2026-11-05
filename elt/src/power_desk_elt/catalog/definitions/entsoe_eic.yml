@@ -49,12 +49,12 @@ tables:
     title: EIC Local Issuing Offices
     description: >-
       Offices authorised by ENTSO-E to allocate and maintain EIC codes; each has a unique
-      two-character code that begins every EIC it issues. Parsed from the Local Issuing Offices
-      table on the EIC page.
+      two-character code that begins every EIC it issues. The Local Issuing Offices table on the
+      EIC page, one column per header: a cell's text, link address or icon names.
     url: https://www.entsoe.eu/data/energy-identification-codes-eic/
     links: [eic_issuing_offices, eic_manual]
     columns: {lio_code: issuing_office_code, name: issuing_office_name, country: country_code, website: website_url,
-              eic_site: eic_site_url, electricity: operates_electricity, gas: operates_gas}
+              eic_site: eic_site_url, operates_in: operates_in}
 
 columns:
   eic_code:
@@ -131,6 +131,11 @@ columns:
     description: Issuing office page about EIC codes.
   email:
     description: Contact address of the issuing office.
+  operates_in:
+    description: >-
+      The sectors the issuing office operates in ("Operates in"), published as icons:
+      `ee-icon-elec` electricity, `ee-icon-gas` gas, `ee-icon-hydrogen` hydrogen, with any note.
+    links: [eic_issuing_offices]
   operates_electricity:
     description: Issuing office allocates codes for the electricity sector.
   operates_gas:

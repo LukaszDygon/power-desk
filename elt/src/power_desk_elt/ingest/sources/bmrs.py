@@ -30,8 +30,8 @@ from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltResource
 
 from power_desk_elt.ingest import http
-from power_desk_elt.ingest.snapshot import SCD2, Snapshot, snapshot_resource
-from power_desk_elt.ingest.spec import RunWindow, SourceSpec
+from power_desk_elt.ingest.snapshot import Snapshot, snapshot_resource
+from power_desk_elt.ingest.spec import SCD2, RunWindow, SourceSpec
 from power_desk_elt.ingest.windows import DateRange, day_after, incremental_window
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,8 @@ API_BASE = f"{API_ROOT}/datasets"
 REMIT_LIST_URL = f"{API_ROOT}/remit/list/by-publish"
 REMIT_URL = f"{API_ROOT}/remit"
 BMUNITS_URL = f"{API_ROOT}/reference/bmunits/all"
-# one row per primary key: dlt drops repeats within a load (Elexon republishes some records verbatim)
+# one row per primary key: dlt drops repeats within a load. Elexon returns some records two or three times
+# verbatim within a load, which dlt's `scd2` would store each time (ADR 0001, amendments)
 DELETE_INSERT: TMergeDispositionDict = {"disposition": "merge", "strategy": "delete-insert"}
 MAX_DAYS_PER_RUN = 7
 REMIT_DAYS_PER_REQUEST = 7  # the publisher's limit for listing by publish time

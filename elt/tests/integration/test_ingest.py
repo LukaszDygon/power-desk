@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-import json
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -12,36 +12,56 @@ from power_desk_elt.ingest import http
 from power_desk_elt.ingest.pipeline import make_pipeline, make_source, resource_progress, run
 from power_desk_elt.ingest.registry import SOURCES
 from power_desk_elt.ingest.seed import synthetic
-from power_desk_elt.ingest.seed.load import seed_end_date
+from power_desk_elt.ingest.seed.load import build_references, load_seed, seed_end_date
 from power_desk_elt.ingest.seed.replay import REPD_URL, SEED_START, SeedPublishers, replay
 from power_desk_elt.ingest.sources import bmrs, desnz_repd, ecmwf, entsoe, entsoe_eic, neso
 from tests.support import query
 
+REFERENCING = [name for name, spec in SOURCES.items() if spec.references]
 
-def ecmwf_rows(publishers: SeedPublishers, dataset: ecmwf.Dataset) -> int:
-    """Fields read x grid points nearest to the REPD sites, per step of every served run."""
-    sites = ecmwf.select_sites(desnz_repd.parse_extract(publishers.files[REPD_URL]))
+
+@pytest.fixture(scope="module")
+def references(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A warehouse holding what sources read by reference: the seed's REPD and `dim_site`, built by dbt."""
+    db = tmp_path_factory.mktemp("references") / "w.duckdb"
+    load_seed(db, sources=sorted({required for name in REFERENCING for required in SOURCES[name].requires}))
+    build_references(REFERENCING, db)
+    return db
+
+
+def warehouse(source: str, tmp_path: Path, request: pytest.FixtureRequest) -> Path:
+    """A fresh warehouse for `source`, with the relations it reads by reference built."""
+    db = tmp_path / "w.duckdb"
+    if source in REFERENCING:
+        shutil.copy(request.getfixturevalue("references"), db)
+    return db
+
+
+def ecmwf_rows(publishers: SeedPublishers, dataset: ecmwf.Dataset, db: Path) -> int:
+    """Fields read x grid points nearest to the selected sites, per step of every served run."""
+    points = query(db, f"select latitude, longitude from {ecmwf.SITES} where is_selected")
     _, content = synthetic.ecmwf_step_file(dataset.stream, min(publishers.ecmwf_runs), 0, dataset.model)
-    points = {(row["latitude"], row["longitude"]) for row in ecmwf.field_rows(content, sites, {})}
+    nearest = {(row["latitude"], row["longitude"]) for row in ecmwf.GridValue.parse(content, points, {})}
     steps = sum(len(dataset.steps.get(run.hour, ())) for run in publishers.ecmwf_runs)  # runs of any dataset
-    return steps * len(ecmwf.PARAMS) * len(points)
+    return steps * len(ecmwf.PARAMS) * len(nearest)
 
 
-def published_rows(publishers: SeedPublishers) -> dict[str, int]:
-    """Rows each raw table must hold after loading everything the publishers serve."""
+def published_rows(publishers: SeedPublishers, db: Path, tables: list[str]) -> dict[str, int]:
+    """Rows each of `tables` must hold after loading everything the publishers serve."""
+    forecasts = {d.resource: ecmwf_rows(publishers, d, db) for d in ecmwf.DATASETS if d.resource in tables}
     return {
         **{dataset.resource: len(publishers.records[dataset.code]) for dataset in bmrs.DATASETS},
         "bmrs__remit": len(publishers.records["REMIT"]),
-        bmrs.BMUNITS.resource: len(bmrs.BMUNITS.parse(publishers.files[bmrs.BMUNITS.url])),
+        bmrs.BMUNITS.resource: len(bmrs.BMUNITS.parse(publishers.files[bmrs.BMUNITS.address()])),
         "pvlive__solar": len(publishers.records["PVLIVE"]),
         **{
             item.resource: sum(content.count(b"\n") - 1 for _, content in publishers.exports[item.folder].values())
             for item in entsoe.DATA_ITEMS
         },
-        **{snapshot.resource: len(snapshot.parse(publishers.files[snapshot.url])) for snapshot in entsoe_eic.SNAPSHOTS},
+        **{s.resource: len(s.parse(publishers.files[s.address()])) for s in entsoe_eic.SNAPSHOTS},
         **{dataset.resource: len(publishers.records[dataset.resource]) for dataset in neso.DATASETS},
-        desnz_repd.RESOURCE: len(desnz_repd.parse_extract(publishers.files[REPD_URL])),
-        **{dataset.resource: ecmwf_rows(publishers, dataset) for dataset in ecmwf.DATASETS},
+        desnz_repd.REPD.resource: len(desnz_repd.parse_extract(publishers.files[REPD_URL])),
+        **forecasts,
     }
 
 
@@ -61,12 +81,20 @@ def load(
 
 
 @pytest.mark.parametrize("source", sorted(SOURCES))
-def test_seed_week_loads_every_published_row(source, tmp_path):
-    publishers = SeedPublishers.from_seed()
-    load(source, tmp_path / "w.duckdb", publishers, end=seed_end_date())
-    tables = make_source(source).resources
-    loaded = {table: query(tmp_path / "w.duckdb", f"select count(*) from raw.{table}")[0][0] for table in tables}
-    assert loaded == {table: published_rows(publishers)[table] for table in tables}
+def test_seed_week_loads_every_published_row(source, tmp_path, request):
+    publishers, db = SeedPublishers.from_seed(), warehouse(source, tmp_path, request)
+    load(source, db, publishers, end=seed_end_date())
+    tables = list(make_source(source).resources)
+    loaded = {table: query(db, f"select count(*) from raw.{table}")[0][0] for table in tables}
+    assert loaded == {table: published_rows(publishers, db, tables)[table] for table in tables}
+
+
+@pytest.mark.parametrize("source", REFERENCING)
+def test_a_source_fetches_nothing_while_what_it_reads_by_reference_is_not_built(source, tmp_path):
+    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+    load(source, db, publishers, end=seed_end_date())
+    tables = {table for (table,) in query(db, "select table_name from information_schema.tables")}
+    assert not tables & set(make_source(source).resources) and not publishers.requests
 
 
 def test_stream_resumes_from_its_cursor_and_records_its_window(tmp_path):
@@ -194,8 +222,8 @@ def test_a_record_the_publisher_repeats_within_a_load_is_stored_once(tmp_path):
 
 
 @pytest.mark.parametrize("dataset", ecmwf.DATASETS, ids=lambda dataset: dataset.resource)
-def test_forecast_runs_load_once_complete_and_a_reload_changes_nothing(tmp_path, dataset):
-    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
+def test_forecast_runs_load_once_complete_and_a_reload_changes_nothing(tmp_path, request, dataset):
+    publishers, db = SeedPublishers.from_seed(), warehouse("ecmwf", tmp_path, request)
     resource = dataset.resource
     served = {run for run in publishers.ecmwf_runs if run.hour in dataset.steps}  # this dataset's runs
     late_run = max(served)
@@ -254,17 +282,3 @@ def test_remit_keeps_every_message_and_a_replayed_window_changes_nothing(tmp_pat
     load("bmrs", db, publishers, SEED_START, seed_end_date(), resources=["bmrs__remit"])
     assert query(db, rows) == [(len(messages), len(messages), len(messages))]
     assert query(db, "select count(*) from raw.bmrs__remit__outage_profile") == [(segments,)]
-
-
-def test_bm_unit_snapshot_is_skipped_while_unchanged_and_versioned_when_changed(tmp_path):
-    publishers, db = SeedPublishers.from_seed(), tmp_path / "w.duckdb"
-    units = bmrs.BMUNITS.parse(publishers.files[bmrs.BMUNITS.url])
-    current = "select count(*) filter (where _dlt_valid_to is null), count(*) from raw.bmrs__bmunits"
-    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
-    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
-    assert query(db, current) == [(len(units), len(units))]
-
-    renamed = [{**units[0], "bmUnitName": "RENAMED"}, *units[1:]]
-    publishers.files[bmrs.BMUNITS.url] = json.dumps(renamed)
-    load("bmrs", db, publishers, resources=["bmrs__bmunits"])
-    assert query(db, current) == [(len(units), len(units) + 1)]

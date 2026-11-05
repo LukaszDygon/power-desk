@@ -1,13 +1,15 @@
 # ADR 0001: Keep dlt's default row handling for ingestion
 
-- **Status:** accepted, 2026-10-28; amended 2026-10-28 (streams: `upsert` -> `delete-insert`)
+- **Status:** accepted, 2026-10-28; amended 2026-10-28 (streams: `upsert` -> `delete-insert`), 2026-11-05
+  (PVLive: `scd2`; Elexon stays `delete-insert`)
 - **Evidence:** [ingestion study](../ingestion-study.md); harness and raw results in `elt/bench/ingestion/`
 
 ## Context
 
 Sources yield row dicts; dlt types, names and hashes them, then loads Parquet files into DuckDB.
 ENTSO-E monthly exports (about 100 MB, re-published when revised) load with `scd2` on the natural
-key, Elexon and PVLive with `delete-insert` on the natural key, EIC snapshots with `scd2`
+key, Elexon and PVLive with `delete-insert` on the natural key (PVLive `scd2` since 2026-11-05), EIC
+snapshots with `scd2`
 ([write dispositions](../architecture.md#write-dispositions)).
 
 We measured the alternatives: 144 runs on one real ENTSO-E month (item forms, six destinations, five
@@ -66,6 +68,13 @@ or three times verbatim within a day (1,259 keys); `upsert` keeps every copy of 
 failing the raw uniqueness test. Streams now use dlt's `delete-insert` on the same primary key, which
 keeps one row per key within a load and replaces it on republication. Still a dlt default strategy;
 `_dlt_id` is a row id rather than a hash of the primary key.
+
+**Amendment (2026-11-05):** `scd2` is the default for every kind ([ADR 0003](0003-onboarding-defaults.md)).
+PVLive returns each half hour once (a month of 2024 responses: 1,488 rows, 1,488 keys), so it loads as
+`scd2` merged on its key. Elexon stays `delete-insert`: dlt's `scd2` has no deduplication within a load
+(its insert takes every staging row whose hash is not current), so a record repeated verbatim within a
+load is stored once per copy (dlt 1.30: two copies of a row load as two current versions; the seed's
+NDF with a repeated record loads 338 rows for 336 keys). Revisit when dlt deduplicates `scd2` loads.
 
 ## Revisit when
 

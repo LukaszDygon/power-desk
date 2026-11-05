@@ -21,7 +21,7 @@ import zipfile
 import dlt
 from dlt.sources.helpers import requests
 
-from power_desk_elt.ingest.http import USER_AGENT
+from power_desk_elt.ingest import http
 from power_desk_elt.ingest.windows import DateRange
 
 TOKEN_URL = "https://keycloak.tp.entsoe.eu/realms/tp/protocol/openid-connect/token"
@@ -110,13 +110,11 @@ class FileLibraryClient:
         return target
 
     def _post(self, endpoint: str, **kwargs: Any) -> requests.Response:
-        response = requests.post(f"{API_URL}/{endpoint}", headers=self._headers(), **kwargs)
-        response.raise_for_status()
-        return response
+        return http.post(f"{API_URL}/{endpoint}", headers=self._headers(), **kwargs)
 
     def _headers(self) -> dict[str, str]:
         if time.monotonic() >= self._expires_at:
-            response = requests.post(
+            token = http.post(
                 TOKEN_URL,
                 timeout=30,
                 data={
@@ -125,9 +123,7 @@ class FileLibraryClient:
                     "username": dlt.secrets["sources.entsoe.credentials.user"],
                     "password": dlt.secrets["sources.entsoe.credentials.password"],
                 },
-            )
-            response.raise_for_status()
-            token = response.json()
+            ).json()
             self._token = token["access_token"]
             self._expires_at = time.monotonic() + token["expires_in"] - TOKEN_RENEWAL_MARGIN_SECONDS
-        return {"Authorization": f"Bearer {self._token}", "User-Agent": USER_AGENT}
+        return {"Authorization": f"Bearer {self._token}"}

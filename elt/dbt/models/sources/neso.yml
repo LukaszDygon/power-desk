@@ -89,6 +89,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -123,6 +133,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -219,6 +239,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -253,6 +283,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -349,6 +389,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -383,6 +433,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -479,6 +539,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -513,6 +583,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -609,6 +689,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -643,6 +733,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:
@@ -739,6 +839,16 @@ sources:
             url: https://www.neso.energy/data-portal/nsl
       data_tests:
       - not_null
+    - name: _full_text
+      description: '{{ doc(''col__full_text'') }}'
+      config:
+        meta:
+          dlt_data_type: VARCHAR
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: reason_for_restriction_to_gb
       description: '{{ doc(''col_reason_for_restriction_to_gb'') }}'
       config:
@@ -773,6 +883,16 @@ sources:
           references:
           - title: NESO Data Portal, North Sea Link - NESO's Net Transfer Capacity
             url: https://www.neso.energy/data-portal/nsl
+    - name: _id
+      description: '{{ doc(''col__id'') }}'
+      config:
+        meta:
+          dlt_data_type: BIGINT
+          references:
+          - title: CKAN DataStore extension (the portal's datastore)
+            url: https://docs.ckan.org/en/latest/maintaining/datastore.html
+          - title: NESO Data Portal API guidance (CKAN datastore)
+            url: https://www.neso.energy/data-portal/api-guidance
     - name: _dlt_load_id
       description: '{{ doc(''col__dlt_load_id'') }}'
       config:

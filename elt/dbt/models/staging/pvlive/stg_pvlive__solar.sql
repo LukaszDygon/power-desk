@@ -6,6 +6,7 @@ with periods as (
         _dlt_load_id
     from {{ dlt_source('pvlive', 'pvlive__solar') }}
     where pes_id = 0
+      and _dlt_valid_to is null
 )
 
 select

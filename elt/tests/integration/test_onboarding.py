@@ -15,7 +15,7 @@ def test_acceptance_run_of_a_stream(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     with replay():
         result = accept.accept("pvlive", date.fromisoformat(SEED_START), date(2024, 3, 7), label="seed")
     failed = [c["criterion"] for c in result["criteria"] if not c["passed"]]
-    assert failed == ["Time travel: raw tables versioned (scd2)"]  # PVLive loads with delete-insert (ADR 0001)
+    assert failed == []
     assert set(result["relations"]) == {"ods.ods_generation_actual", "marts.mart_generation_actual"}
     assert (tmp_path / "pvlive" / "acceptance" / "sample" / "marts.mart_generation_actual.csv").exists()
     assert (tmp_path / "pvlive" / "timings.jsonl").read_text().count("\n") == 1

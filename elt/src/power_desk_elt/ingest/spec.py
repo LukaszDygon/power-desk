@@ -1,4 +1,5 @@
-"""What the registry, orchestrator and CLIs need to know about a source, and the days a run covers."""
+"""What the registry, orchestrator and CLIs need to know about a source, the days a run covers, and the
+default write disposition."""
 
 from __future__ import annotations
 
@@ -6,10 +7,14 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
+from dlt.common.schema.typing import TMergeDispositionDict
 from dlt.sources import DltSource
 
 from power_desk_elt.ingest.windows import to_date
 from power_desk_elt.settings import backfill_start_date
+
+# every version of a row kept (ADR 0003); a resource adds its `merge_key` where only its keys may close
+SCD2: TMergeDispositionDict = {"disposition": "merge", "strategy": "scd2"}
 
 
 @dataclass(frozen=True)
@@ -40,14 +45,17 @@ class SourceSpec:
     """A dlt source and its run limits; `name` is the dlt source, schema and pipeline name.
 
     `window_padding_days` widens requested date ranges for publishers whose local dates
-    cross UTC day boundaries. `requires` names sources whose tables the source's models also read
-    (e.g. a site list), loaded first by an acceptance run.
+    cross UTC day boundaries. `references` names the warehouse relations (`<schema>.<model>`, dbt
+    models) the source's resources read, e.g. the sites to read weather for: they are built before the
+    source loads (the orchestrator's asset dependencies, the seed load, an acceptance run). `requires`
+    names the sources those relations are built from, loaded first by an acceptance run.
     """
 
     name: str
     build: Callable[[RunWindow], DltSource]  # the source module's `@dlt.source` function
     max_days_per_run: int = 7
     window_padding_days: int = 0
+    references: tuple[str, ...] = ()
     requires: tuple[str, ...] = ()
 
     def window(

@@ -1,36 +1,26 @@
-from power_desk_elt.ingest.seed.replay import SEED_DIR
-from power_desk_elt.ingest.sources.entsoe_eic import parse_csv, parse_issuing_offices
+from power_desk_elt.ingest.sources.entsoe_eic import IssuingOffice
 
-PUBLISHED_ROWS = """
-<table><tr id="10"><td>10</td><td>ENTSO-E</td><td>EU</td>
-<td>&#8203; <a href="https://www.entsoe.eu/"><i class="ee-icon-globe"></i></a></td>
-<td><a href="http://www.eiccodes.eu/"><i></i></a></td><td><a href="mailto:cio-admin@entsoe.eu"><i></i></a></td>
-<td><i class="ee-icon-elec"></i></td><td></td></tr>
-<tr id="56"><td>56</td><td>GASTSO</td><td>UA</td><td><a href="https://tsoua.com/"></a></td><td></td><td></td><td></td>
-<td><i class="ee-icon-gas"></i></td></tr></table>
+# the table's layout on the EIC page (2026-11-05): link and icon cells, zero-width spaces, a header spanning cells
+PUBLISHED_TABLE = """
+<table id="lio-list"><thead><tr><th>LIO Code</th><th>Name</th><th>Country</th><th>Website</th><th>EIC site</th>
+<th>Email</th><th colspan="2">Operates in</th></tr></thead><tbody>
+<tr id="12"><td>12</td><td>Swissgrid</td><td>CH</td>
+<td>&#8203; <a href="https://www.swissgrid.ch/"><i class="ee-icon-globe"></i></a></td><td>&#8203;</td>
+<td><a href="mailto:eic.io@swissgrid.ch">&#8203;<i class="ee-icon-envelope"></i></a></td>
+<td>&#8203; <i class="ee-icon-elec"></i> <span class="small-80">(except X codes)</span></td>
+<td><i class="ee-icon-gas"></i> &#8203;</td><td></td></tr></tbody></table>
 """
 
 
-def test_parse_issuing_offices_reads_links_and_market_icons():
-    first, second = parse_issuing_offices(PUBLISHED_ROWS)
-    assert first == {
-        "lio_code": "10",
-        "name": "ENTSO-E",
-        "country": "EU",
-        "website": "https://www.entsoe.eu/",
-        "eic_site": "http://www.eiccodes.eu/",
-        "email": "cio-admin@entsoe.eu",
-        "electricity": True,
-        "gas": False,
-    }
-    assert (second["electricity"], second["gas"], second["email"]) == (False, True, None)
-
-
-def test_parse_issuing_offices_reads_the_recorded_seed_page():
-    rows = parse_issuing_offices((SEED_DIR / "entsoe_eic" / "eic-issuing-offices.html").read_text(encoding="utf-8"))
-    assert rows and all(len(row["lio_code"]) == 2 for row in rows)
-
-
-def test_parse_csv_strips_nul_bytes():
-    [row] = parse_csv("EicCode;EicLongName\n10YGB----------A;Great\x00 Britain\n", ";")
-    assert row == {"EicCode": "10YGB----------A", "EicLongName": "Great Britain"}
+def test_issuing_offices_are_the_table_cells_by_header_as_published():
+    assert IssuingOffice.parse(PUBLISHED_TABLE) == [
+        {
+            "LIO Code": "12",
+            "Name": "Swissgrid",
+            "Country": "CH",
+            "Website": "https://www.swissgrid.ch/",
+            "EIC site": None,
+            "Email": "mailto:eic.io@swissgrid.ch",
+            "Operates in": "ee-icon-elec (except X codes) ee-icon-gas",
+        }
+    ]

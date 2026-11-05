@@ -1,9 +1,10 @@
 {{ config(materialized='table') }}
 
 {#-
-  The sites the `ecmwf` source reads weather for (`ecmwf.select_sites`, the `weather_site_*` vars): every
-  REPD project with a published version that was an operational wind or solar project of at least the
-  minimum capacity, with that version's attributes. A table, so readers need no spatial extension.
+  The sites to read weather for (the `weather_site_*` vars): every REPD project with a published version
+  that was an operational wind or solar project of at least the minimum capacity, with that version's
+  attributes. The `ecmwf` source reads the selected ones (`is_selected`) by reference, so the rule and the
+  coordinate conversion live only here. A table, so readers need no spatial extension.
 -#}
 with qualifying as (
     select *
