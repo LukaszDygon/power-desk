@@ -1,0 +1,21 @@
+# OpenMetadata's dependencies on the server, over infra/openmetadata/dependencies.yaml: passwords from the
+# mysql-auth Secret (`make secrets`, before the first install: MySQL keeps the first ones), and room for one
+# warehouse's catalogue (docs/hosting.md, Sizing).
+mysql:
+  auth:
+    existingSecret: mysql-auth  # mysql-root-password, mysql-password (= mysql-secrets' openmetadata-mysql-password)
+  primary:
+    extraFlags: "--sort_buffer_size=10M --innodb-buffer-pool-size=256M --performance-schema=OFF"
+    persistence:
+      size: 10Gi
+    resources:
+      requests: {cpu: 100m, memory: 512Mi}
+      limits: {memory: 1Gi}
+
+opensearch:
+  opensearchJavaOpts: "-Xmx1g -Xms1g"
+  persistence:
+    size: 10Gi
+  resources:  # the heap plus the JVM's off-heap memory
+    requests: {cpu: 100m, memory: 1536Mi}
+    limits: {memory: 2Gi}

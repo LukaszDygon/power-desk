@@ -1,0 +1,14 @@
+# /etc/rancher/k3s/config.yaml: one k3s server node (embedded SQLite datastore). bootstrap.sh appends the node's
+# tailnet address and name to tls-san, so kubectl reaches the API over the tailnet.
+write-kubeconfig-mode: "0600"
+secrets-encryption: true
+# every PersistentVolume (OpenMetadata, Loki) on the data volume, so the nightly snapshot holds them
+default-local-storage-path: /srv/power-desk/volumes
+node-label:
+  - power-desk/warehouse=true
+kubelet-arg:
+  # keep memory for the host and the page cache, which DuckDB reads through
+  - system-reserved=memory=2Gi
+  - eviction-hard=memory.available<1Gi
+tls-san:
+  - power-desk

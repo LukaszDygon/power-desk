@@ -1,0 +1,10 @@
+[Unit]
+Description=Power Desk: snapshot the data volume and back it up with restic
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/power-desk-backup
+Nice=10
+IOSchedulingClass=idle

@@ -1,0 +1,61 @@
+{{- $ctx := dict "root" $ "name" "dashboard" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pdw.name" $ctx }}
+  labels:
+    {{- include "pdw.labels" $ctx | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "pdw.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pdw.labels" $ctx | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        {{- include "pdw.podSecurity" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: dashboard
+          image: {{ include "pdw.image" (dict "root" $ "image" .Values.images.dashboard) }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          env:
+            - {name: POWER_DESK_ENV, value: {{ .Values.environment | quote }}}
+            - {name: POWER_DESK_DUCKDB_PATH, value: /app/data/warehouse_{{ .Values.environment }}.duckdb}
+          securityContext:
+            {{- include "pdw.containerSecurity" . | nindent 12 }}
+          ports:
+            - {name: http, containerPort: 8888}
+          readinessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}
+          volumeMounts:
+            # read-only: the dashboard never writes the warehouse
+            - {name: data, mountPath: /app/data, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        {{- include "pdw.volumes" . | nindent 8 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pdw.name" $ctx }}
+  labels:
+    {{- include "pdw.labels" $ctx | nindent 4 }}
+spec:
+  selector:
+    {{- include "pdw.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - {name: http, port: 8888, targetPort: http}

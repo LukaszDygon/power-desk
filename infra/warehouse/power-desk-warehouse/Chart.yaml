@@ -1,0 +1,6 @@
+apiVersion: v2
+name: power-desk-warehouse
+description: Power Desk's warehouse workloads, every process that opens the DuckDB file - the orchestrator (Dagster), the dashboard and the catalogue's ingestion
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

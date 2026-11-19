@@ -1,0 +1,16 @@
+// The tailnet's access policy for Power Desk (Tailscale admin console > Access controls), merged into yours.
+// The server and the cluster's proxies are tagged devices: only the admins reach them, and they reach no one.
+{
+  "groups": {
+    "group:power-desk-admins": ["you@example.org"],
+  },
+  "tagOwners": {
+    "tag:power-desk":   ["group:power-desk-admins"],  // the server (bootstrap.sh's auth key)
+    "tag:k8s-operator": ["group:power-desk-admins"],  // the Kubernetes operator (its OAuth client)
+    "tag:k8s":          ["tag:k8s-operator"],         // the operator's proxies: one per UI (manifests/tailnet.yaml)
+  },
+  "grants": [
+    // SSH, the Kubernetes API and the UIs (Dagster, dashboard, Grafana, OpenMetadata)
+    {"src": ["group:power-desk-admins"], "dst": ["tag:power-desk", "tag:k8s"], "ip": ["*"]},
+  ],
+}

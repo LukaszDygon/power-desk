@@ -1,0 +1,23 @@
+# The services on the server, over infra/services/power-desk-services/values.yaml. Image tag: set by the Makefile.
+# The landing zone is the warehouse's landing/ folder, where the orchestrator reads it.
+image:
+  repository: power-desk-services
+  pullPolicy: IfNotPresent
+environment: prod
+landing:
+  url: /landing
+  volume:
+    hostPath: /srv/power-desk/data/landing
+existingSecret: power-desk-env
+services:
+  entsoe-subscription:
+    # Public, for ENTSO-E's pushes only: `make public` enables it on PUBLIC_HOST. The edge firewall admits only
+    # ENTSO-E's addresses on 443, and Traefik checks them again (manifests/public.yaml).
+    ingress:
+      enabled: false
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.middlewares: power-desk-entsoe-allowlist@kubernetescrd
+      tlsSecretName: entsoe-subscription-tls

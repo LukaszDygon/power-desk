@@ -1,0 +1,26 @@
+# The warehouse's workloads on the server, over infra/warehouse/power-desk-warehouse/values.yaml.
+# Image tags: set by the Makefile (`make apps`, from the last `make images`).
+pullPolicy: IfNotPresent
+environment: prod
+data:
+  hostPath: /srv/power-desk/data
+nodeSelector:
+  power-desk/warehouse: "true"
+existingSecret: power-desk-env
+
+orchestrator:
+  daemon:
+    # dlt, dbt and DuckDB. A full dbt rebuild of 73M raw rows peaked at 3.3 GiB resident (7.7 GiB footprint)
+    # on an 8 GB machine, 2026-11-19; scheduled runs rebuild only what pending loads touch (docs/hosting.md)
+    resources:
+      requests: {cpu: "1", memory: 4Gi}
+      limits: {memory: 12Gi}
+
+dashboard:
+  resources:
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {memory: 2Gi}
+
+catalog:
+  enabled: true
+  existingSecret: openmetadata-ingestion-bot

@@ -20,11 +20,8 @@ HELM    := helm --kube-context $(PROFILE)
 CONNECTOR := $(ROOT)/infra/openmetadata-duckdb
 OM_HOST ?= http://localhost:8585/api
 
-# chart versions, pinned
-LOKI_CHART    := 7.5.0
-ALLOY_CHART   := 1.15.0
-GRAFANA_CHART := 10.5.15
-OM_CHART      := 2.0.7
+# chart versions, pinned once for every cluster
+include $(ROOT)/infra/versions.mk
 
 .PHONY: cluster repos observability observability-down grafana openmetadata openmetadata-ui openmetadata-down catalog status down
 

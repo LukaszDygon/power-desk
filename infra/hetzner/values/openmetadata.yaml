@@ -1,0 +1,8 @@
+# The OpenMetadata server on the server, over infra/openmetadata/openmetadata.yaml: a 1 GB heap. Reached only
+# over the tailnet (manifests/tailnet.yaml); change the default admin's password at the first login.
+extraEnvs:
+  - name: OPENMETADATA_HEAP_OPTS
+    value: "-Xmx1g -Xms512m"
+resources:
+  requests: {cpu: 250m, memory: 1Gi}
+  limits: {memory: 1536Mi}

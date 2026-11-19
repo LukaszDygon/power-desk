@@ -1,0 +1,19 @@
+# k3s's bundled Traefik (/var/lib/rancher/k3s/server/manifests/): HTTPS only, and the client's address kept for
+# the ENTSO-E allowlist (manifests/public.yaml).
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        expose:
+          default: false
+    service:
+      spec:
+        externalTrafficPolicy: Local
+    logs:
+      access:
+        enabled: true

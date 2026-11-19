@@ -5,5 +5,7 @@ WORKDIR /opt/airflow/openmetadata-duckdb
 USER airflow
 COPY --chown=airflow:0 pyproject.toml ./
 COPY --chown=airflow:0 src ./src
+# the workflows, for `metadata ingest -c configs/<workflow>.yaml` (the server's catalogue CronJob)
+COPY --chown=airflow:0 configs ./configs
 # the image brings openmetadata-ingestion; add the warehouse's DuckDB
 RUN pip install --no-deps . duckdb==1.5.5

@@ -1,6 +1,6 @@
 # Architecture
 
-dlt loads each publisher's data into DuckDB, dbt conforms and documents it, and Dagster schedules both.
+How publisher data becomes queryable: dlt loads it into DuckDB, dbt conforms and documents it, Dagster schedules both.
 
 ```
 publisher ─dlt─> raw ─> staging/<source> ─> ods (entities) ─> marts (hourly)
@@ -10,87 +10,90 @@ publisher ─dlt─> raw ─> staging/<source> ─> ods (entities) ─> marts (h
 
 ## Principles
 
-- **One place per step.** Extraction and loading in dlt sources, every transformation in dbt, scheduling
-  in Dagster. Each kind of transformation is one macro, reused wherever it applies.
-- **Raw as published.** Ingestion yields rows as the publisher sends them, normalized only by dlt. Data
-  without structure (an HTML page, a binary grid) is parsed by a data class (pydantic) that owns its parser;
-  a generic parser may serve several classes. A resource fetches only its own data; data it needs from
-  another source it reads by reference from the warehouse.
-- **Versioned raw.** `raw` keeps every version (`scd2`), so the data reads as it was at any time.
-- **Derived, never invented.** A value the publisher does not give is null; an aggregate states how much of
-  its period holds data (`coverage`).
-- **One way to run each step.** A library function, called directly or by the orchestrator. Only the
-  orchestrator records orchestration details (runs, schedules, materializations); the steps don't know who
-  calls them.
-- **Projects meet through files.** `elt`, `dashboard` and `services` never import one another; they share
-  `libs/` and the warehouse's files.
-
-A departure from these is an exception, recorded once in [deviations](deviations.md).
+- **One place per step:** dlt extracts and loads, dbt transforms (one macro per kind), Dagster schedules.
+- **Raw as published, versioned:** rows as sent, normalized only by dlt, every version kept (`scd2`).
+- **Read by reference:** a resource fetches only its own data; other sources it reads from the warehouse.
+- **Derived, never invented:** a missing value is null; an aggregate states its `coverage`.
+- **One way to run each step:** a library function; only the orchestrator records runs and schedules.
+- **Projects meet through files:** `elt`, `dashboard` and `services` share only `libs/` and the warehouse.
+- **Departures:** listed once, in [deviations](deviations.md).
 
 ## Layers
 
-| Layer | Content | Rules |
+| Layer | Holds | Rule |
 |---|---|---|
-| `raw` | dlt tables, one per resource | As published, keyed by the natural key, every version kept. Never edited. |
-| `staging/<source>` | one model per raw table | Types, UTC time, names, the current version, the source's derived fields. Views; incremental tables for large sources. |
-| `ods` | incremental tables, one per entity | Every source providing the entity, at its published interval and resolution, conformed to units and dimension keys. A build replaces the partitions pending loads touch. |
-| `dims` | tables and seeds | Conformed dimensions, hierarchy bridges, mappings from publisher codes. A curated dimension is its seed. |
-| `marts` | incremental tables, one per time-series entity | The entity on an hourly spine, through one macro. |
-| `dlt_meta` | views and an audit table | Which dlt load each tracked model processed. |
-
-`marts` is a uniform, documented layer that analytical queries build on, not a layer of analyses. An
-entity need not have a mart.
-
-## Naming
+| `raw` | a dlt table per resource | as published, every version, never edited |
+| `staging/<source>` | a model per raw table | types, UTC, names, current version |
+| `ods` | an incremental table per entity | every source, native resolution, conformed keys and units |
+| `dims` | tables and seeds | dimensions, bridges, code mappings |
+| `marts` | an incremental table per time-series entity | the entity on an hourly spine, one macro |
+| `dlt_meta` | views, an audit table | which load each tracked model processed |
 
 | Object | Name |
 |---|---|
-| raw table (dlt resource) | `<source>__<dataset>` |
-| staging model | `stg_<source>__<dataset>` |
-| entity | `ods_<entity>` (e.g. `generation_actual`, `demand_forecast`) |
-| mart | `mart_<entity>` |
+| raw table, staging model | `<source>__<dataset>`, `stg_<source>__<dataset>` |
+| entity, mart | `ods_<entity>`, `mart_<entity>` |
 | dimension, bridge, mapping | `dim_<name>`, `bridge_<name>_hierarchy`, `map_<dimension>` |
 
-Entity and mart columns come in a fixed order: time (`timestamp_utc`; `interval_minutes` in entities),
-dimension keys (`*_eic_code`, `technology_code`, `time_horizon`), measures (`<quantity>_mw`; `coverage` in
-marts), then provenance (`source_dataset`, `source_code`, `_dlt_load_id`). A measure keeps one name across
-actual and forecast entities.
-
-## Marts
-
-Every mart is `hourly_series` over its entity: one row per series (the dimension keys) and hour holding
-data. Its steps are the shared macros of `macros/time/`: where a period ends, splitting a period across
-the hours it overlaps, and aggregating a series' rows within an hour.
-
-- **Measures** aggregate as `dim_metric` says, the one definition: rates, levels and prices are the
-  time-weighted mean over the covered minutes; volumes are pro-rated into the hour.
-- **Precedence:** where a series' periods overlap, the most recently published row prevails.
-- **UTC periods:** a day or month published from local midnight ends where the series' next period starts,
-  so it lasts 23 or 25 hours at clock changes.
-- **Areas** stay at every level the publisher uses; choosing a level before summing is the query's business.
-
-## Dimensions
-
-A query needs only values, a datetime and the natural keys of a small set of shared dimensions; the
-dimensions explain each key and how keys relate.
-
-- **Conformed dimensions:** area, border, technology, time horizon, resource, party, site, source dataset
-  and metric, each keyed by a natural key (an EIC or canonical code) and versioned where its publisher
-  revises it.
-- **Bridges** relate keys across granularities (unit → plant, zone → member state, technology → group), so
-  a roll-up to any level is one join.
-- **Mappings** (`seeds/mappings`) translate each publisher's codes into dimension keys, at the most
-  specific level the publisher supports.
-- **Traceability:** an entity row keeps its `source_dataset`, source code and `_dlt_load_id`, which lead
-  back to the raw row and its load.
+- **Columns:** time, dimension keys, measures, provenance, in that order; one measure name across actuals and forecasts.
+- **Marts:** one row per series and hour holding data, aggregated as `dim_metric` says, newest publication wins.
+- **Marts are uniform, not analyses:** an entity need not have one; areas stay at every published level.
+- **Dimensions:** a query needs only values, a datetime and a few shared natural keys; bridges roll up in one join.
+- **Traceability:** entity rows keep `source_dataset`, source code and `_dlt_load_id`.
 
 ## Ingestion
 
-Each module in `ingest/sources/` exposes a `@dlt.source(window)` and a `SourceSpec`, registered in
-`ingest/registry.py`. The window is open-ended (resume from the cursor, at most `max_days` new days) or
-bounded (a backfill, which leaves the cursor untouched). A source names the warehouse relations it reads by
-reference (`SourceSpec.references`); they are built before it loads. Fetch errors fail the run, so no gap is
-skipped. Recorded payloads (`elt/seed/`) replace the publishers in dev and tests, through the real pipelines.
+- **Contract:** a `@dlt.source(window)` plus a `SourceSpec` per source, in `ingest/registry.py`.
+- **Windows:** open-ended (from the cursor, at most `max_days`) or bounded backfills; fetch errors fail the run.
+- **Dispositions:** `merge` + `scd2` everywhere, keyed per kind of source (Appendix B).
+- **dlt's defaults:** dlt names, types and keys rows; its schemas define the dbt sources ([ADR 0001](adr/0001-keep-dlt-defaults-for-ingestion.md)).
+- **Seed and push feeds:** recorded payloads stand in for publishers; services land push feeds ([services](../services/README.md)).
+
+## Orchestration and quality
+
+- **Jobs:** one per publication cadence, loading then building dbt over pending loads; catch-up while capped.
+- **Backfills and nightly:** backfill jobs by calendar month; nightly tests everything and refreshes docs.
+- **Load-id contract:** a load is pending for a model until `dlt_load_audit` records it, after the model and its tests pass.
+- **Tests:** builds test pending loads, nightly every row; key failures block, gaps warn; failures in `test_failures`.
+- **Freshness and writer:** two freshness checks per raw table; one pool for every DuckDB writer.
+
+## Catalogue, logs, environments
+
+- **Definitions:** each concept once, quoted from an official source; undocumented columns fail.
+- **Contracts:** ODCS, exported from dbt, verified by its tests ([data contracts](data-contracts.md)).
+- **Logs:** one format carrying dlt, dbt and Dagster ids ([logging and provenance](logging.md)).
+- **Environments:** `POWER_DESK_ENV` (`dev`, `prod`); automation starts only in `prod`; credentials are dlt secrets.
+
+## Appendix A: Evidence
+
+- **dlt's defaults over alternatives:** measured in [the ingestion study](adr/evidence/0001-ingestion-study.md).
+
+## Appendix B: Details
+
+**Principles.** Data without structure is parsed by a data class (pydantic) that owns its parser; a generic parser may serve several classes. Data without structure means e.g. an HTML
+page or a binary grid. Orchestration details are runs, schedules and materializations; steps don't know who
+calls them.
+
+**Layers.** Staging also adds the source's derived fields; it is views, with incremental tables for large
+sources. An ods build replaces the partitions pending loads touch. A curated dimension is its seed.
+
+**Columns.** Time (`timestamp_utc`; `interval_minutes` in entities), dimension keys (`*_eic_code`,
+`technology_code`, `time_horizon`), measures (`<quantity>_mw`; `coverage` in marts), provenance
+(`source_dataset`, `source_code`, `_dlt_load_id`). Entity examples: `generation_actual`, `demand_forecast`.
+
+**Marts.** Every mart is `hourly_series` over its entity. Steps are the shared macros of `macros/time/`: where a period ends, splitting a period across the
+hours it overlaps, aggregating a series' rows within an hour. Rates, levels and prices: time-weighted mean
+over the covered minutes. UTC periods: a day or month published from local midnight ends where the series'
+next period starts, so it lasts 23 or 25 hours at clock changes.
+
+**Dimensions.** Each is keyed by a natural key (an EIC or canonical code) and versioned where its publisher
+revises it. Conformed dimensions: area, border, technology, time horizon, resource, party, site, source dataset, metric. Mappings translate publisher codes to dimension keys, at the most specific level the publisher supports. Bridge examples: unit → plant, zone → member state, technology → group. Mappings live in
+`seeds/mappings`.
+
+**Ingestion.** Modules live in `ingest/sources/`. A source names the relations it reads by reference
+(`SourceSpec.references`); they are built before it loads, and its raw assets depend on them. Recorded
+payloads are in `elt/seed/` and run through the real pipelines. Load files are Parquet; dlt schemas are
+exported to `ingest/schemas/`. Services acknowledge a batch once it has landed.
 
 | Kind | Cursor | Disposition |
 |---|---|---|
@@ -100,39 +103,17 @@ skipped. Recorded payloads (`elt/seed/`) replace the publishers in dev and tests
 | File partitions | the publication time | `merge` + `scd2` on the natural key |
 | Forecast runs | the run | `merge` + `scd2` on the natural key |
 
-dlt names, types and keys every row (Parquet load files); its schemas are exported to `ingest/schemas/` and
-define the dbt sources. Why we keep dlt's defaults, and when to revisit:
-[ADR 0001](adr/0001-keep-dlt-defaults-for-ingestion.md).
+**Orchestration.** Jobs are in `orchestration/jobs.py`; every raw table is in exactly one job, and each job
+has a schedule. Backfill jobs are `backfill_<source>`; Dagster splits a range into runs and tracks them.
+Freshness checks run against the table's catalogue preset: `recently_fetched` (newest load) and
+`recent_data` (newest data by its own datetime). Ingestion time comes only from dlt's load metadata.
 
-Push feeds are received by long-running services (`services/`), which land each batch as a dlt load in a
-landing zone and acknowledge it once landed ([services](../services/README.md)).
+**Load ids.** One macro defines pending loads (`macros/dlt/loads.sql`). Tracked models rebuild only the
+partitions pending loads touch, and are idempotent on their grain.
 
-## Orchestration
-
-- **Ingest jobs** (`orchestration/jobs.py`) group raw tables by publication cadence; every raw table is in
-  exactly one. Each job loads its tables, then builds every dbt model over the pending loads; it has a
-  schedule and a catch-up run while its last run was capped.
-- **Backfill jobs** (`backfill_<source>`) run the same assets over bounded windows, one calendar month per
-  partition; Dagster splits a range into runs and tracks them.
-- **Nightly** tests the whole warehouse and refreshes the dbt docs.
-- **Dependencies:** a source's raw assets depend on the relations it reads by reference.
-- **Freshness:** two checks per raw table against its catalogue preset: the newest load
-  (`recently_fetched`) and the newest data by its own datetime (`recent_data`). Ingestion time comes only
-  from dlt's load metadata.
-- **One writer:** DuckDB admits one, so every asset that writes it shares a pool.
-
-## Load-id contract
-
-1. A completed dlt load is pending for a tracked model until `dlt_meta.dlt_load_audit` records it for that
-   model. One macro defines it (`macros/dlt/loads.sql`).
-2. Tracked models rebuild the partitions pending loads touch; they are idempotent on their grain.
-3. A load is recorded for a model once the model and its tests pass.
-
-## Data quality
-
-Tests read the rows of pending loads (`dlt_scope: recent`) or every row (`all`, nightly); which tests run is
-dbt's selection. A raw table before its first load reads as empty. Uniqueness guards check touched keys
-against the whole table.
+**Data quality.** Tests read pending rows (`dlt_scope: recent`) or every row (`all`, nightly); which tests
+run is dbt's selection. A raw table before its first load reads as empty. Uniqueness guards check touched
+keys against the whole table.
 
 | Check | Layer | On failure |
 |---|---|---|
@@ -142,20 +123,7 @@ against the whole table.
 | Mapping keys exist in their dimension | dims | blocks |
 | Grain uniqueness, ranges | marts | blocks |
 
-Failing rows are stored in `test_failures.<test>`.
-
-## Catalogue
-
-- **Definitions:** `catalog/definitions/*.yml` define each table and column concept once, quoted from and
-  citing an official source (`provider:kind/id`, fetched into `catalog/snapshots/`, or a document link).
-- **Generation:** `catalog.generate` writes a dbt doc block per definition and the dbt sources; generation
-  fails on undocumented raw columns, and tests fail on undocumented warehouse columns.
-- **Data contracts:** `catalog.contracts` exports an ODCS contract per mart, entity and dimension from the
-  dbt project; dbt tests verify them ([data contracts](data-contracts.md)).
-
-## Logging and environments
-
-Every process logs one record format, carrying the identifiers dlt, dbt and Dagster issue
-([logging and provenance](logging.md)). `POWER_DESK_ENV` (`dev`, `prod`) selects the warehouse file, dbt
-target, dlt state and Dagster instance; automation starts on its own only in `prod`. Credentials are dlt
-secrets, read from the environment or `.env`.
+**Catalogue.** Definitions are `catalog/definitions/*.yml`; citations are `provider:kind/id` (fetched into
+`catalog/snapshots/`) or a document link. `catalog.generate` writes a dbt doc block per definition and the
+dbt sources; generation fails on undocumented raw columns, tests on undocumented warehouse columns.
+`catalog.contracts` exports an ODCS contract per mart, entity and dimension.

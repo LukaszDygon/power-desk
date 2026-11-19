@@ -1,0 +1,11 @@
+# Grafana on the server, over infra/observability/grafana.yaml: a login (the admin from the grafana-admin Secret,
+# `make secrets`), no anonymous access. Reached only over the tailnet (manifests/tailnet.yaml).
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+grafana.ini:
+  auth:
+    disable_login_form: false
+  auth.anonymous:
+    enabled: false

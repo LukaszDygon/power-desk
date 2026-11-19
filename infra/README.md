@@ -1,16 +1,19 @@
-# Infra (local cluster)
+# Infra
 
-Where and how things run: the local minikube cluster, our services' deployment, log aggregation and the
-catalogue. Each is a set of pinned Helm charts with values for a small local cluster (`make` targets in
-`Makefile`, and `services/Makefile` for ours); a real cluster needs its own values (authentication,
-storage, sizes).
+Where and how things run: the local minikube cluster, our workloads' deployment, log aggregation and the
+catalogue. Each is a set of pinned Helm charts (`versions.mk`) with values for a small local cluster (`make`
+targets in `Makefile`, and `services/Makefile` for ours). The server layers its own values over these
+(`hetzner/`, [hosting](../docs/hosting.md)).
 
 ```
-Makefile                the cluster, log aggregation and the catalogue
+Makefile                the local cluster, log aggregation and the catalogue
 observability/          Loki, Alloy and Grafana values; the logs dashboard
 openmetadata/           OpenMetadata values and its ingestion bot's token
 openmetadata-duckdb/    OpenMetadata connector for the DuckDB warehouse (own project and lock)
 services/               our services' Helm chart, local values and a sample push (services/Makefile)
+warehouse/              the chart of every workload that opens the warehouse: Dagster, the dashboard, the catalogue's ingestion
+hetzner/                the server: install, host hardening, firewalls, backups, its values (docs/hosting.md)
+versions.mk             the charts' versions, for both clusters
 ```
 
 | Namespace | Charts | For |

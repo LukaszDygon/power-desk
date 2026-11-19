@@ -1,0 +1,54 @@
+# Every workload that opens the warehouse's DuckDB file. They share one node directory (`data.hostPath`): DuckDB
+# locks the file, which works between processes of one machine only, and admits one writer (the orchestrator).
+
+images:
+  elt: {repository: power-desk-elt, tag: ""}              # elt/Dockerfile; default tag: the chart's appVersion
+  dashboard: {repository: power-desk-dashboard, tag: ""}  # dashboard/Dockerfile
+  catalog: {repository: openmetadata-ingestion-duckdb, tag: "2.0.7"}  # infra/openmetadata-duckdb/docker
+pullPolicy: IfNotPresent
+
+environment: prod  # POWER_DESK_ENV: warehouse file, dbt target, Dagster instance; automation runs only in prod
+
+# The warehouse's files, mounted at /app/data: the DuckDB file, dbt's artifacts (dbt-target/), Dagster's instance
+# (dagster/), dlt's working directory (dlt/), run logs (logs/) and the services' landing zone (landing/).
+# Owned by uid 10001.
+data:
+  hostPath: /srv/power-desk/data
+
+# Pins every pod to the node holding `data.hostPath` once the cluster has several.
+nodeSelector: {}
+
+# An existing Secret with the dlt secrets (publisher credentials, as in .env.example).
+existingSecret: ""
+
+# Non-secret environment for the orchestrator, e.g. POWER_DESK_START_DATE: "2024-01-01".
+env: {}
+
+orchestrator:
+  webserver:
+    resources:
+      requests: {cpu: 100m, memory: 512Mi}
+      limits: {memory: 2Gi}
+  # The daemon starts every run as its own process in this container (Dagster's default run launcher), so dlt,
+  # dbt and DuckDB run within this limit.
+  daemon:
+    resources:
+      requests: {cpu: "1", memory: 4Gi}
+      limits: {memory: 16Gi}
+
+dashboard:
+  resources:
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {memory: 4Gi}
+
+# OpenMetadata's ingestion of the warehouse and the dbt project (infra/openmetadata-duckdb), on a schedule.
+# It opens the warehouse read-only, so it waits while a run writes; failed attempts are retried.
+catalog:
+  enabled: false
+  schedule: "30 5 * * *"  # UTC, after the nightly run
+  host: http://openmetadata.openmetadata.svc:8585/api
+  # An existing Secret holding OPENMETADATA_JWT_TOKEN, the ingestion bot's token (Settings > Bots in the UI).
+  existingSecret: ""
+  resources:
+    requests: {cpu: 250m, memory: 1Gi}
+    limits: {memory: 3Gi}

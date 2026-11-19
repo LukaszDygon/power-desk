@@ -1,14 +1,34 @@
 # Data contracts
 
-Every queryable relation (`marts`, `ods`, `dims`) has a data contract in
-[ODCS v3.2.0](https://bitol-io.github.io/open-data-contract-standard/), in
-`elt/contracts/<schema>/<relation>.odcs.yaml`. A contract is what a query may rely on: grain, column
-types, units, keys, joins, quality rules, and the rules for querying the relation correctly. Why we
-work this way: [ADR 0002](adr/0002-data-contracts-exported-from-dbt.md).
+What a query may rely on for each queryable relation, and how those guarantees are made and changed.
 
-## Where each part comes from
+## Contracts
 
-Contracts are generated (`catalog/contracts.py`); never edit them.
+- **One per relation:** every `marts`, `ods` and `dims` relation, in [ODCS v3.2.0](https://bitol-io.github.io/open-data-contract-standard/), at `elt/contracts/<schema>/<relation>.odcs.yaml`.
+- **Content:** grain, types, units, keys, joins, quality rules and query rules.
+- **Generated from dbt:** `catalog/contracts.py`; never edit them (Appendix B).
+- **Why:** [ADR 0002](adr/0002-data-contracts-exported-from-dbt.md).
+
+## Verifying
+
+- **dbt tests only:** every test a contract names runs in each build (pending loads) and nightly (all rows).
+- **Staleness:** ELT integration tests fail on a stale or invalid contract.
+
+## Changing a contract
+
+- **Change dbt, not the contract:** a test for a guarantee, `meta` context for an uncheckable query rule ([`verify-contract`](../.agents/skills/verify-contract/SKILL.md)).
+- **Then rebuild and regenerate:** `uv run python -m power_desk_elt.catalog.contracts` (`--check` reports stale files).
+- **Review:** the contract diff ships with the change.
+
+## Query guidance
+
+- **`context`:** `instructions` for reading the relation, `constraints` for what not to do.
+- **Only facts:** about our pipeline, or rules from authoritative sources.
+- **Testable rules become tests**, not context.
+
+## Appendix B: Details
+
+**Sources of each part.**
 
 | Contract | Source |
 |---|---|
@@ -22,24 +42,10 @@ Contracts are generated (`catalog/contracts.py`); never edit them.
 | `quality` | every data test on the model, as `type: custom`, `engine: dbt`, its name as `implementation` |
 | `context` (instructions, constraints) | dbt `meta`: the folder's `layer_context` (`dbt_project.yml`), then the model's `context` |
 
-## Verifying
+**Verification.** Nothing but dbt verifies contracts. The integration tests regenerate them from the seed
+week and validate against `elt/contracts/odcs-json-schema-v3.2.0.json`.
 
-dbt runs every test a contract names, in each build (scoped to pending loads) and nightly (unscoped).
-Nothing else verifies contracts. The ELT integration tests regenerate them from the seed week and
-fail while a committed contract is stale or not valid ODCS (schema: `elt/contracts/odcs-json-schema-v3.2.0.json`).
+**Changing.** Build the warehouse first (`power-desk-load-seed`, or `dbt build`), since generation reads it.
 
-## Changing a contract
-
-1. Change the dbt project: a test (to add or relax a guarantee), or `meta` context (a query rule that
-   no test can check). Procedure: the [`verify-contract`](../.agents/skills/verify-contract/SKILL.md)
-   skill.
-2. Build the warehouse (`power-desk-load-seed`, or `dbt build`), then regenerate:
-   `uv run python -m power_desk_elt.catalog.contracts` (`--check` reports stale files).
-3. Review the contract diff with the change.
-
-## Query guidance
-
-`context` is written for whoever turns a question into SQL (an analyst or an AI): `instructions` say
-how to read the relation, and `constraints` say what not to do (mix area levels, sources or time
-horizons, read a missing hour as zero). Only facts about our pipeline or rules from authoritative
-sources go there. A rule that can be checked on the data becomes a test instead.
+**Query guidance.** `context` is written for whoever turns a question into SQL (an analyst or an AI).
+Typical constraints: don't mix area levels, sources or time horizons; don't read a missing hour as zero.

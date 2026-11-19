@@ -1,0 +1,96 @@
+{{- $ctx := dict "root" $ "name" "orchestrator" }}
+{{- $image := include "pdw.image" (dict "root" $ "image" .Values.images.elt) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pdw.name" $ctx }}
+  labels:
+    {{- include "pdw.labels" $ctx | nindent 4 }}
+spec:
+  # one Dagster instance: DuckDB admits one writer, and the instance (SQLite) lives in the warehouse's directory
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      {{- include "pdw.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pdw.labels" $ctx | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        {{- include "pdw.podSecurity" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # time for a run in progress to stop cleanly
+      terminationGracePeriodSeconds: 120
+      initContainers:
+        # the instance's config from the image, and the manifest of this image's dbt project, which the dashboard
+        # and the catalogue read from the warehouse's directory
+        - name: prepare
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - >-
+              mkdir -p "$DAGSTER_HOME" "$HOME" /app/data/dbt-target /app/data/dbt-logs /app/data/logs &&
+              cp /app/elt/.dagster/prod/dagster.yaml "$DAGSTER_HOME/dagster.yaml" &&
+              python -c "from power_desk_elt.transform.dbt import run_dbt; raise SystemExit(run_dbt(['parse', '--quiet']))"
+          {{- include "pdw.eltEnv" . | nindent 10 }}
+          securityContext:
+            {{- include "pdw.containerSecurity" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /app/data}
+            - {name: tmp, mountPath: /tmp}
+      containers:
+        - name: webserver
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          command: [dagster-webserver, -h, 0.0.0.0, -p, "3000", -m, power_desk_elt.orchestration.definitions]
+          {{- include "pdw.eltEnv" . | nindent 10 }}
+          securityContext:
+            {{- include "pdw.containerSecurity" . | nindent 12 }}
+          ports:
+            - {name: http, containerPort: 3000}
+          startupProbe:
+            httpGet: {path: /server_info, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /server_info, port: http}
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.orchestrator.webserver.resources | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /app/data}
+            - {name: tmp, mountPath: /tmp}
+        - name: daemon
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          command: [dagster-daemon, run, -m, power_desk_elt.orchestration.definitions]
+          {{- include "pdw.eltEnv" . | nindent 10 }}
+          securityContext:
+            {{- include "pdw.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.orchestrator.daemon.resources | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /app/data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        {{- include "pdw.volumes" . | nindent 8 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pdw.name" $ctx }}
+  labels:
+    {{- include "pdw.labels" $ctx | nindent 4 }}
+spec:
+  selector:
+    {{- include "pdw.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - {name: http, port: 3000, targetPort: http}

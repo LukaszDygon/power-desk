@@ -1,0 +1,41 @@
+# The UIs on the tailnet: one HTTPS name each (https://<name>.<tailnet>.ts.net, Let's Encrypt certificates via
+# Tailscale), served by the Tailscale Kubernetes operator's proxies; nothing here is reachable from the internet.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: pd-dagster, namespace: power-desk}
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service: {name: power-desk-warehouse-orchestrator, port: {number: 3000}}
+  tls:
+    - hosts: [pd-dagster]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: pd-dashboard, namespace: power-desk}
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service: {name: power-desk-warehouse-dashboard, port: {number: 8888}}
+  tls:
+    - hosts: [pd-dashboard]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: pd-grafana, namespace: observability}
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service: {name: grafana, port: {number: 80}}
+  tls:
+    - hosts: [pd-grafana]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: pd-openmetadata, namespace: openmetadata}
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service: {name: openmetadata, port: {number: 8585}}
+  tls:
+    - hosts: [pd-openmetadata]

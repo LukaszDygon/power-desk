@@ -1,0 +1,25 @@
+# The public route for ENTSO-E's pushes (`make public`): a Let's Encrypt certificate by DNS-01, since the edge
+# firewall admits no one else on 443, and Traefik's own check of the sender's address. The DNS provider here is
+# Cloudflare (its token in the cloudflare-api-token Secret); swap the solver for your DNS provider.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef: {name: letsencrypt-account}
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef: {name: cloudflare-api-token, key: api-token}
+---
+# ENTSO-E's subscription service pushes from these (services/README.md)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: entsoe-allowlist
+  namespace: power-desk
+spec:
+  ipAllowList:
+    sourceRange: [4.185.182.62/32, 4.182.105.72/32]

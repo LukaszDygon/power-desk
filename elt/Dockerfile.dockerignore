@@ -1,0 +1,18 @@
+# the build context is the repository root: send only what the image needs
+*
+!pyproject.toml
+!uv.lock
+!elt/pyproject.toml
+!dashboard/pyproject.toml
+!libs/logging/pyproject.toml
+!libs/warehouse/pyproject.toml
+!services/pyproject.toml
+!libs/logging/src
+!libs/warehouse/src
+!elt/src
+!elt/dbt
+!elt/.dagster/prod/dagster.yaml
+elt/dbt/target
+elt/dbt/logs
+elt/dbt/.user.yml
+**/__pycache__

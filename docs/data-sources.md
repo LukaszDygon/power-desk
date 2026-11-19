@@ -1,29 +1,63 @@
 # Energy data sources
 
-A tagged reference list of energy data publishers. It covers European power, gas, carbon and weather in
-detail, plus forecasting and machine-learning services and the main sources outside Europe. Every table
-uses the same columns and the tag vocabulary below.
+Who publishes European power, gas, carbon and weather data (plus forecast services, machine-learning weather
+models and the main sources outside Europe), and how to get it. The sources power-desk ingests are those in
+`elt/src/power_desk_elt/ingest/registry.py`.
+
+## Headlines
+
+- **Exchanges are the licensing constraint:** EPEX SPOT, Nord Pool, EEX and ICE Endex web prices are for
+  internal or personal use only; their files, APIs and redistribution are paid.
+- **Licence-light day-ahead prices:** ENTSO-E Transparency, SMARD and TSO portals (Energinet, OMIE's files,
+  GME after registration).
+- **15-minute MTU:** SDAC since 1 Oct 2025 (96 periods a day), European intraday auctions since 13 Jun 2024;
+  some datasets were renamed.
+- **Weather is mostly open:** ECMWF's real-time catalogue is CC BY 4.0 with no data charge since 1 Oct 2025
+  (delivery still charged); Météo-France open since Jan 2024; DWD, KNMI, DMI, FMI and MET Norway CC BY 4.0.
+- **Non-commercial traps:** Open-Meteo and Electricity Maps free tiers, IEA WEO free data, OpenElectricity,
+  Renewables.ninja (unv.), Energy-Charts prices outside the 16 SMARD zones, EUMETSAT under 1 h latency,
+  Pangu-Weather and GraphCast weights; Met Office data on AWS is share-alike.
+- **Open ML weather model:** ECMWF AIFS (data and weights CC BY 4.0, commercial use allowed); commercial
+  forecast services are paid, mostly on quote.
+- **Stale:** Open Power System Data (not updated since 2020), JRC-PPDB-OPEN (since 2019).
+- **Checked:** on the publishers' own pages, 2026-11-01 (Europe) and 2026-11-02 (the rest); re-check before
+  building a source. **(unv.)** marks a point not confirmed on a primary page (Appendix A).
+
+## Where to get what
+
+| Need | Main sources | Access |
+|---|---|---|
+| Pan-European fundamentals and DA prices | ENTSO-E Transparency Platform | Account (token) |
+| Gas flows, storage, LNG | ENTSOG, GIE AGSI+ / ALSI | Free · Account |
+| Inside information | ACER / REMIT, EEX Transparency | Free (EEX API paid) |
+| GB | Elexon Insights (IRIS push), NESO Data Portal, PV_Live, Carbon Intensity API | Free · Account (IRIS) |
+| Ireland (SEM) | EirGrid / SONI, SEMO, SEMOpx | Free |
+| DE | SMARD, Netztransparenz.de, Marktstammdatenregister, Energy-Charts | Free · Account |
+| FR | RTE Data portal, ODRÉ / éCO2mix | Account · Free |
+| BE, NL, AT, CH | Elia, TenneT NL, APG, Swissgrid | Free · Account (TenneT, APG) |
+| ES, PT, IT | REE REData / ESIOS, REN, Terna, OMIE, GME, MIBGAS | Free · Account (ESIOS, Terna, GME) |
+| Nordics | Energinet, Fingrid, Statnett, Svenska kraftnät, eSett | Free · Account (Fingrid) |
+| CEE | PSE, OTE, TGE, HUPX, BSP SouthPool, CROPEX, OPCOM, IBEX | Free web · Paid (TGE commercial use, HUPX live and history) |
+| Licensed exchange data | EPEX SPOT, Nord Pool, EEX, ICE Endex | Paid |
+| Capacity and balancing auctions | JAO, PRISMA, regelleistung.net, NESO EAC, EMR Capacity Market, LCCC | Free · Account · Paid (PRISMA) |
+| Carbon | EEX EU ETS auctions, EU ETS Union Registry | Free |
+| NWP and ensembles | ECMWF Open Data (IFS, AIFS, ENS), DWD, NOAA GFS / GEFS, national met services | Free (mostly CC BY 4.0) |
+| Reanalysis, irradiance, capacity factors | Copernicus CDS (ERA5), C3S PECD, CAMS, PVGIS, NASA POWER, Renewables.ninja | Free · Account |
+| Commercial weather and RES forecasts | Solcast, Meteomatics, Tomorrow.io, DTN, Spire, Meteologica, emsys, enercast and others | Paid |
+| ML weather models | ECMWF AIFS, Google WeatherNext, NVIDIA Earth-2, Microsoft Aurora, Pangu-Weather | Free weights, licences vary |
+| Statistics and registers | Ember, Eurostat, IEA, EIA, IRENA, EI, UK DESNZ (DUKES, REPD), Global Energy Monitor | Free · Account |
+| Commercial vendors | Montel, Volue Insight, Kpler, LSEG, Bloomberg, ICIS, Argus, S&P Platts, Aurora | Paid |
+| Outside Europe | EIA, US/CA ISOs, AEMO, JEPX, OCCTO, ONS and others | Mostly Free; keys for EIA, ERCOT, PJM, AESO and others |
+
+Details per source (area, type, data, delivery, access, licence, docs) are in Appendices B-I; open questions
+in Appendix J.
+
+## Appendix A: Method and tags
 
 Each row was checked against the publisher's own pages: Europe on **2026-11-01**, and the forecasting
 services and global sections on **2026-11-02**. Terms change often, so re-check the Docs link before you
 build a source. **(unv.)** marks a point that could not be confirmed on a primary page, because the page
-rendered only with JavaScript, returned 403, or did not state it. The sources power-desk ingests are those in
-`elt/src/power_desk_elt/ingest/registry.py`.
-
-**Contents**
-1. [Tags](#tags)
-2. [What matters most](#what-matters-most)
-3. [Transparency platforms and system operators (Europe)](#transparency-platforms-and-system-operators-europe)
-4. [Exchanges (Europe)](#exchanges-europe)
-5. [Auctions (Europe)](#auctions-europe)
-6. [Weather](#weather)
-7. [Forecasting services and machine-learning models](#forecasting-services-and-machine-learning-models)
-8. [Aggregators, statistics and reference data](#aggregators-statistics-and-reference-data)
-9. [Commercial vendors](#commercial-vendors)
-10. [Outside Europe](#outside-europe)
-11. [Gaps](#gaps)
-
-## Tags
+rendered only with JavaScript, returned 403, or did not state it. Every table uses the columns and tags below.
 
 **Columns**
 
@@ -96,34 +130,7 @@ rendered only with JavaScript, returned 403, or did not state it. The sources po
 - **`Account`**: free, but needs a registration, API key or token.
 - **`Paid`**: a subscription, licence or quote.
 
-## What matters most
-
-- **Exchange data is the main licensing constraint.** EPEX SPOT, Nord Pool, EEX and ICE Endex show some
-  prices on the web free of charge, but only for internal or personal use. Their files, APIs and any
-  redistribution are paid. For day-ahead prices of coupled zones, the licence-light routes are ENTSO-E
-  Transparency, SMARD and the TSO portals: Energinet, OMIE's files, and GME after registration.
-- **15-minute MTU.** SDAC moved to 15-minute products on 1 Oct 2025, and European intraday auctions
-  started on 13 Jun 2024. Expect 96 day-ahead periods per day and some renamed datasets; for example,
-  Energinet's `Elspotprices` became `DayAheadPrices`.
-- **Weather is now mostly open.** ECMWF's whole real-time catalogue has been CC BY 4.0 with no data
-  charge since 1 Oct 2025; delivery services are still charged. Météo-France has been open since
-  Jan 2024. DWD, KNMI, DMI, FMI and MET Norway are CC BY 4.0.
-- **Non-commercial traps.** These are free to use only for non-commercial purposes:
-  - Open-Meteo and Electricity Maps free tiers.
-  - IEA WEO free data (CC BY-NC-SA).
-  - OpenElectricity (CC BY-NC).
-  - Renewables.ninja (unv.).
-  - Energy-Charts prices outside the 16 SMARD zones.
-  - EUMETSAT data under 1 h latency.
-  - Pangu-Weather and GraphCast weights.
-
-  Met Office data on AWS is share-alike (CC BY-SA).
-- **Machine-learning forecasts.** Commercial forecast services are paid and mostly priced on quote. To
-  build your own models, ECMWF AIFS is the cleanest open machine-learning weather model: data and weights
-  are CC BY 4.0, and commercial use is allowed.
-- **Stale:** Open Power System Data has not been updated since 2020, and JRC-PPDB-OPEN since 2019.
-
-## Transparency platforms and system operators (Europe)
+## Appendix B: Transparency platforms and system operators (Europe)
 
 ### Pan-European
 
@@ -181,7 +188,7 @@ rendered only with JavaScript, returned 403, or did not state it. The sources po
 Not checked: Elering (EE), ČEPS (CZ), MAVIR (HU), and the national inside-information platforms on ACER's
 list.
 
-## Exchanges (Europe)
+## Appendix C: Exchanges (Europe)
 
 ### Power spot markets
 
@@ -211,7 +218,7 @@ list.
 | **GIE AGSI+ / ALSI** (GIE) | `Europe` EU per country, company and site | `Transparency` `Gas` | gas storage, LNG, outages | API (key in URL) · Web | `Account` | Attribution required, or the key can be revoked | [AGSI+](https://agsi.gie.eu) |
 | **PRISMA** | `Europe` interconnection points | `Auction` `Gas` | auction results, transfer capacity | Web (CSV export) · API | `Account` or `Paid` | Public aggregates are on ACER AEGIS | [PRISMA](https://www.prisma-capacity.eu) |
 
-## Auctions (Europe)
+## Appendix D: Auctions (Europe)
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
@@ -223,7 +230,7 @@ list.
 | **EMR Delivery Body: Capacity Market** (NESO) | `GB & Ireland` GB | `Auction` | auction results, capacity | API and Download (NESO portal) · Web | `Free` | Register updated weekly. Latest auction T-4 for 2029/30 (Jun 2026) | [Register](https://www.neso.energy/data-portal/capacity-market-register) |
 | **LCCC / EMR Settlement** | `GB & Ireland` GB | `Auction` | generation, DA prices, auction results | Download (JSON/CSV) · API (unv.) | `Free` | Licence per dataset; some are OGL | [Data portal](https://dp.lowcarboncontracts.uk) |
 
-## Weather
+## Appendix E: Weather
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
@@ -258,7 +265,7 @@ list.
 | **Spire Weather** | `Global` | `Weather` `Forecast` | NWP, ensembles, RES forecast | API | `Paid` | Own satellite data; 200-member sub-seasonal ensemble | [Spire](https://spire.com/weather-climate/) |
 | **StormGeo Energy Analytics** | `Europe` | `Weather` `Forecast` | price forecast, RES forecast | Web · API (unv.) | `Paid` | Owner (unv.) | [Product page](https://www.stormgeo.com/products/european-power-market-analysis) |
 
-## Forecasting services and machine-learning models
+## Appendix F: Forecasting services and machine-learning models
 
 ### Forecast providers
 
@@ -291,7 +298,7 @@ list.
 | **Microsoft Aurora** | `Global` | `ML model` `Weather` | NWP | Weights on GitHub and Hugging Face · Azure AI Foundry | `Free` (weights) · `Paid` (Foundry) | Code and weights MIT. Commercial use of the Foundry version needs permission | [Aurora](https://ai.azure.com/catalog/models/Aurora) |
 | **Huawei Pangu-Weather** | `Global` | `ML model` `Weather` | NWP | Weights (ONNX) | `Free` | **Non-commercial only** (CC BY-NC-SA 4.0) | [GitHub](https://github.com/198808xc/Pangu-Weather) |
 
-## Aggregators, statistics and reference data
+## Appendix G: Aggregators, statistics and reference data
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
@@ -318,7 +325,7 @@ list.
 | **JRC-IDEES / JRC-PPDB-OPEN** (EC JRC) | `Europe` EU | `Reference` | energy balances, plant register | Download | `Free` | IDEES runs to 2021. PPDB has not been updated since 2019 | [JRC](https://jeodpp.jrc.ec.europa.eu) · [PPDB](https://zenodo.org/records/3574566) |
 | **Open Power System Data** | `Europe` | `Aggregator` `Reference` | load, generation, DA prices, plant register | Download (CSV/XLSX/SQLite) | `Free` | Licence per original owner. **Not updated since 2020** | [OPSD](https://open-power-system-data.org) |
 
-## Commercial vendors
+## Appendix H: Commercial vendors
 
 | Source | Area | Type | Data types | Delivery | Access | Licence & notes | Docs |
 |---|---|---|---|---|---|---|---|
@@ -335,7 +342,7 @@ list.
 | **Modo Energy** | `GB & Ireland` · `Europe` · `North America` · `Asia-Pacific` AU | `Commercial` | ancillary services, price forecast | Terminal · API | `Paid` | Battery storage revenue indices | [Modo](https://modoenergy.com) |
 | **Pexapark** | `Europe` (and US) | `Commercial` | price forecast | Web · API | `Paid` | PPA and battery reference prices | [Pexapark](https://pexapark.com) |
 
-## Outside Europe
+## Appendix I: Outside Europe
 
 Summary level only: one row per main publisher, not checked dataset by dataset. Global statistics
 (EIA International, IRENA, EI, UN, World Bank) and NASA POWER are listed above.
@@ -373,7 +380,7 @@ Summary level only: one row per main publisher, not checked dataset by dataset. 
 | **Coordinador Eléctrico Nacional** | `Latin America` CL | `System operator` | DA prices, generation, load | Web · API (unv.) | `Account` (unv.) | The API endpoint could not be opened | [Coordinador](https://www.coordinador.cl) |
 | **Eskom Data Portal** | `Africa` ZA | `System operator` | load, generation, outages | Web · Download (CSV) | `Free` | Bulk data on request by email | [Data portal](https://www.eskom.co.za/dataportal) |
 
-## Gaps
+## Appendix J: Gaps
 
 - **Not confirmed on a primary page:**
   - Free history depth on Nord Pool.

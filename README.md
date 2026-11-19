@@ -11,6 +11,7 @@ orchestrated by Dagster.
 - [Data sources](docs/data-sources.md): the publishers, their data and access
 - [Logging and provenance](docs/logging.md): the log standard, and tracing a row
 - [Services](services/README.md) and [infra](infra/README.md): push-feed receivers, the cluster, Grafana, OpenMetadata
+- [Hosting](docs/hosting.md): everything on one Hetzner server (k3s), reached over Tailscale, backed up off-site
 - [Agent instructions](AGENTS.md) and their skills (`.agents/skills/`)
 
 ## Layout
@@ -36,7 +37,7 @@ dashboard/           read-only analyst dashboard (power_desk_dashboard): app, wi
 services/            long-running receivers of push feeds (power_desk_services)
 libs/logging/        the log standard, shared by the ELT and the services
 libs/warehouse/      the warehouse contract: environment, file locations, connections
-infra/               local cluster, the services' Helm chart, Grafana, OpenMetadata and its DuckDB connector
+infra/               local cluster, the Helm charts, Grafana, OpenMetadata and its DuckDB connector; the server (hetzner/)
 docs/                architecture, deviations, ADRs, data sources
 data/                runtime (gitignored): warehouses, landing zone, logs, onboarding artefacts
 ```

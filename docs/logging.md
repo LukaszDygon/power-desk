@@ -1,28 +1,44 @@
 # Logging and provenance
 
-Every process logs one record format, and records about data carry the identifiers dlt, dbt and Dagster
-already issue, so a row's provenance is traceable through logs, dlt metadata and dbt artifacts, and the same
-identifiers are what a catalogue (OpenMetadata) ingests. The standard is implemented once, in
-`libs/logging` (`power_desk_logging`).
+How every process logs, and how a row is traced back through logs, dlt metadata and dbt artifacts to its load.
+
+## Standard
+
+- **One record format:** the [OpenTelemetry log data model](https://opentelemetry.io/docs/specs/otel/logs/data-model/), implemented once in `libs/logging` (Appendix B).
+- **Tool identifiers, not ours:** records carry the ids dlt, dbt and Dagster issue; OpenMetadata ingests the same ids.
+- **Settings:** `POWER_DESK_LOG_LEVEL` (`INFO`), `RUNTIME__LOG_LEVEL` for dlt (`WARNING`), `POWER_DESK_LOG_FORMAT` (`text` or `json`).
 
 ## Hygiene
 
-- **Log in shared code, not at call sites.** Context is bound where a unit of work starts (a pipeline run, a
-  queue, a Dagster run) and enriches every record within it; modules log plain messages with
-  `logging.getLogger(__name__)`. `extra={...}` only for a fact about one record (a dead-lettered message id).
-- **Configure libraries rather than re-log them.** dlt logs and traces its runs, dbt its invocations,
-  Dagster its steps: we route and enrich their records (dlt: its tracking hook; dbt: JSON log file and run id;
-  Dagster: `python_logs`), and add an event only where a tool has none (`dlt.load`).
-- **One setup call per process:** `configure(service)` (services, CLIs), or `instrument()` where a framework
-  owns the handlers (Dagster).
-- **No secrets, no row data, no `print`** outside CLI output meant for people.
-- **Levels:** `DEBUG` diagnostics; `INFO` what happened to data; `WARNING` handled anomalies (rejected input,
-  retries); `ERROR` a failure that loses or delays data; `CRITICAL` the process stopped.
+- **Log in shared code:** context is bound where a unit of work starts; modules log plain messages.
+- **Configure libraries, don't re-log them:** route and enrich dlt, dbt and Dagster records.
+- **One setup call per process:** `configure(service)`, or `instrument()` under Dagster.
+- **Never:** secrets, row data, or `print` outside CLI output for people.
+- **Levels:** `INFO` is what happened to data; `ERROR` is data lost or delayed (Appendix B).
 
-## Record
+## Provenance
 
-The [OpenTelemetry log data model](https://opentelemetry.io/docs/specs/otel/logs/data-model/), as dbt
-writes its own JSON logs.
+- **Identifiers:** `dagster.run_id`, `dlt.pipeline_name`, `dlt.load_id`, `dbt.invocation_id` (Appendix B).
+- **One event:** `dlt.load` per load package of every dlt run; dbt needs none.
+- **Tracing a row:** its load id leads to `raw._dlt_loads`, the `dlt.load` event and `dlt_load_audit`'s dbt invocation and Dagster run (Appendix B).
+- **Where records go:** stderr (services, CLIs), Dagster's event log plus a JSON run log, `dbt.log` beside its artifacts; Loki and Grafana on the cluster ([infra](../infra/README.md)).
+
+## OpenMetadata
+
+- **Sources:** the warehouse ([our DuckDB connector](../infra/openmetadata-duckdb/README.md)), dbt artifacts, Dagster, OpenLineage events (Appendix B).
+- **Open:** emitting OpenLineage events, keeping dbt artifacts until ingested, the landing load id in raw.
+
+## Appendix B: Details
+
+**Hygiene.** Units of work: a pipeline run, a queue, a Dagster run; modules use `logging.getLogger(__name__)`.
+`extra={...}` only for a fact about one record (a dead-lettered message id). Routing: dlt through its tracking
+hook, dbt through its JSON log file and run id, Dagster through `python_logs`; an event is added only where a
+tool has none (`dlt.load`). `configure` serves services and CLIs; `instrument()` is for frameworks owning the
+handlers. Levels: `DEBUG` diagnostics; `INFO` what happened to data; `WARNING` handled anomalies (rejected
+input, retries); `ERROR` a failure that loses or delays data; `CRITICAL` the process stopped.
+`POWER_DESK_LOG_FORMAT=text` is a line for people, `json` is for collectors (the services' image).
+
+**Record**, as dbt writes its own JSON logs:
 
 | Field | |
 |---|---|
@@ -42,10 +58,7 @@ writes its own JSON logs.
 | `code.function.name`, `code.file.path`, `code.line.number`, `thread.name` | every record (JSON only) |
 | `exception.type`, `exception.message`, `exception.stacktrace` | records with an exception, and an uncaught one (`configure`) |
 
-`POWER_DESK_LOG_LEVEL` (`INFO`) sets our level, `RUNTIME__LOG_LEVEL` dlt's (its default, `WARNING`).
-`POWER_DESK_LOG_FORMAT` is `text` (a line for people) or `json` (collectors; the services' image).
-
-## Identifiers
+**Identifiers.**
 
 | Attribute | Issued by | Also in |
 |---|---|---|
@@ -58,14 +71,12 @@ dbt receives the Dagster run id as `DBT_ENV_CUSTOM_ENV_DAGSTER_RUN_ID`, which it
 [stamps into its artifacts](https://docs.getdbt.com/reference/dbt-jinja-functions/env_var#custom-metadata)
 and log lines; `DBT_LOG_FORMAT_FILE=json` makes `dbt.log` JSON lines.
 
-## Provenance event
+**`dlt.load` event.** Emitted by the tracking hook for every dlt run (orchestrator, CLIs, services), with
+`dlt.pipeline_name`, `dlt.destination_name`, `dlt.dataset_name`, `dlt.load_id`, `dlt.row_counts` (table → rows,
+from dlt's normalize metrics). dbt's log and artifacts carry both ids, and `dlt_load_audit` links its
+invocations to the loads.
 
-`dlt.load`, one per load package of every dlt run (orchestrator, CLIs, services), from the tracking hook:
-`dlt.pipeline_name`, `dlt.destination_name`, `dlt.dataset_name`, `dlt.load_id`, `dlt.row_counts` (table →
-rows, from dlt's normalize metrics). dbt needs none: its log and artifacts carry both ids, and
-`dlt_load_audit` links its invocations to the loads.
-
-## Where records go
+**Where records go.**
 
 | Process | Destination |
 |---|---|
@@ -75,9 +86,9 @@ rows, from dlt's normalize metrics). dbt needs none: its log and artifacts carry
 | CLIs (`power-desk-load-seed`, `power-desk-accept`) | stderr |
 
 On the local cluster, Alloy ships the pods' records and the Dagster run log to Loki, viewed in Grafana and
-filtered by the identifiers above ([infra](../infra/README.md)).
+filtered by the identifiers above.
 
-## Tracing a row
+**Tracing a row.**
 
 1. A mart row names its `source_dataset` and `_last_dlt_load_id`; an ods or raw row its `_dlt_load_id`.
 2. `raw._dlt_loads` dates the load (ingestion time comes only from dlt's metadata); its `dlt.load` event
@@ -86,7 +97,7 @@ filtered by the identifiers above ([infra](../infra/README.md)).
    that invocation's `manifest.json`, `run_results.json` and `dbt.log` show the SQL, tests and timings.
 4. Pushed feeds: landed files are named by the landing load id, whose `dlt.load` event names the service.
 
-## OpenMetadata
+**OpenMetadata.**
 
 | Metadata | OpenMetadata reads it from |
 |---|---|
@@ -95,7 +106,6 @@ filtered by the identifiers above ([infra](../infra/README.md)).
 | Jobs, runs and their status | Dagster: [Dagster connector](https://docs.open-metadata.org/v2.0.x/connectors/pipeline/dagster) |
 | Publisher → raw and landing lineage | OpenLineage run events to its [OpenLineage API](https://docs.open-metadata.org/v2.0.x/how-to-guides/data-lineage/openlineage) |
 
-Open: emitting OpenLineage events (one per `dlt.load` event: job `<namespace>.<pipeline>`, run id a UUID of
-the load id, parent run the Dagster run, outputs the loaded tables; the event carries every field); keeping
-each invocation's dbt artifacts until ingested; the landing load id surviving into raw once the landing zone
-is onboarded.
+Planned OpenLineage events: one per `dlt.load` event, job `<namespace>.<pipeline>`, run id a UUID of the load
+id, parent run the Dagster run, outputs the loaded tables; the event carries every field. The landing load id
+should survive into raw once the landing zone is onboarded.

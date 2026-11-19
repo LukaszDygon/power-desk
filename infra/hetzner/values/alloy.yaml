@@ -1,0 +1,7 @@
+# Alloy on the server, over infra/observability/alloy.yaml: the Dagster run logs come from the warehouse's
+# directory, mounted where config.alloy reads them.
+controller:
+  volumes:
+    extra:
+      - name: power-desk-data
+        hostPath: {path: /srv/power-desk/data, type: Directory}

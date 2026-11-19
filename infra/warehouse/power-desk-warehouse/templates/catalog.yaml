@@ -1,0 +1,76 @@
+{{- if .Values.catalog.enabled }}
+{{- $ctx := dict "root" $ "name" "catalog" }}
+# The warehouse and the dbt project into OpenMetadata, as `make -C infra catalog` does on the local cluster
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "pdw.name" $ctx }}
+  labels:
+    {{- include "pdw.labels" $ctx | nindent 4 }}
+spec:
+  schedule: {{ .Values.catalog.schedule | quote }}
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      # retried while a run holds the warehouse's lock
+      backoffLimit: 4
+      template:
+        metadata:
+          labels:
+            {{- include "pdw.labels" $ctx | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          initContainers:
+            # dbt's manifest and catalog, compiled into their own target so the runs' artifacts stay as they are
+            - name: dbt-catalog
+              image: {{ include "pdw.image" (dict "root" $ "image" .Values.images.elt) }}
+              imagePullPolicy: {{ .Values.pullPolicy }}
+              command:
+                - python
+                - -c
+                - >-
+                  from power_desk_elt.transform.dbt import run_dbt;
+                  raise SystemExit(run_dbt(['compile', '--write-catalog', '--quiet'], target_path='/app/data/dbt-target/openmetadata'))
+              {{- include "pdw.eltEnv" . | nindent 14 }}
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 10001
+                runAsGroup: 10001
+                {{- include "pdw.containerSecurity" . | nindent 16 }}
+              volumeMounts:
+                - {name: data, mountPath: /app/data}
+                - {name: tmp, mountPath: /tmp}
+          containers:
+            # OpenMetadata's ingestion image, as its own user: it only reads the warehouse's directory
+            - name: ingest
+              image: {{ include "pdw.image" (dict "root" $ "image" .Values.images.catalog) }}
+              imagePullPolicy: {{ .Values.pullPolicy }}
+              command:
+                - sh
+                - -c
+                - >-
+                  export DBT_RUN_RESULTS="$(ls -t /app/data/dbt-target/run_results.json /app/data/dbt-target/dbt_models-*/run_results.json 2>/dev/null | head -1)" &&
+                  metadata ingest -c configs/warehouse.yaml &&
+                  metadata ingest -c configs/dbt.yaml
+              env:
+                - {name: OPENMETADATA_HOST, value: {{ .Values.catalog.host | quote }}}
+                - {name: POWER_DESK_DUCKDB_PATH, value: /app/data/warehouse_{{ .Values.environment }}.duckdb}
+                - {name: DBT_CATALOG_PATH, value: /app/data/dbt-target/openmetadata}
+              envFrom:
+                - secretRef: {name: {{ required "catalog.existingSecret is required" .Values.catalog.existingSecret }}}
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: {drop: [ALL]}
+              resources:
+                {{- toYaml .Values.catalog.resources | nindent 16 }}
+              volumeMounts:
+                - {name: data, mountPath: /app/data, readOnly: true}
+          volumes:
+            {{- include "pdw.volumes" . | nindent 12 }}
+{{- end }}
